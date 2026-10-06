@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "Caption PiP",
+  "version": "0.1.0",
+  "minimum_chrome_version": "116",
+  "description": "YouTube 字幕浮動播放器；字幕仍由 YouTube 原頁面控制。",
+  "icons": {
+    "16": "assets/icon-16.png",
+    "32": "assets/icon-32.png",
+    "48": "assets/icon-48.png",
+    "128": "assets/icon.png"
+  },
+  "action": {
+    "default_title": "Caption PiP",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "assets/icon-16.png",
+      "32": "assets/icon-32.png",
+      "48": "assets/icon-48.png",
+      "128": "assets/icon.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": ["storage", "activeTab", "scripting", "downloads"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["pip-audio.js", "pip-ui.js", "floating-comments.js", "content.js"],
+      "css": ["floating-comments.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

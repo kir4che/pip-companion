@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Caption PiP</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <button class="primary" id="open-pip" type="button">Open PiP</button>
+      <div class="shortcut-row">
+        <span>快捷鍵</span>
+        <button class="shortcut" id="shortcut" type="button">
+          Alt+Shift+P
+        </button>
+      </div>
+      <p id="status" role="status">快捷鍵只在 YouTube 頁面有焦點時有效。</p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier
+        run: npm run format:check
+      - name: Manifest
+        run: |
+          node -e "
+          const fs = require('fs');
+          const m = JSON.parse(fs.readFileSync('manifest.json', 'utf8'));
+          const paths = [
+            m.background.service_worker,
+            ...m.content_scripts.flatMap((s) => s.js),
+            ...m.content_scripts.flatMap((s) => s.css || []),
+            ...Object.values(m.icons || {}),
+            ...Object.values((m.action && m.action.default_icon) || {}),
+            m.action && m.action.default_popup,
+          ].filter(Boolean);
+          const missing = paths.filter((p) => !fs.existsSync(p));
+          if (missing.length) {
+            console.error('missing: ' + missing.join(', '));
+            process.exit(1);
+          }
+          console.log('manifest ok: ' + paths.length + ' files');
+          "
