@@ -63,14 +63,6 @@ globalThis.CaptionPiP.PipUI = (() => {
         justify-content: flex-end;
         gap: 0.35em;
         pointer-events: none;
-        background: transparent;
-        border-radius: 0;
-        padding: 0;
-        margin: 0;
-        text-shadow: none;
-      }
-      .subtitle[hidden] {
-        display: none !important;
       }
       .subtitle-line {
         display: block;
@@ -262,7 +254,6 @@ globalThis.CaptionPiP.PipUI = (() => {
         font-variant-numeric: tabular-nums;
         cursor: pointer;
         outline: none;
-        box-sizing: border-box;
         transition:
           border-color 0.15s ease,
           background 0.15s ease;
@@ -286,7 +277,7 @@ globalThis.CaptionPiP.PipUI = (() => {
         direction: rtl;
         accent-color: #f33;
       }
-      .volume-feedback {
+      .feedback {
         position: absolute;
         z-index: 3;
         left: 50%;
@@ -300,6 +291,29 @@ globalThis.CaptionPiP.PipUI = (() => {
         font-variant-numeric: tabular-nums;
         pointer-events: none;
       }
+      .feedback[data-mode="icon"] {
+        padding: 0;
+        background: none;
+        border-radius: 0;
+        animation: feedback-pop 0.18s ease-out;
+      }
+      .feedback svg {
+        display: block;
+        width: clamp(48px, 16cqmin, 112px);
+        height: clamp(48px, 16cqmin, 112px);
+        fill: rgba(255, 255, 255, 0.95);
+        filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.55));
+      }
+      @keyframes feedback-pop {
+        from {
+          transform: translate(-50%, -50%) scale(0.65);
+          opacity: 0;
+        }
+        to {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 1;
+        }
+      }
     `;
     const responsiveCss = css`
       @media (max-width: 440px) {
@@ -311,17 +325,15 @@ globalThis.CaptionPiP.PipUI = (() => {
           width: 28px;
           height: 28px;
         }
+        .controls .speed-button {
+          width: 34px;
+        }
         .time {
           min-width: 55px;
         }
         .volume-slider,
         .speed-slider {
           height: 84px;
-        }
-      }
-      @media (max-width: 440px) {
-        .controls .speed-button {
-          width: 34px;
         }
       }
       @media (hover: none) {
@@ -334,6 +346,9 @@ globalThis.CaptionPiP.PipUI = (() => {
       @media (prefers-reduced-motion: reduce) {
         .controls {
           transition: none;
+        }
+        .feedback[data-mode="icon"] {
+          animation: none;
         }
       }
     `;
@@ -358,11 +373,11 @@ globalThis.CaptionPiP.PipUI = (() => {
     const subtitle = doc.createElement("div");
     subtitle.className = "subtitle";
     subtitle.setAttribute("aria-live", "polite");
-    const volumeFeedback = doc.createElement("div");
-    volumeFeedback.className = "volume-feedback";
-    volumeFeedback.setAttribute("role", "status");
-    volumeFeedback.setAttribute("aria-live", "polite");
-    volumeFeedback.hidden = true;
+    const feedback = doc.createElement("div");
+    feedback.className = "feedback";
+    feedback.setAttribute("role", "status");
+    feedback.setAttribute("aria-live", "polite");
+    feedback.hidden = true;
     const miniProgress = doc.createElement("div");
     miniProgress.className = "mini-progress";
     miniProgress.setAttribute("role", "progressbar");
@@ -447,7 +462,7 @@ globalThis.CaptionPiP.PipUI = (() => {
     const speedSlider = doc.createElement("input");
     speedSlider.className = "speed-slider";
     speedSlider.type = "range";
-    speedSlider.min = "0.5";
+    speedSlider.min = "0.25";
     speedSlider.max = "5";
     speedSlider.step = "0.05";
     speedSlider.value = "1";
@@ -474,7 +489,7 @@ globalThis.CaptionPiP.PipUI = (() => {
       volumeControl,
       speedControl,
     );
-    screen.append(video, subtitle, volumeFeedback, miniProgress, controls);
+    screen.append(video, subtitle, feedback, miniProgress, controls);
     app.append(screen);
     doc.head.replaceChildren(style);
     doc.body.replaceChildren(app);
@@ -483,7 +498,7 @@ globalThis.CaptionPiP.PipUI = (() => {
     const ui = {
       video,
       subtitle,
-      volumeFeedback,
+      feedback,
       volumeValue,
       volumeButton,
       volumePath,

@@ -14,9 +14,11 @@ const VOLUME_ICON_PATH =
 const MUTED_VOLUME_ICON_PATH =
   "M3 9v6h4l5 5V4L7 9H3z M15.5 9.4 16.9 8l2.6 2.6L22.1 8l1.4 1.4-2.6 2.6 2.6 2.6-1.4 1.4-2.6-2.6-2.6 2.6-1.4-1.4 2.6-2.6z";
 const PLAYBACK_RATES = [
-  0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75, 4,
-  4.25, 4.5, 4.75, 5,
+  0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75,
+  4, 4.25, 4.5, 4.75, 5,
 ];
+const PLAY_ICON_PATH = "M8 5v14l11-7z";
+const PAUSE_ICON_PATH = "M6 19h4V5H6v14zm8-14v14h4V5h-4z";
 const PipAudio = globalThis.CaptionPiP.PipAudio;
 const PipUI = globalThis.CaptionPiP.PipUI;
 let launchShortcut = { ...DEFAULT_SHORTCUT };
@@ -31,7 +33,7 @@ let captionNode = null;
 let captionObserver = null;
 let captionLines = [];
 let opening = false;
-let volumeFeedbackTimer = 0;
+let feedbackTimer = 0;
 void loadShortcut();
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName === "local" && changes[SHORTCUT_KEY]) {
@@ -214,7 +216,7 @@ function extractCaptionLines(node) {
 
   return deduplicated;
 }
-function refreshSubtitle() {
+function refreshSubtitle(force = false) {
   if (!pipUi) {
     captionObserver?.disconnect();
     captionObserver = null;
@@ -236,9 +238,13 @@ function refreshSubtitle() {
         childList: true,
         subtree: true,
         characterData: true,
+        attributes: true,
+        attributeFilter: ["style"],
       });
     }
+    force = true;
   }
+  if (!force) return;
   captionLines = extractCaptionLines(captionNode);
   renderSubtitle();
 }
@@ -267,17 +273,38 @@ function renderSubtitle() {
     pipUi.subtitle.appendChild(lineEl);
   }
 }
-function showVolumeFeedback(text = "") {
-  if (!pipUi || !sourceVideo) return;
-  const isMuted = sourceVideo.muted || getSourceVolumePercent() === 0;
-  pipUi.volumeFeedback.textContent =
-    text ||
-    (isMuted ? "靜音" : `音量 ${Math.round(getSourceVolumePercent())}%`);
-  pipUi.volumeFeedback.hidden = false;
-  window.clearTimeout(volumeFeedbackTimer);
-  volumeFeedbackTimer = window.setTimeout(() => {
-    if (pipUi) pipUi.volumeFeedback.hidden = true;
+function revealFeedback() {
+  pipUi.feedback.hidden = false;
+  window.clearTimeout(feedbackTimer);
+  feedbackTimer = window.setTimeout(() => {
+    if (pipUi) pipUi.feedback.hidden = true;
   }, 900);
+}
+function showFeedback(text) {
+  if (!pipUi) return;
+  pipUi.feedback.dataset.mode = "text";
+  pipUi.feedback.textContent = text;
+  revealFeedback();
+}
+function showPlaybackFeedback(paused) {
+  if (!pipUi) return;
+  const doc = pipUi.feedback.ownerDocument;
+  const icon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+  const path = doc.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", paused ? PAUSE_ICON_PATH : PLAY_ICON_PATH);
+  icon.append(path);
+  pipUi.feedback.dataset.mode = "icon";
+  pipUi.feedback.replaceChildren(icon);
+  revealFeedback();
+}
+function showVolumeFeedback() {
+  if (!sourceVideo) return;
+  const isMuted = sourceVideo.muted || getSourceVolumePercent() === 0;
+  showFeedback(
+    isMuted ? "靜音" : `音量 ${Math.round(getSourceVolumePercent())}%`,
+  );
 }
 function getYouTubePlayer() {
   return document.querySelector("#movie_player");
@@ -332,14 +359,7 @@ function savePipScreenshot() {
     } catch {
       downloadViaAnchor();
     }
-    if (pipUi) {
-      pipUi.volumeFeedback.textContent = "已截圖";
-      pipUi.volumeFeedback.hidden = false;
-      window.clearTimeout(volumeFeedbackTimer);
-      volumeFeedbackTimer = window.setTimeout(() => {
-        if (pipUi) pipUi.volumeFeedback.hidden = true;
-      }, 900);
-    }
+    showFeedback("已截圖");
   } catch {}
 }
 function getSourceVolumePercent() {
@@ -385,10 +405,11 @@ function updatePlaybackUi() {
     "d",
     muted ? MUTED_VOLUME_ICON_PATH : VOLUME_ICON_PATH,
   );
-  pipUi.volumeSlider.value = String(Math.round(getSourceVolumePercent()));
+  const volumePercent = Math.round(getSourceVolumePercent());
+  pipUi.volumeSlider.value = String(volumePercent);
   pipUi.volumeSlider.max = String(PipAudio.maxVolume(sourceVideo));
   if (pipUi.volumeValue.ownerDocument.activeElement !== pipUi.volumeValue) {
-    pipUi.volumeValue.value = String(Math.round(getSourceVolumePercent()));
+    pipUi.volumeValue.value = String(volumePercent);
   }
   pipUi.timeLabel.textContent = `${formatTime(sourceVideo.currentTime)} / ${formatTime(sourceVideo.duration)}`;
   const duration = Number.isFinite(sourceVideo.duration)
@@ -423,11 +444,13 @@ function updatePlaybackUi() {
 }
 function togglePlayback() {
   if (!sourceVideo) return;
-  if (sourceVideo.paused) {
+  const willPlay = sourceVideo.paused;
+  if (willPlay) {
     void sourceVideo.play().catch(() => {});
   } else {
     sourceVideo.pause();
   }
+  showPlaybackFeedback(!willPlay);
 }
 function adjustPlaybackRate(direction) {
   const video = sourceVideo;
@@ -493,7 +516,7 @@ function createPipUi(win) {
     playNext: playNextYouTubeVideo,
     setVolume: setSourceVolumePercent,
     getMaxVolume: () => PipAudio.maxVolume(sourceVideo),
-    showFeedback: showVolumeFeedback,
+    showFeedback,
     showVolumeFeedback,
     getVolumePercent: getSourceVolumePercent,
     toggleCaptions: toggleYouTubeSubtitles,
@@ -553,9 +576,8 @@ function attachCapturedStream(stream) {
 }
 function startCapture(video) {
   if (!pipWindow || !pipUi) return;
-  const captureable = video;
-  if (!captureable.captureStream) throw new Error("captureStream unavailable");
-  const stream = captureable.captureStream();
+  if (!video.captureStream) throw new Error("captureStream unavailable");
+  const stream = video.captureStream();
   if (!stream.getVideoTracks().length) {
     stream.getTracks().forEach((track) => track.stop());
     throw new Error("no video track");
@@ -659,12 +681,12 @@ function bindSourceVideo(video) {
     } catch {}
   }
   updatePlaybackUi();
-  refreshSubtitle();
+  refreshSubtitle(true);
 }
 function closePiP(closeWindow) {
   const oldWindow = pipWindow;
-  window.clearTimeout(volumeFeedbackTimer);
-  volumeFeedbackTimer = 0;
+  window.clearTimeout(feedbackTimer);
+  feedbackTimer = 0;
   pipWindow = null;
   pipUi = null;
   captionObserver?.disconnect();
@@ -688,10 +710,9 @@ async function openPiP() {
   try {
     const documentPip = getDocumentPip();
     if (!documentPip) throw new Error("Document PiP unavailable");
-    const captureable = openingVideo;
-    if (!captureable.captureStream)
+    if (!openingVideo.captureStream)
       throw new Error("captureStream unavailable");
-    stream = captureable.captureStream();
+    stream = openingVideo.captureStream();
     if (!stream.getVideoTracks().length) throw new Error("no video track");
     PipAudio.prepare();
     const windowPromise = documentPip.requestWindow({
@@ -713,7 +734,7 @@ async function openPiP() {
     );
     pipUi = createPipUi(nextWindow);
     if (sourceVideo !== openingVideo) throw new Error("source changed");
-    refreshSubtitle();
+    refreshSubtitle(true);
     attachCapturedStream(stream);
     stream = null;
     updatePlaybackUi();
