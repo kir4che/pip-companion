@@ -6,6 +6,7 @@ globalThis.CaptionPiP.PipAudio = (() => {
   let activeChain = null;
   let activeVideo = null;
   let active = false;
+  let pipOpen = false;
   let expectedVolume = 1;
   let expectedMuted = false;
   let lastAudibleVolumePercent = 100;
@@ -15,8 +16,12 @@ globalThis.CaptionPiP.PipAudio = (() => {
   const isActiveFor = (video) =>
     active && activeVideo === video && activeChain !== null;
 
+  function setPipOpen(open) {
+    pipOpen = Boolean(open);
+  }
+
   function maxVolume(video) {
-    return isActiveFor(video) ? 300 : 100;
+    return video && pipOpen ? 300 : 100;
   }
 
   function getVolumePercent(video) {
@@ -176,6 +181,7 @@ globalThis.CaptionPiP.PipAudio = (() => {
     maxVolume,
     prepare,
     resetToNative,
+    setPipOpen,
     setVolumePercent,
     start,
     stop,

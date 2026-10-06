@@ -366,6 +366,15 @@ function getSourceVolumePercent() {
   return PipAudio.getVolumePercent(sourceVideo);
 }
 function setSourceVolumePercent(percent, unmute) {
+  if (
+    percent > 100 &&
+    pipWindow &&
+    sourceVideo &&
+    !PipAudio.isActiveFor(sourceVideo) &&
+    !PipAudio.start(sourceVideo, pipWindow)
+  ) {
+    percent = 100;
+  }
   PipAudio.setVolumePercent(sourceVideo, percent, unmute, getYouTubePlayer());
   updatePlaybackUi();
 }
@@ -565,7 +574,6 @@ function attachCapturedStream(stream) {
   captureAbort = new AbortController();
   const signal = captureAbort.signal;
   displayCapturedTracks(stream);
-  if (sourceVideo) PipAudio.start(sourceVideo, pipWindow);
   updatePlaybackUi();
   stream.addEventListener("addtrack", () => displayCapturedTracks(stream), {
     signal,
@@ -689,6 +697,7 @@ function closePiP(closeWindow) {
   feedbackTimer = 0;
   pipWindow = null;
   pipUi = null;
+  PipAudio.setPipOpen(false);
   captionObserver?.disconnect();
   captionObserver = null;
   captionNode = null;
@@ -714,7 +723,6 @@ async function openPiP() {
       throw new Error("captureStream unavailable");
     stream = openingVideo.captureStream();
     if (!stream.getVideoTracks().length) throw new Error("no video track");
-    PipAudio.prepare();
     const windowPromise = documentPip.requestWindow({
       width: 640,
       height: 360,
@@ -725,6 +733,7 @@ async function openPiP() {
       throw new Error("source changed");
     }
     pipWindow = nextWindow;
+    PipAudio.setPipOpen(true);
     nextWindow.addEventListener(
       "pagehide",
       () => {
@@ -785,7 +794,12 @@ window.addEventListener("yt-navigate-finish", () => {
   scanPage();
 });
 window.addEventListener("yt-player-updated", scanPage);
-window.setInterval(scanPage, 750);
+window.setInterval(() => {
+  if (!document.hidden) scanPage();
+}, 750);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) scanPage();
+});
 window.addEventListener("resize", () => {
   if (document.body.classList.contains(FLOATING_COMMENTS_BODY_CLASS)) {
     updateFloatingCommentsDimensions();
