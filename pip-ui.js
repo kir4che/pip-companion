@@ -505,15 +505,18 @@ globalThis.CaptionPiP.PipUI = (() => {
       const rate = actions.getVideo()?.playbackRate;
       if (rate) actions.showFeedback(`倍速 ${Math.round(rate * 100) / 100}×`);
     };
-    const adjustPlaybackRate = (direction, wrapAtEnd = false) => {
-      actions.adjustPlaybackRate(direction, wrapAtEnd);
+    const adjustPlaybackRate = (direction) => {
+      actions.adjustPlaybackRate(direction);
       showSpeedFeedback();
     };
-    const cyclePlaybackRate = () => adjustPlaybackRate(1, true);
+    const togglePlaybackRate = () => {
+      actions.togglePlaybackRate();
+      showSpeedFeedback();
+    };
     const toggleMute = () => actions.toggleMute();
 
     volumeButton.addEventListener("click", toggleMute);
-    speedButton.addEventListener("click", cyclePlaybackRate);
+    speedButton.addEventListener("click", togglePlaybackRate);
     playButton.addEventListener("click", togglePlayback);
     video.addEventListener("click", togglePlayback);
     nextButton.addEventListener("click", () => actions.playNext());

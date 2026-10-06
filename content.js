@@ -20,6 +20,7 @@ const PLAYBACK_RATES = [
 const PipAudio = globalThis.CaptionPiP.PipAudio;
 const PipUI = globalThis.CaptionPiP.PipUI;
 let launchShortcut = { ...DEFAULT_SHORTCUT };
+let lastNonOneRate = 1.25;
 let sourceVideo = null;
 let sourceAbort = null;
 let captureAbort = null;
@@ -428,7 +429,7 @@ function togglePlayback() {
     sourceVideo.pause();
   }
 }
-function adjustPlaybackRate(direction, wrapAtEnd = false) {
+function adjustPlaybackRate(direction) {
   const video = sourceVideo;
   if (!video) return;
   let nextRate;
@@ -443,11 +444,20 @@ function adjustPlaybackRate(direction, wrapAtEnd = false) {
     }
   }
   if (nextRate === undefined) {
-    nextRate = wrapAtEnd
-      ? PLAYBACK_RATES[direction > 0 ? 0 : PLAYBACK_RATES.length - 1]
-      : PLAYBACK_RATES[direction > 0 ? PLAYBACK_RATES.length - 1 : 0];
+    nextRate = PLAYBACK_RATES[direction > 0 ? PLAYBACK_RATES.length - 1 : 0];
   }
   video.playbackRate = nextRate;
+  updatePlaybackUi();
+}
+function togglePlaybackRate() {
+  const video = sourceVideo;
+  if (!video) return;
+  if (Math.abs(video.playbackRate - 1) > 0.001) {
+    lastNonOneRate = video.playbackRate;
+    video.playbackRate = 1;
+  } else {
+    video.playbackRate = lastNonOneRate;
+  }
   updatePlaybackUi();
 }
 function toggleMute() {
@@ -478,6 +488,7 @@ function createPipUi(win) {
     updatePlaybackUi,
     togglePlayback,
     adjustPlaybackRate,
+    togglePlaybackRate,
     toggleMute,
     playNext: playNextYouTubeVideo,
     setVolume: setSourceVolumePercent,
