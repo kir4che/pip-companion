@@ -4,8 +4,8 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
   function screenshotFilename() {
     const title =
       document.title
-        .replace(/\s*[-–]\s*YouTube\s*$/i, "")
-        .replace(/[\\/:*?"<>|]/g, "_")
+        .replace(/\s*[-–]\s*(YouTube|Twitch)\s*$/i, "")
+        .replace(/[\\/:*?"<>|\r\n\t]/g, "_")
         .replace(/^\.+/, "")
         .trim()
         .slice(0, 80) || "Screenshot";
@@ -21,7 +21,8 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
       const link = document.createElement("a");
       link.href = url;
       link.download = filename;
-      document.body.appendChild(link);
+      const root = document.body || document.documentElement;
+      root.appendChild(link);
       link.click();
       link.remove();
     } catch {
@@ -29,12 +30,45 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
     }
   }
 
+  function resolveScreenshotVideo(): HTMLVideoElement | null {
+    // 1. 若浮窗開啟中，以浮窗內掛載的影片為準
+    if (state.pipWindow && !state.pipWindow.closed) {
+      if (state.sourceVideo?.videoWidth && state.sourceVideo.videoHeight)
+        return state.sourceVideo;
+      if (state.pipUi?.video?.videoWidth && state.pipUi.video.videoHeight)
+        return state.pipUi.video;
+    }
+
+    // 2. 主頁面情境：優先動態尋找當前最活躍、正在播放的主影片
+    const activeVideo = globalThis.PipCompanion.ContentVideo.findVideo();
+    if (activeVideo && activeVideo.videoWidth && activeVideo.videoHeight) {
+      if (
+        activeVideo !== state.sourceVideo &&
+        (!state.sourceVideo?.isConnected ||
+          state.sourceVideo.paused ||
+          !activeVideo.paused)
+      ) {
+        globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(
+          activeVideo,
+        );
+      }
+      return activeVideo;
+    }
+
+    // 3. Fallback 回快取的 sourceVideo（確保靜態暫停等特殊情境也能截圖）
+    if (
+      state.sourceVideo?.isConnected &&
+      state.sourceVideo.videoWidth &&
+      state.sourceVideo.videoHeight
+    )
+      return state.sourceVideo;
+
+    return null;
+  }
+
   function savePipScreenshot() {
     if (!state.screenshotEnabled) return;
-    const video =
-      (state.sourceVideo?.videoWidth ? state.sourceVideo : null) ||
-      (state.pipUi?.video?.videoWidth ? state.pipUi.video : null) ||
-      globalThis.PipCompanion.ContentVideo.findVideo();
+    const video = resolveScreenshotVideo();
     if (!video || !video.videoWidth || !video.videoHeight) return;
     const canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;

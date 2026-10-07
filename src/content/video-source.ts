@@ -1,23 +1,53 @@
 "use strict";
 
 globalThis.PipCompanion.ContentVideo = (() => {
-  const VIDEO_SELECTOR = "video.html5-main-video";
+  const PREFERRED_SELECTORS = [
+    "video.html5-main-video", // YouTube
+    '[data-a-target="video-player"] video', // Twitch main player
+    ".video-player video", // Twitch
+    ".video-player__container video", // Twitch
+    ".video-player__default-player video", // Twitch
+    ".bpx-player-video-wrap video", // Bilibili
+    ".bilibili-player-video video", // Bilibili
+    "#ani_video_html5_api", // Bahamut
+    ".anime_video_area video", // Bahamut
+  ];
 
   function getDocumentPip() {
     return window.documentPictureInPicture ?? null;
   }
 
-  function pickLargestVideo(
+  function scoreVideo(video: HTMLVideoElement): number {
+    if (!video || !video.isConnected) return -1;
+    const width = video.videoWidth || 0;
+    const height = video.videoHeight || 0;
+    const area = width * height;
+    if (area === 0) return -1;
+
+    let score = area;
+    // 正在播放中（未暫停且未結束）優先權最高，避免抓到靜態或暫停的殘留節點。
+    if (!video.paused && !video.ended) score += 1e9;
+    // 已載入目前影格或具備足夠資料
+    if (video.readyState >= 2) score += 1e6;
+    // 時間戳大於 0（已開始播放）
+    if (video.currentTime > 0) score += 1e4;
+    // 扣除已結束的影片
+    if (video.ended) score -= 5e8;
+
+    return score;
+  }
+
+  function pickBestVideo(
     videos: Iterable<HTMLVideoElement>,
   ): HTMLVideoElement | null {
     let best: HTMLVideoElement | null = null;
+    let bestScore = -1;
     for (const video of videos) {
-      if (
-        !best ||
-        video.videoWidth * video.videoHeight >
-          best.videoWidth * best.videoHeight
-      )
+      const score = scoreVideo(video);
+      if (score > bestScore) {
+        bestScore = score;
         best = video;
+      }
     }
     return best;
   }
@@ -46,21 +76,27 @@ globalThis.PipCompanion.ContentVideo = (() => {
   const DEEP_SCAN_MS = 1000;
 
   function findVideo(): HTMLVideoElement | null {
-    const preferred = document.querySelector(
-      VIDEO_SELECTOR,
-    ) as HTMLVideoElement | null;
-    if (preferred) return preferred;
+    for (const selector of PREFERRED_SELECTORS) {
+      const preferred = pickBestVideo(
+        document.querySelectorAll(selector) as NodeListOf<HTMLVideoElement>,
+      );
+      if (preferred) return preferred;
+    }
 
-    const light = pickLargestVideo(document.querySelectorAll("video"));
+    const light = pickBestVideo(document.querySelectorAll("video"));
     if (light) return light;
 
-    if (state.deepVideoCache?.isConnected) return state.deepVideoCache;
+    if (
+      state.deepVideoCache?.isConnected &&
+      scoreVideo(state.deepVideoCache) > 0
+    )
+      return state.deepVideoCache;
     if (Date.now() - state.lastDeepScan < DEEP_SCAN_MS)
       return state.deepVideoCache;
     state.lastDeepScan = Date.now();
     const collected: HTMLVideoElement[] = [];
     collectVideosDeep(document, collected);
-    state.deepVideoCache = pickLargestVideo(collected);
+    state.deepVideoCache = pickBestVideo(collected);
     return state.deepVideoCache;
   }
 
