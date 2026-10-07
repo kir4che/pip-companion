@@ -5,6 +5,7 @@ globalThis.PipCompanion.PipUI = (() => {
   function create(win: Window, actions: PipUiActions, video: HTMLVideoElement) {
     const doc = win.document;
     doc.documentElement.lang = "zh-Hant";
+
     const style = doc.createElement("style");
     const css = (strings: TemplateStringsArray, ...values: string[]) =>
       strings.reduce(
@@ -415,6 +416,7 @@ globalThis.PipCompanion.PipUI = (() => {
     const miniProgressFill = doc.createElement("span");
     miniProgressFill.className = "mini-progress-fill";
     miniProgress.append(miniProgressFill);
+
     const controls = doc.createElement("div");
     controls.className = "controls";
     const timeTooltip = doc.createElement("span");
@@ -429,6 +431,7 @@ globalThis.PipCompanion.PipUI = (() => {
       button.setAttribute("aria-label", ariaLabel);
       return button;
     };
+
     const playButton = makeButton("play", "▶", "播放影片");
     const nextButton = makeButton("next", "", "下一部影片");
     const nextIcon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -438,6 +441,7 @@ globalThis.PipCompanion.PipUI = (() => {
     nextPath.setAttribute("d", "M6 18 14.5 12 6 6v12zm10-12v12h2V6h-2z");
     nextIcon.append(nextPath);
     nextButton.append(nextIcon);
+
     const speedButton = makeButton("speed", "1×", "播放速度 1×");
     speedButton.className = "speed-button";
     const timeGroup = doc.createElement("span");
@@ -572,6 +576,7 @@ globalThis.PipCompanion.PipUI = (() => {
       { capture: true },
     );
     nextButton.addEventListener("click", () => actions.playNext());
+
     volumeSlider.addEventListener("input", () =>
       actions.setVolume(
         Number(volumeSlider.value),
@@ -804,6 +809,7 @@ globalThis.PipCompanion.PipUI = (() => {
         (Number(progress.value) / 1000) * videoSource.duration;
       update();
     });
+
     progress.addEventListener("pointermove", (e) => {
       const videoSource = actions.getVideo();
       if (
@@ -829,6 +835,7 @@ globalThis.PipCompanion.PipUI = (() => {
     progress.addEventListener("pointerleave", () => {
       timeTooltip.hidden = true;
     });
+
     win.addEventListener(
       "wheel",
       (e) => {
@@ -847,6 +854,7 @@ globalThis.PipCompanion.PipUI = (() => {
       },
       { capture: true, passive: false },
     );
+
     let hideControlsTimer = 0;
     win.addEventListener(
       "pointermove",
@@ -865,5 +873,6 @@ globalThis.PipCompanion.PipUI = (() => {
 
     return ui;
   }
+
   return { create };
 })();

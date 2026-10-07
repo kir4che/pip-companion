@@ -2,18 +2,20 @@
 
 globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.PipAudio = (() => {
-  let context: AudioContext | null = null;
-  let activeChain: {
+  type AudioChain = {
     source: MediaElementAudioSourceNode;
     gain: GainNode;
-  } | null = null;
+  };
+
+  let context: AudioContext | null = null;
+  let activeChain: AudioChain | null = null;
   let activeVideo: HTMLVideoElement | null = null;
   let active = false;
   let expectedVolume = 1;
   let expectedMuted = false;
   let lastAudibleVolumePercent = 100;
   let applyingPiPVolume = false;
-  const chains = new WeakMap();
+  const chains = new WeakMap<HTMLVideoElement, AudioChain>();
 
   const isActiveFor = (video: HTMLVideoElement | null) =>
     active && activeVideo === video && activeChain !== null;
@@ -94,6 +96,7 @@ globalThis.PipCompanion.PipAudio = (() => {
     } catch {
       // YouTube 播放器 API 不可用時，改用 media 元素的靜音狀態。
     }
+
     const currentVolume = getVolumePercent(video);
     if (currentVolume > 0) lastAudibleVolumePercent = currentVolume;
 
@@ -129,6 +132,7 @@ globalThis.PipCompanion.PipAudio = (() => {
   function start(video: HTMLVideoElement | null, pipWindow: Window | null) {
     if (!video) return false;
     if (!isSameOrigin(video.currentSrc)) return false;
+
     prepare();
     const ctx = context;
     if (!ctx || ctx.state === "closed") return false;

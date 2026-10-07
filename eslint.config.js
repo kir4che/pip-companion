@@ -7,7 +7,6 @@ module.exports = [
   {
     ignores: ["node_modules/**", "dist/**", "src/**/*.d.ts"],
   },
-  // .ts：typescript-eslint 的 recommended，範圍收斂到 .ts
   ...tseslint.configs.recommended.map((config) =>
     config.files ? config : { ...config, files: ["**/*.ts"] },
   ),
@@ -24,6 +23,11 @@ module.exports = [
       "@typescript-eslint/no-unused-expressions": [
         "error",
         { allowShortCircuit: true, allowTernary: true },
+      ],
+      "padding-line-between-statements": [
+        "error",
+        { blankLine: "always", prev: "*", next: "function" },
+        { blankLine: "always", prev: "function", next: "*" },
       ],
       "no-empty": ["error", { allowEmptyCatch: true }],
     },

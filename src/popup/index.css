@@ -136,6 +136,10 @@ button {
   justify-content: space-between;
 }
 
+.shortcut-row[hidden] {
+  display: none;
+}
+
 .shortcut {
   border: 1px solid #52525b;
   border-radius: 5px;

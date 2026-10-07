@@ -3,8 +3,8 @@ import { dirname } from "node:path";
 
 const staticFiles = [
   ["manifest.json", "manifest.json"],
-  ["src/popup/popup.html", "popup.html"],
-  ["src/popup/popup.css", "popup.css"],
+  ["src/popup/index.html", "popup.html"],
+  ["src/popup/index.css", "popup.css"],
   ["src/content/floating-comments.css", "content/floating-comments.css"],
 ];
 

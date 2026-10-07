@@ -165,6 +165,7 @@ if (DANMAKU_IS_SUPPORTED_SITE) {
 function updateAllDanmakuVisibility(): void {
   mainDanmakuRenderer?.updateVisibility();
   pipDanmakuRenderer?.updateVisibility();
+
   if (DANMAKU_IS_YOUTUBE) checkAndBindDanmakuChat();
   if (DANMAKU_IS_BILIBILI) checkAndBindBilibiliDanmaku(bilibiliPipSourceVideo);
 }
@@ -265,6 +266,7 @@ function ensureDanmakuStyles(doc: Document): void {
       }
     }
   `;
+
   (doc.head || doc.documentElement).appendChild(style);
 }
 
@@ -296,6 +298,7 @@ class DanmakuRenderer {
     this.laneHeight = this.isPip ? 24 : 34;
     this.fontSize = this.isPip ? 14 : 22;
     this.topPadding = this.isPip ? 8 : 12;
+
     this.initOverlay();
   }
 
@@ -337,6 +340,7 @@ class DanmakuRenderer {
   setPaused(paused: boolean): void {
     this.updateClock();
     this.paused = paused;
+
     if (paused) this.clearPendingTimer();
     else this.flushPendingDanmaku();
     if (!this.overlay) return;
@@ -371,6 +375,7 @@ class DanmakuRenderer {
     this.restoreOccupancy = null;
     if (!this.overlay) return;
     this.overlay.replaceChildren();
+
     const now = this.updateClock();
     for (const lanes of Object.values(this.laneAvailableTime)) {
       lanes.fill(now);
@@ -475,6 +480,7 @@ class DanmakuRenderer {
         item.remove();
       }
     }
+
     this.discardExpiredDanmaku(now);
     const blockedTypes = new Set<DanmakuType>();
     let nextLaneTime = Infinity;
@@ -1220,6 +1226,7 @@ function requestBilibiliSegments(
   { initial = false }: { initial?: boolean } = {},
 ): void {
   if (bilibiliLegacyFallback) return;
+
   const start = Math.max(1, Math.floor(startSegment));
   const end = Math.min(
     bilibiliSegmentCount || endSegment,
@@ -1236,6 +1243,7 @@ function requestBilibiliSegments(
       segments.push(segment);
     }
   }
+
   if (!segments.length) return;
 
   const requestStart = segments[0];
@@ -1247,12 +1255,15 @@ function requestBilibiliSegments(
   ) {
     requestEnd = segments[index];
   }
+
   for (let segment = requestStart; segment <= requestEnd; segment++) {
     bilibiliLoadingSegments.add(segment);
   }
+
   const requestGeneration = initial
     ? ++bilibiliRequestGeneration
     : bilibiliRequestGeneration;
+
   sendBilibiliMessage({
     type: "GET_BILIBILI_DANMAKU",
     ...(identity.bvid ? { bvid: identity.bvid } : { avid: identity.avid }),
@@ -1270,6 +1281,7 @@ function requestBilibiliSegments(
       ) {
         return;
       }
+
       if (!response?.ok || !Array.isArray(response.messages)) {
         throw new Error(response?.error || "Bilibili danmaku request failed");
       }
@@ -1323,6 +1335,7 @@ function requestBilibiliSegments(
       ) {
         return;
       }
+
       const retryAt = Date.now() + 5000;
       for (let segment = requestStart; segment <= requestEnd; segment++) {
         bilibiliSegmentRetryAt.set(segment, retryAt);
@@ -1360,6 +1373,7 @@ function ensureBilibiliSegments(video: HTMLVideoElement): void {
 function checkAndBindBilibiliDanmaku(video: HTMLVideoElement | null): void {
   if (!DANMAKU_IS_BILIBILI || !pipDanmakuRenderer) return;
   if (video) bilibiliPipSourceVideo = video;
+
   const targetVideo = bilibiliPipSourceVideo;
   const identity = getBilibiliVideoIdentity();
   if (!danmakuEnabled || !identity || !targetVideo) {
@@ -1397,6 +1411,7 @@ function checkAndBindBilibiliDanmaku(video: HTMLVideoElement | null): void {
         signal: controller.signal,
       },
     );
+
     targetVideo.addEventListener(
       "seeking",
       () => {
@@ -1435,11 +1450,13 @@ function checkAndBindBilibiliDanmaku(video: HTMLVideoElement | null): void {
       },
       { signal: controller.signal },
     );
+
     pipDanmakuRenderer.setPlaybackRate(targetVideo.playbackRate);
     if (bilibiliMessagesLoaded) startBilibiliDanmakuAtCurrentTime(targetVideo);
   }
 
   if (bilibiliMessagesLoaded || bilibiliLoadingSegments.size > 0) return;
+
   const initialSegment =
     Math.floor(Math.max(0, targetVideo.currentTime) / 120) + 1;
   const initialEndSegment = initialSegment + 2;
@@ -1447,6 +1464,7 @@ function checkAndBindBilibiliDanmaku(video: HTMLVideoElement | null): void {
   for (let segment = initialSegment; segment <= initialEndSegment; segment++) {
     if (isBilibiliSegmentCoolingDown(segment, now)) return;
   }
+
   requestBilibiliSegments(identity, initialSegment, initialEndSegment, {
     initial: true,
   });
@@ -1482,6 +1500,7 @@ function receiveDanmaku(
     if (!initial) broadcastDanmaku(data);
     return;
   }
+
   if (
     typeof data.replayTime !== "number" ||
     !Number.isFinite(data.replayTime)
@@ -1544,6 +1563,7 @@ function bindReplayVideo(): void {
 
   const controller = new AbortController();
   replayVideoController = controller;
+
   video.addEventListener("timeupdate", processReplayMessages, {
     signal: controller.signal,
   });
@@ -1569,10 +1589,12 @@ function bindReplayVideo(): void {
         (a, b) => a.replayTime - b.replayTime,
       );
       ensureMainRenderer();
+
       const restoringRenderers = [
         mainDanmakuRenderer,
         pipDanmakuRenderer,
       ].filter((r): r is DanmakuRenderer => r !== null);
+
       for (const renderer of restoringRenderers) renderer.beginSeekRestore();
       try {
         for (const entry of entries) {
@@ -1734,6 +1756,7 @@ function checkAndBindDanmakuChat(): void {
     resetChatObservers();
     return;
   }
+
   bindReplayVideo();
   if (chatFrame !== observedChatFrame) {
     resetChatObservers();
@@ -1801,7 +1824,6 @@ function checkAndBindDanmakuChat(): void {
   chatObserver.observe(itemsContainer, { childList: true, subtree: true });
 }
 
-// Attach functions to globalThis for accessibility across contexts if needed
 Object.assign(globalThis, {
   toggleDanmaku,
   initDanmakuInPip,

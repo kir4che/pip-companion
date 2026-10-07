@@ -36,8 +36,7 @@
               >
               <span class="help-row"><span>靜音</span><kbd>M</kbd></span>
               <span class="help-row"
-                ><span>倍速控制</span
-                ><kbd>Shift + &lt; / Shift + &gt;</kbd></span
+                ><span>倍速控制</span><kbd>Shift + , / Shift + .</kbd></span
               >
             </span>
           </button>
@@ -80,7 +79,7 @@
         </div>
       </div>
       <div class="toggle-list">
-        <p class="list-title">額外功能</p>
+        <p class="list-title">功能開關</p>
         <label class="toggle-row">
           <span>浮動留言區</span>
           <input type="checkbox" id="comments-toggle" checked />
@@ -89,14 +88,10 @@
           <span>截圖</span>
           <input type="checkbox" id="screenshot-toggle" checked />
         </label>
-        <label class="toggle-row">
-          <span>彈幕</span>
-          <input type="checkbox" id="danmaku-toggle" checked />
-        </label>
       </div>
       <p id="status" role="status"></p>
     </main>
-    <script src="shared/lib.js"></script>
-    <script src="popup/popup.js"></script>
+    <script src="shared/utils.js"></script>
+    <script src="popup/index.js"></script>
   </body>
 </html>
