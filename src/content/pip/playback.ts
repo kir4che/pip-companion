@@ -276,6 +276,10 @@ globalThis.PipCompanion.ContentPlayback = (() => {
 
   function toggleCaptions() {
     state.captionsOn = !state.captionsOn;
+    if (state.captionsOn) {
+      globalThis.PipCompanion.ContentCaptions.prepareNativeCaptions();
+      globalThis.PipCompanion.ContentCaptions.syncNativeCaptions();
+    }
     globalThis.PipCompanion.ContentCaptions.renderSubtitle();
     globalThis.PipCompanion.ContentFeedback.showFeedback(
       state.captionsOn ? "字幕: 開" : "字幕: 關",

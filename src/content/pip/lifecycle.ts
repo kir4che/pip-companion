@@ -102,18 +102,19 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   function remountSourceVideo() {
     if (!state.pipUi || !state.sourceVideo) return;
     const wasPlaying = !state.sourceVideo.paused;
+    globalThis.PipCompanion.ContentCaptions.prepareNativeCaptions();
     stashSourceVideo();
     state.pipUi.screen.append(state.sourceVideo);
     state.sourceVideo.style.cssText = "";
-    globalThis.PipCompanion.ContentCaptions.suppressNativeCaptions();
+    globalThis.PipCompanion.ContentCaptions.prepareNativeCaptions();
     globalThis.PipCompanion.PipAudio.start(state.sourceVideo, state.pipWindow);
     if (wasPlaying) void state.sourceVideo.play().catch(() => {});
   }
 
   function releasePipVideo() {
     globalThis.PipCompanion.PipAudio.stop();
-    globalThis.PipCompanion.ContentCaptions.restoreNativeCaptionModes();
     restoreSourceVideo();
+    globalThis.PipCompanion.ContentCaptions.restoreNativeCaptionModes();
   }
 
   function resumePlayback() {
@@ -220,6 +221,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       "addtrack",
       (e) => {
         e.track?.addEventListener("cuechange", syncCaptions, { signal });
+        if (state.pipUi && state.captionsOn)
+          globalThis.PipCompanion.ContentCaptions.prepareNativeCaptions();
         syncCaptions();
       },
       { signal },

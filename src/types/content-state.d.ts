@@ -28,7 +28,8 @@ interface State {
   opening: boolean;
 
   // 字幕來源與顯示狀態
-  nativeCaptionTracks: Set<TextTrack> | null;
+  nativeCaptionTracks: Map<TextTrack, TextTrackMode> | null;
+  youtubeCaptionsInitiallyEnabled: boolean | null;
   captionNode: HTMLElement | null;
   captionExtract: CaptionExtract | null;
   captionObserver: MutationObserver | null;

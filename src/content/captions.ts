@@ -4,6 +4,22 @@ globalThis.PipCompanion.ContentCaptions = (() => {
   const CAPTION_SCAN_MS = 1000;
   const CAPTION_EMPTY_LIMIT = 5;
 
+  function getYouTubeCaptionButton() {
+    if (!IS_YOUTUBE) return null;
+    return document.querySelector<HTMLElement>(
+      "#movie_player .ytp-subtitles-button",
+    );
+  }
+
+  function enableYouTubeCaptions() {
+    const button = getYouTubeCaptionButton();
+    if (!button) return;
+    const enabled = button.getAttribute("aria-pressed") === "true";
+    if (state.youtubeCaptionsInitiallyEnabled === null)
+      state.youtubeCaptionsInitiallyEnabled = enabled;
+    if (!enabled) button.click();
+  }
+
   function refreshSubtitle(force = false) {
     if (!state.pipUi) {
       state.captionObserver?.disconnect();
@@ -152,16 +168,42 @@ globalThis.PipCompanion.ContentCaptions = (() => {
         track.mode !== "showing"
       )
         continue;
-      (state.nativeCaptionTracks ??= new Set()).add(track);
+      const tracks = (state.nativeCaptionTracks ??= new Map());
+      if (!tracks.has(track)) tracks.set(track, track.mode);
       track.mode = "hidden";
     }
   }
 
+  function prepareNativeCaptions() {
+    enableYouTubeCaptions();
+    if (state.captionNode || !state.videoStash) return;
+    suppressNativeCaptions();
+    const tracks = Array.from(state.sourceVideo?.textTracks ?? []).filter(
+      (track) => track.kind === "subtitles" || track.kind === "captions",
+    );
+    if (tracks.some((track) => track.mode !== "disabled")) return;
+    const track = tracks[0];
+    if (!track) return;
+    const changedTracks = (state.nativeCaptionTracks ??= new Map());
+    if (!changedTracks.has(track)) changedTracks.set(track, track.mode);
+    track.mode = "hidden";
+  }
+
   function restoreNativeCaptionModes() {
-    for (const track of state.nativeCaptionTracks ?? []) {
-      if (track.mode === "hidden") track.mode = "showing";
+    for (const [track, mode] of state.nativeCaptionTracks ?? []) {
+      if (track.mode === "hidden") track.mode = mode;
     }
     state.nativeCaptionTracks = null;
+
+    const button = getYouTubeCaptionButton();
+    const initiallyEnabled = state.youtubeCaptionsInitiallyEnabled;
+    if (
+      button &&
+      initiallyEnabled !== null &&
+      (button.getAttribute("aria-pressed") === "true") !== initiallyEnabled
+    )
+      button.click();
+    state.youtubeCaptionsInitiallyEnabled = null;
   }
 
   function syncNativeCaptions() {
@@ -201,6 +243,7 @@ globalThis.PipCompanion.ContentCaptions = (() => {
 
   return {
     refreshSubtitle,
+    prepareNativeCaptions,
     restoreNativeCaptionModes,
     syncNativeCaptions,
     renderSubtitle,

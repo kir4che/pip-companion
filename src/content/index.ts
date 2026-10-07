@@ -21,6 +21,7 @@ const state: State = {
   sourceAbort: null,
   videoStash: null,
   nativeCaptionTracks: null,
+  youtubeCaptionsInitiallyEnabled: null,
   pipWindow: null,
   pipUi: null,
   captionNode: null,

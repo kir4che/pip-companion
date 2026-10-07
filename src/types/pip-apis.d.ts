@@ -91,6 +91,7 @@ interface ContentVideoApi {
 }
 
 interface ContentCaptionsApi {
+  prepareNativeCaptions(): void;
   refreshSubtitle(force?: boolean): void;
   restoreNativeCaptionModes(): void;
   syncNativeCaptions(): void;
