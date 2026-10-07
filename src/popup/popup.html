@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>幕伴 PiP · PiP Companion</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <button class="primary" id="open-pip" type="button">開啟浮窗</button>
+      <div class="shortcut-list">
+        <p class="list-title">
+          快捷鍵
+          <button
+            class="help"
+            type="button"
+            aria-label="固定快捷鍵"
+            aria-describedby="fixed-shortcut"
+          >
+            ?
+            <span class="help-tip" id="fixed-shortcut">
+              <span class="help-title">固定快捷鍵</span>
+              <span class="help-row"
+                ><span>播放 / 暫停</span><kbd>Space</kbd></span
+              >
+              <span class="help-row"><span>字幕開關</span><kbd>C</kbd></span>
+              <span class="help-row"
+                ><span>快退快進</span><kbd>← / →</kbd></span
+              >
+              <span class="help-row"
+                ><span>逐格後退 / 前進</span><kbd>, / .</kbd></span
+              >
+              <span class="help-row"
+                ><span>音量控制</span><kbd>↓ / ↑</kbd></span
+              >
+              <span class="help-row"><span>靜音</span><kbd>M</kbd></span>
+              <span class="help-row"
+                ><span>倍速控制</span
+                ><kbd>Shift + &lt; / Shift + &gt;</kbd></span
+              >
+            </span>
+          </button>
+        </p>
+        <div class="shortcut-row">
+          <span>開啟浮窗</span>
+          <button class="shortcut" data-shortcut="launchShortcut" type="button">
+            Alt+Shift+P
+          </button>
+        </div>
+        <div class="shortcut-row">
+          <span>浮動留言區</span>
+          <button
+            class="shortcut"
+            data-shortcut="commentsShortcut"
+            type="button"
+          >
+            Alt+C
+          </button>
+        </div>
+        <div class="shortcut-row">
+          <span>截圖</span>
+          <button
+            class="shortcut"
+            data-shortcut="screenshotShortcut"
+            type="button"
+          >
+            Alt+P
+          </button>
+        </div>
+      </div>
+      <div class="toggle-list">
+        <p class="list-title">額外功能</p>
+        <label class="toggle-row">
+          <span>浮動留言區</span>
+          <input type="checkbox" id="comments-toggle" checked />
+        </label>
+        <label class="toggle-row">
+          <span>截圖</span>
+          <input type="checkbox" id="screenshot-toggle" checked />
+        </label>
+      </div>
+      <p id="status" role="status"></p>
+    </main>
+    <script src="shared/lib.js"></script>
+    <script src="popup/popup.js"></script>
+  </body>
+</html>

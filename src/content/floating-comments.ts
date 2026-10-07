@@ -1,5 +1,5 @@
 "use strict";
-/* exported ensureFloatingCommentsButton */
+
 const FLOATING_COMMENTS_BODY_CLASS = "yt-floating-comments-open";
 const FLOATING_COMMENTS_BOTTOM_SHEET_CLASS =
   "yt-floating-comments-bottom-sheet";
@@ -8,7 +8,7 @@ function updateFloatingCommentsDimensions() {
   const watchFlexy = document.querySelector("ytd-watch-flexy");
   const isTheater = watchFlexy?.hasAttribute("theater") || false;
   const isNarrow = window.innerWidth < 1000;
-  const secondary = document.querySelector("#secondary");
+  const secondary = document.querySelector("#secondary") as HTMLElement | null;
   const secWidth = secondary?.offsetWidth || 0;
   const player = document.querySelector("#movie_player");
   const playerRect = player?.getBoundingClientRect();
@@ -37,8 +37,10 @@ function updateFloatingCommentsDimensions() {
   }
 }
 
-function ensureFloatingCommentsCloseButton(comments) {
-  let closeBtn = comments.querySelector(".yt-floating-comments-close-btn");
+function ensureFloatingCommentsCloseButton(comments: Element) {
+  let closeBtn = comments.querySelector<HTMLButtonElement>(
+    ".yt-floating-comments-close-btn",
+  );
   if (!closeBtn) {
     closeBtn = document.createElement("button");
     closeBtn.className = "yt-floating-comments-close-btn";
@@ -55,16 +57,13 @@ function ensureFloatingCommentsCloseButton(comments) {
   const titleRow = comments.querySelector(
     "ytd-comments-header-renderer #title",
   );
-  if (titleRow) {
-    if (closeBtn.parentElement !== titleRow) {
-      titleRow.appendChild(closeBtn);
-    }
-  } else if (closeBtn.parentElement !== comments) {
+  if (titleRow && closeBtn.parentElement !== titleRow)
+    titleRow.appendChild(closeBtn);
+  if (!titleRow && closeBtn.parentElement !== comments)
     comments.prepend(closeBtn);
-  }
 }
 
-function toggleFloatingComments(forceState) {
+function toggleFloatingComments(forceState?: boolean) {
   const shouldOpen =
     typeof forceState === "boolean"
       ? forceState
@@ -102,24 +101,27 @@ function toggleFloatingComments(forceState) {
   }
 }
 
-function ensureFloatingCommentsButton() {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function ensureFloatingCommentsButton(shortcut: Shortcut) {
+  const { formatShortcut } = globalThis.PipCompanion.util;
   const rightControls = document.querySelector(".ytp-right-controls");
-  if (
-    !rightControls ||
-    rightControls.querySelector(".yt-floating-comments-btn")
-  )
-    return;
+  if (!rightControls) return;
+
+  const shortcutText = formatShortcut(shortcut);
+  const tooltipText = `浮動留言區 (${shortcutText})`;
+  const existing = rightControls.querySelector(".yt-floating-comments-btn");
+  if (existing) {
+    if (existing.getAttribute("data-shortcut") === shortcutText) return;
+    existing.remove();
+  }
 
   const btn = document.createElement("button");
   btn.className = "ytp-button yt-floating-comments-btn";
-  const isMac = navigator.platform.includes("Mac");
-  const shortcutText = isMac ? "⌥C" : "Alt+C";
-  const tooltipText = `浮動留言區 (${shortcutText})`;
-
   btn.setAttribute("aria-label", tooltipText);
   btn.setAttribute("data-tooltip-title", tooltipText);
   btn.setAttribute("data-title-no-tooltip", "浮動留言區");
-  btn.setAttribute("aria-keyshortcuts", isMac ? "Alt+C" : "Alt+C");
+  btn.setAttribute("aria-keyshortcuts", formatShortcut(shortcut, true));
+  btn.setAttribute("data-shortcut", shortcutText);
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 24 24");
@@ -141,14 +143,10 @@ function ensureFloatingCommentsButton() {
   btn.addEventListener("pointerenter", () => tooltip.classList.add("show"));
   btn.addEventListener("pointerleave", () => tooltip.classList.remove("show"));
 
-  const fullscreenBtn = document.querySelector(".ytp-fullscreen-button");
-  if (fullscreenBtn?.parentNode) {
-    fullscreenBtn.parentNode.insertBefore(btn, fullscreenBtn);
-  } else if (rightControls) {
-    rightControls.appendChild(btn);
-  }
+  const subtitlesBtn = rightControls.querySelector(".ytp-subtitles-button");
+  if (subtitlesBtn) subtitlesBtn.after(btn);
+  else rightControls.appendChild(btn);
 
-  if (document.body.classList.contains(FLOATING_COMMENTS_BODY_CLASS)) {
+  if (document.body.classList.contains(FLOATING_COMMENTS_BODY_CLASS))
     btn.classList.add("active");
-  }
 }

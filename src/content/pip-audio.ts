@@ -1,52 +1,65 @@
 "use strict";
 
-globalThis.CaptionPiP = globalThis.CaptionPiP || {};
-globalThis.CaptionPiP.PipAudio = (() => {
-  let context = null;
-  let activeChain = null;
-  let activeVideo = null;
+globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
+globalThis.PipCompanion.PipAudio = (() => {
+  let context: AudioContext | null = null;
+  let activeChain: {
+    source: MediaElementAudioSourceNode;
+    gain: GainNode;
+  } | null = null;
+  let activeVideo: HTMLVideoElement | null = null;
   let active = false;
-  let pipOpen = false;
   let expectedVolume = 1;
   let expectedMuted = false;
   let lastAudibleVolumePercent = 100;
   let applyingPiPVolume = false;
   const chains = new WeakMap();
 
-  const isActiveFor = (video) =>
+  const isActiveFor = (video: HTMLVideoElement | null) =>
     active && activeVideo === video && activeChain !== null;
 
-  function setPipOpen(open) {
-    pipOpen = Boolean(open);
+  function isSameOrigin(url: string) {
+    try {
+      return new URL(url, location.href).origin === location.origin;
+    } catch {
+      return false;
+    }
   }
 
-  function maxVolume(video) {
-    return video && pipOpen ? 300 : 100;
+  function maxVolume(video: HTMLVideoElement | null) {
+    return isActiveFor(video) ? 300 : 100;
   }
 
-  function getVolumePercent(video) {
+  function getVolumePercent(video: HTMLVideoElement | null) {
     if (!video || video.muted) return 0;
-    if (isActiveFor(video)) {
+    const chain = activeChain;
+    if (chain && isActiveFor(video)) {
       return Math.max(
         0,
-        Math.min(300, video.volume * activeChain.gain.gain.value * 100),
+        Math.min(300, video.volume * chain.gain.gain.value * 100),
       );
     }
     return Math.max(0, Math.min(100, video.volume * 100));
   }
 
-  function setVolumePercent(video, percent, unmute, player) {
+  function setVolumePercent(
+    video: HTMLVideoElement | null,
+    percent: number,
+    unmute: boolean,
+    player: YouTubePlayer | null,
+  ) {
     if (!video) return;
     const volume = Math.max(0, Math.min(maxVolume(video), Math.round(percent)));
-    if (isActiveFor(video)) {
+    const chain = activeChain;
+    if (chain && isActiveFor(video)) {
       applyingPiPVolume = true;
       try {
         if (volume <= 100) {
           video.volume = volume / 100;
-          activeChain.gain.gain.value = 1;
+          chain.gain.gain.value = 1;
         } else {
           video.volume = 1;
-          activeChain.gain.gain.value = volume / 100;
+          chain.gain.gain.value = volume / 100;
         }
         if (unmute && volume > 0) video.muted = false;
         expectedVolume = video.volume;
@@ -70,13 +83,16 @@ globalThis.CaptionPiP.PipAudio = (() => {
     }
   }
 
-  function toggleMute(video, player) {
+  function toggleMute(
+    video: HTMLVideoElement | null,
+    player: YouTubePlayer | null,
+  ) {
     if (!video) return;
     let muted = video.muted || video.volume === 0;
     try {
       muted = muted || Boolean(player?.isMuted?.());
     } catch {
-      // Use the media element mute state when YouTube's player API is unavailable.
+      // YouTube 播放器 API 不可用時，改用 media 元素的靜音狀態。
     }
     const currentVolume = getVolumePercent(video);
     if (currentVolume > 0) lastAudibleVolumePercent = currentVolume;
@@ -103,23 +119,26 @@ globalThis.CaptionPiP.PipAudio = (() => {
   function prepare() {
     try {
       if (!context || context.state === "closed") context = new AudioContext();
-      if (context.state === "suspended") void context.resume().catch(() => {});
+      const ctx = context;
+      if (ctx && ctx.state === "suspended") void ctx.resume().catch(() => {});
     } catch {
       context = null;
     }
   }
 
-  function start(video, pipWindow) {
+  function start(video: HTMLVideoElement | null, pipWindow: Window | null) {
     if (!video) return false;
+    if (!isSameOrigin(video.currentSrc)) return false;
     prepare();
+    const ctx = context;
+    if (!ctx || ctx.state === "closed") return false;
     let chain = chains.get(video);
     try {
-      if (!context || context.state === "closed") return false;
       if (!chain) {
-        const source = context.createMediaElementSource(video);
-        const gain = context.createGain();
+        const source = ctx.createMediaElementSource(video);
+        const gain = ctx.createGain();
         source.connect(gain);
-        gain.connect(context.destination);
+        gain.connect(ctx.destination);
         chain = { source, gain };
         chains.set(video, chain);
       }
@@ -127,11 +146,12 @@ globalThis.CaptionPiP.PipAudio = (() => {
       stop();
       return false;
     }
+    if (!chain) return false;
 
     activeChain = chain;
     activeVideo = video;
     active = true;
-    activeChain.gain.gain.value = 1;
+    chain.gain.gain.value = 1;
     expectedVolume = video.volume;
     expectedMuted = video.muted;
     if (video.volume > 0)
@@ -156,23 +176,23 @@ globalThis.CaptionPiP.PipAudio = (() => {
     applyingPiPVolume = false;
   }
 
-  function resetToNative(video) {
-    if (!isActiveFor(video)) return;
-    activeChain.gain.gain.value = 1;
+  function resetToNative(video: HTMLVideoElement) {
+    const chain = activeChain;
+    if (!chain || !isActiveFor(video)) return;
+    chain.gain.gain.value = 1;
     expectedVolume = video.volume;
     expectedMuted = video.muted;
     if (video.volume > 0)
       lastAudibleVolumePercent = Math.round(video.volume * 100);
   }
 
-  function syncNativeVolume(video) {
+  function syncNativeVolume(video: HTMLVideoElement) {
     if (
       !applyingPiPVolume &&
       isActiveFor(video) &&
       (video.volume !== expectedVolume || video.muted !== expectedMuted)
-    ) {
+    )
       resetToNative(video);
-    }
   }
 
   return {
@@ -181,7 +201,6 @@ globalThis.CaptionPiP.PipAudio = (() => {
     maxVolume,
     prepare,
     resetToNative,
-    setPipOpen,
     setVolumePercent,
     start,
     stop,

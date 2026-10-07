@@ -1,14 +1,19 @@
 {
-  "name": "yt-caption-pip",
+  "name": "pip-companion",
   "private": true,
   "scripts": {
     "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "node scripts/build.mjs && tsc -p tsconfig.json",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
   "devDependencies": {
+    "@types/chrome": "^0.3.4",
     "eslint": "^9.0.0",
     "globals": "^15.0.0",
-    "prettier": "^3.9.9"
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1"
   }
 }

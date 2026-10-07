@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Caption PiP",
+  "name": "幕伴 PiP · PiP Companion",
   "version": "0.1.0",
   "minimum_chrome_version": "116",
-  "description": "YouTube 字幕浮動播放器；字幕仍由 YouTube 原頁面控制。",
+  "description": "支援字幕、彈幕與留言的子母畫面播放器",
   "icons": {
     "16": "assets/icon-16.png",
     "32": "assets/icon-32.png",
@@ -11,7 +11,7 @@
     "128": "assets/icon.png"
   },
   "action": {
-    "default_title": "Caption PiP",
+    "default_title": "幕伴 PiP · PiP Companion",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "assets/icon-16.png",
@@ -23,12 +23,22 @@
   "background": {
     "service_worker": "background.js"
   },
-  "permissions": ["storage", "activeTab", "scripting", "downloads"],
+  "permissions": ["storage", "activeTab", "scripting"],
   "content_scripts": [
     {
-      "matches": ["https://www.youtube.com/*"],
-      "js": ["pip-audio.js", "pip-ui.js", "floating-comments.js", "content.js"],
-      "css": ["floating-comments.css"],
+      "matches": ["*://*/*"],
+      "js": [
+        "shared/lib.js",
+        "content/pip-audio.js",
+        "content/pip-ui.js",
+        "content/floating-comments.js",
+        "content/content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "css": ["content/floating-comments.css"],
       "run_at": "document_idle"
     }
   ]

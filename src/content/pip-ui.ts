@@ -1,12 +1,12 @@
 "use strict";
 
-globalThis.CaptionPiP = globalThis.CaptionPiP || {};
-globalThis.CaptionPiP.PipUI = (() => {
-  function create(win, actions) {
+globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
+globalThis.PipCompanion.PipUI = (() => {
+  function create(win: Window, actions: PipUiActions, video: HTMLVideoElement) {
     const doc = win.document;
     doc.documentElement.lang = "zh-Hant";
     const style = doc.createElement("style");
-    const css = (strings, ...values) =>
+    const css = (strings: TemplateStringsArray, ...values: string[]) =>
       strings.reduce(
         (out, chunk, index) => out + chunk + (values[index] ?? ""),
         "",
@@ -45,9 +45,16 @@ globalThis.CaptionPiP.PipUI = (() => {
       [hidden] {
         display: none !important;
       }
+      html:focus,
+      body:focus,
+      .app:focus,
+      .screen:focus,
+      .screen > video:focus {
+        outline: none;
+      }
     `;
     const contentCss = css`
-      .video {
+      .screen > video {
         width: 100%;
         height: 100%;
         object-fit: contain;
@@ -101,8 +108,8 @@ globalThis.CaptionPiP.PipUI = (() => {
           opacity 0.16s ease,
           transform 0.16s ease;
       }
-      .screen:hover .controls,
-      .screen:focus-within .controls {
+      .screen.controls-visible .controls,
+      .screen:has(:focus-visible) .controls {
         opacity: 1;
         transform: none;
         pointer-events: auto;
@@ -124,8 +131,8 @@ globalThis.CaptionPiP.PipUI = (() => {
         height: 100%;
         background: #f33;
       }
-      .screen:hover .mini-progress,
-      .screen:focus-within .mini-progress {
+      .screen.controls-visible .mini-progress,
+      .screen:has(:focus-visible) .mini-progress {
         opacity: 0;
       }
       .time-tooltip {
@@ -176,14 +183,37 @@ globalThis.CaptionPiP.PipUI = (() => {
         background: #444d;
       }
       input:focus-visible {
-        outline: none;
+        outline: 2px solid #3ea6ff;
+        outline-offset: 2px;
       }
       .time {
         flex: 0 0 auto;
         min-width: 78px;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
         font-size: 12px;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
+      }
+      .time-current {
+        height: 18px;
+        padding: 0 2px;
+        margin: 0;
+        border: 0;
+        border-radius: 3px;
+        background: transparent;
+        color: #fff;
+        font-family: inherit;
+        font-size: 12px;
+        text-align: center;
+      }
+      .time-current:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .time-current:focus {
+        background: rgba(0, 0, 0, 0.65);
+        cursor: text;
       }
       .progress {
         flex: 1 1 auto;
@@ -233,9 +263,9 @@ globalThis.CaptionPiP.PipUI = (() => {
         transition: opacity 0.12s ease;
       }
       .volume-control:hover .volume-popover,
-      .volume-control:focus-within .volume-popover,
+      .volume-control:has(:focus-visible) .volume-popover,
       .speed-control:hover .speed-popover,
-      .speed-control:focus-within .speed-popover {
+      .speed-control:has(:focus-visible) .speed-popover {
         opacity: 1;
         pointer-events: auto;
       }
@@ -364,15 +394,8 @@ globalThis.CaptionPiP.PipUI = (() => {
     app.className = "app";
     const screen = doc.createElement("div");
     screen.className = "screen";
-    const video = doc.createElement("video");
-    video.className = "video";
-    video.playsInline = true;
-    video.muted = true;
-    video.autoplay = true;
-    video.setAttribute("aria-label", "YouTube 影片畫面");
     const subtitle = doc.createElement("div");
     subtitle.className = "subtitle";
-    subtitle.setAttribute("aria-live", "polite");
     const feedback = doc.createElement("div");
     feedback.className = "feedback";
     feedback.setAttribute("role", "status");
@@ -394,7 +417,7 @@ globalThis.CaptionPiP.PipUI = (() => {
     timeTooltip.className = "time-tooltip";
     timeTooltip.hidden = true;
     timeTooltip.setAttribute("aria-hidden", "true");
-    const makeButton = (action, label, ariaLabel) => {
+    const makeButton = (action: string, label: string, ariaLabel: string) => {
       const button = doc.createElement("button");
       button.type = "button";
       button.dataset.action = action;
@@ -413,9 +436,20 @@ globalThis.CaptionPiP.PipUI = (() => {
     nextButton.append(nextIcon);
     const speedButton = makeButton("speed", "1×", "播放速度 1×");
     speedButton.className = "speed-button";
-    const timeLabel = doc.createElement("span");
-    timeLabel.className = "time";
-    timeLabel.textContent = "0:00 / 0:00";
+    const timeGroup = doc.createElement("span");
+    timeGroup.className = "time";
+    const timeCurrent = doc.createElement("input");
+    timeCurrent.type = "text";
+    timeCurrent.className = "time-current";
+    timeCurrent.value = "0:00";
+    timeCurrent.size = 4;
+    timeCurrent.maxLength = 12;
+    timeCurrent.setAttribute("inputmode", "numeric");
+    timeCurrent.setAttribute("aria-label", "目前時間，輸入後按 Enter 跳轉");
+    const timeDuration = doc.createElement("span");
+    timeDuration.className = "time-duration";
+    timeDuration.textContent = "/ 0:00";
+    timeGroup.append(timeCurrent, timeDuration);
     const progress = doc.createElement("input");
     progress.className = "progress";
     progress.type = "range";
@@ -469,34 +503,24 @@ globalThis.CaptionPiP.PipUI = (() => {
     speedSlider.setAttribute("aria-label", "播放速度");
     speedPopover.append(speedSlider);
     speedControl.append(speedButton, speedPopover);
-    for (const control of [
-      playButton,
-      nextButton,
-      speedButton,
-      volumeButton,
-      progress,
-      volumeSlider,
-      speedSlider,
-    ]) {
-      control.tabIndex = -1;
-    }
     controls.append(
       timeTooltip,
       playButton,
       nextButton,
-      timeLabel,
+      timeGroup,
       progress,
       volumeControl,
       speedControl,
     );
-    screen.append(video, subtitle, feedback, miniProgress, controls);
+    screen.append(subtitle, feedback, miniProgress, controls);
     app.append(screen);
     doc.head.replaceChildren(style);
     doc.body.replaceChildren(app);
-    doc.title = "YouTube 字幕浮窗";
+    doc.title = "字幕浮窗";
 
     const ui = {
       video,
+      screen,
       subtitle,
       feedback,
       volumeValue,
@@ -508,7 +532,8 @@ globalThis.CaptionPiP.PipUI = (() => {
       speedSlider,
       volumeSlider,
       progress,
-      timeLabel,
+      timeCurrent,
+      timeDuration,
       miniProgress,
       miniProgressFill,
       timeTooltip,
@@ -518,9 +543,9 @@ globalThis.CaptionPiP.PipUI = (() => {
     const togglePlayback = () => actions.togglePlayback();
     const showSpeedFeedback = () => {
       const rate = actions.getVideo()?.playbackRate;
-      if (rate) actions.showFeedback(`倍速 ${Math.round(rate * 100) / 100}×`);
+      if (rate) actions.showFeedback(`${Math.round(rate * 100) / 100}×`);
     };
-    const adjustPlaybackRate = (direction) => {
+    const adjustPlaybackRate = (direction: number) => {
       actions.adjustPlaybackRate(direction);
       showSpeedFeedback();
     };
@@ -533,7 +558,15 @@ globalThis.CaptionPiP.PipUI = (() => {
     volumeButton.addEventListener("click", toggleMute);
     speedButton.addEventListener("click", togglePlaybackRate);
     playButton.addEventListener("click", togglePlayback);
-    video.addEventListener("click", togglePlayback);
+    screen.addEventListener(
+      "click",
+      (e) => {
+        if (e.target !== screen && e.target !== video) return;
+        e.stopPropagation();
+        togglePlayback();
+      },
+      { capture: true },
+    );
     nextButton.addEventListener("click", () => actions.playNext());
     volumeSlider.addEventListener("input", () =>
       actions.setVolume(
@@ -557,96 +590,151 @@ globalThis.CaptionPiP.PipUI = (() => {
         const clamped = Math.max(0, Math.min(maxVolume, parsed));
         actions.setVolume(clamped, clamped > 0);
         actions.showVolumeFeedback();
-      } else {
-        update();
-      }
+      } else update();
     };
     volumeValue.addEventListener("click", () => volumeValue.select());
     volumeValue.addEventListener("focus", () => volumeValue.select());
-    volumeValue.addEventListener("keydown", (event) => {
-      event.stopPropagation();
-      if (event.key === "Enter") {
+    volumeValue.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") {
         commitVolumeInput();
         volumeValue.blur();
-      } else if (event.key === "Escape") {
+      } else if (e.key === "Escape") {
         update();
         volumeValue.blur();
       }
     });
     volumeValue.addEventListener("blur", commitVolumeInput);
 
-    win.addEventListener("keydown", (event) => {
-      if (event.target === volumeValue) return;
+    const { parseTime } = globalThis.PipCompanion.util;
+    const setTimeInput = (text: string) => {
+      timeCurrent.value = text;
+      timeCurrent.size = Math.max(4, text.length);
+    };
+    const renderTimeInput = () => {
       const videoSource = actions.getVideo();
-      const plain =
-        !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey;
-      if (plain && event.code === "Space" && videoSource) {
-        event.preventDefault();
-        event.stopPropagation();
+      setTimeInput(actions.formatTime(videoSource?.currentTime ?? 0));
+    };
+    let timeFocusText = "";
+    const commitTimeInput = (): boolean => {
+      if (timeCurrent.value.trim() === timeFocusText) return true;
+      const videoSource = actions.getVideo();
+      const seconds = parseTime(timeCurrent.value);
+      if (!videoSource || seconds === null) {
+        actions.showFeedback("時間格式錯誤");
+        return false;
+      }
+      const duration = videoSource.duration;
+      const target =
+        Number.isFinite(duration) && duration > 0
+          ? Math.max(0, Math.min(duration, seconds))
+          : Math.max(0, seconds);
+      videoSource.currentTime = target;
+      const text = actions.formatTime(target);
+      timeFocusText = text;
+      setTimeInput(text);
+      return true;
+    };
+    timeCurrent.addEventListener("click", () => timeCurrent.select());
+    timeCurrent.addEventListener("focus", () => {
+      renderTimeInput();
+      timeFocusText = timeCurrent.value;
+      timeCurrent.select();
+    });
+    timeCurrent.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter" && commitTimeInput()) timeCurrent.blur();
+      else if (e.key === "Escape") {
+        renderTimeInput();
+        timeFocusText = timeCurrent.value;
+        timeCurrent.blur();
+      }
+    });
+    timeCurrent.addEventListener("blur", () => {
+      if (!commitTimeInput()) {
+        renderTimeInput();
+        timeFocusText = timeCurrent.value;
+      }
+    });
+
+    win.addEventListener("keydown", (e) => {
+      if (e.target === volumeValue || e.target === timeCurrent) return;
+      const target = e.target instanceof Element ? e.target : null;
+      const videoSource = actions.getVideo();
+      const plain = !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey;
+      if (plain && e.code === "Space" && videoSource) {
+        e.preventDefault();
+        e.stopPropagation();
         togglePlayback();
         return;
       }
-      const decreaseRate =
-        event.key === "[" || (!event.shiftKey && event.code === "BracketLeft");
-      const increaseRate =
-        event.key === "]" || (!event.shiftKey && event.code === "BracketRight");
       if (
         videoSource &&
-        !event.ctrlKey &&
-        !event.altKey &&
-        !event.metaKey &&
+        !e.repeat &&
+        !e.shiftKey &&
+        (e.key === "," || e.key === ".") &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey &&
+        !target?.closest?.("input[type='range']")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        const backward = e.key === ",";
+        const next = videoSource.currentTime + (backward ? -1 : 1) / 60;
+        if (Number.isFinite(next) && next >= 0) videoSource.currentTime = next;
+        actions.showFrameStepIcon(backward);
+        return;
+      }
+      const decreaseRate = e.shiftKey && e.code === "Comma";
+      const increaseRate = e.shiftKey && e.code === "Period";
+      if (
+        videoSource &&
+        !e.ctrlKey &&
+        !e.altKey &&
+        !e.metaKey &&
         (decreaseRate || increaseRate)
       ) {
-        event.preventDefault();
-        event.stopPropagation();
+        e.preventDefault();
+        e.stopPropagation();
         adjustPlaybackRate(decreaseRate ? -1 : 1);
         return;
       }
-      if (plain && videoSource && event.key.toLowerCase() === "c") {
-        event.preventDefault();
-        event.stopPropagation();
+      if (
+        plain &&
+        videoSource &&
+        (e.key.toLowerCase() === "c" || e.code === "KeyC")
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
         actions.toggleCaptions();
         return;
       }
-      if (
-        event.altKey &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !event.shiftKey &&
-        event.key.toLowerCase() === "c"
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
+      if (actions.matchesCommentsShortcut(e)) {
+        e.preventDefault();
+        e.stopPropagation();
         actions.toggleComments();
         return;
       }
-      if (
-        event.altKey &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !event.shiftKey &&
-        event.key.toLowerCase() === "p"
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
+      if (actions.matchesScreenshotShortcut(e)) {
+        e.preventDefault();
+        e.stopPropagation();
         actions.screenshot();
         return;
       }
-      const key = event.code === "Space" ? " " : event.key.toLowerCase();
-      const rangeFocused = Boolean(
-        event.target?.closest?.("input[type='range']"),
-      );
+      const key = e.code === "Space" ? " " : e.key.toLowerCase();
+      const rangeFocused = Boolean(target?.closest?.("input[type='range']"));
       const volumeKey = key === "arrowup" || key === "arrowdown";
       const directKey = key === "m";
       const horizontalArrow = key === "arrowleft" || key === "arrowright";
       if (
         !videoSource ||
-        event.ctrlKey ||
-        event.altKey ||
-        event.metaKey ||
-        event.shiftKey ||
-        event.target?.isContentEditable ||
-        (event.target?.closest?.(
+        e.ctrlKey ||
+        e.altKey ||
+        e.metaKey ||
+        e.shiftKey ||
+        (target instanceof HTMLElement && target.isContentEditable) ||
+        (target?.closest?.(
           "button, input, select, textarea, [contenteditable='true']",
         ) &&
           !(directKey || (rangeFocused && (volumeKey || horizontalArrow))))
@@ -683,17 +771,14 @@ globalThis.CaptionPiP.PipUI = (() => {
           actions.showVolumeFeedback();
           break;
         }
-        case "k":
-          togglePlayback();
-          break;
         case "m":
           toggleMute();
           break;
         default:
           return;
       }
-      event.preventDefault();
-      event.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
       update();
     });
 
@@ -709,7 +794,7 @@ globalThis.CaptionPiP.PipUI = (() => {
         (Number(progress.value) / 1000) * videoSource.duration;
       update();
     });
-    progress.addEventListener("pointermove", (event) => {
+    progress.addEventListener("pointermove", (e) => {
       const videoSource = actions.getVideo();
       if (
         !videoSource ||
@@ -722,28 +807,28 @@ globalThis.CaptionPiP.PipUI = (() => {
       if (progressRect.width <= 0 || controlsRect.width <= 0) return;
       const ratio = Math.max(
         0,
-        Math.min(1, (event.clientX - progressRect.left) / progressRect.width),
+        Math.min(1, (e.clientX - progressRect.left) / progressRect.width),
       );
       timeTooltip.textContent = actions.formatTime(
         videoSource.duration * ratio,
       );
       timeTooltip.hidden = false;
       const halfWidth = timeTooltip.offsetWidth / 2;
-      timeTooltip.style.left = `${Math.max(halfWidth, Math.min(controlsRect.width - halfWidth, event.clientX - controlsRect.left))}px`;
+      timeTooltip.style.left = `${Math.max(halfWidth, Math.min(controlsRect.width - halfWidth, e.clientX - controlsRect.left))}px`;
     });
     progress.addEventListener("pointerleave", () => {
       timeTooltip.hidden = true;
     });
     win.addEventListener(
       "wheel",
-      (event) => {
-        if (!(event.metaKey || event.ctrlKey) || event.deltaY === 0) return;
-        event.preventDefault();
-        event.stopPropagation();
+      (e) => {
+        if (!(e.metaKey || e.ctrlKey) || e.deltaY === 0) return;
+        e.preventDefault();
+        e.stopPropagation();
         const currentWidth = win.outerWidth;
         const currentHeight = win.outerHeight;
         const aspectRatio = currentWidth / currentHeight;
-        const scale = event.deltaY < 0 ? 1.05 : 0.95;
+        const scale = e.deltaY < 0 ? 1.05 : 0.95;
         let height = Math.round(currentHeight * scale);
         const width = Math.round(height * aspectRatio);
         if (Math.abs(width / height - aspectRatio) >= 1e-5)
@@ -752,17 +837,20 @@ globalThis.CaptionPiP.PipUI = (() => {
       },
       { capture: true, passive: false },
     );
-    win.addEventListener("pointerdown", () => actions.playMirroredVideo(), {
-      passive: true,
-    });
+    let hideControlsTimer = 0;
     win.addEventListener(
       "pointermove",
-      () => {
-        const videoSource = actions.getVideo();
-        if (ui.video.paused && videoSource && !videoSource.paused)
-          actions.playMirroredVideo();
+      (e) => {
+        screen.classList.add("controls-visible");
+        win.clearTimeout(hideControlsTimer);
+        const target = e.target as Element | null;
+        if (target?.closest?.(".controls")) return;
+        hideControlsTimer = win.setTimeout(
+          () => screen.classList.remove("controls-visible"),
+          1000,
+        );
       },
-      { once: true, passive: true },
+      { passive: true },
     );
 
     return ui;

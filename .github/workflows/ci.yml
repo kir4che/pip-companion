@@ -18,7 +18,12 @@ jobs:
         run: npm run lint
       - name: Prettier
         run: npm run format:check
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Build
+        run: npm run build
       - name: Manifest
+        working-directory: dist
         run: |
           node -e "
           const fs = require('fs');

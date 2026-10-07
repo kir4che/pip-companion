@@ -2,7 +2,7 @@ body.yt-floating-comments-open #primary {
   position: relative !important;
   z-index: 2019 !important;
 }
-/* Side Drawer Mode (Desktop Multi-Column) */
+
 body.yt-floating-comments-open:not(.yt-floating-comments-bottom-sheet)
   #comments,
 body.yt-floating-comments-open:not(.yt-floating-comments-bottom-sheet)
@@ -25,7 +25,7 @@ body.yt-floating-comments-open:not(.yt-floating-comments-bottom-sheet)
   box-sizing: border-box !important;
   display: block !important;
 }
-/* Bottom Sheet Mode (RWD Narrow Single-Column or Theater Mode) */
+
 body.yt-floating-comments-open.yt-floating-comments-bottom-sheet #comments,
 body.yt-floating-comments-open.yt-floating-comments-bottom-sheet
   ytd-comments#comments {
@@ -63,9 +63,11 @@ body.yt-floating-comments-open ytd-comments-header-renderer #title {
   align-items: center !important;
   width: 100% !important;
 }
+
 .yt-floating-comments-close-btn {
   display: none;
 }
+
 body.yt-floating-comments-open .yt-floating-comments-close-btn {
   display: inline-flex !important;
   align-items: center !important;
@@ -86,17 +88,21 @@ body.yt-floating-comments-open .yt-floating-comments-close-btn {
     background 0.15s ease,
     transform 0.15s ease !important;
 }
+
 body.yt-floating-comments-open #comments > .yt-floating-comments-close-btn {
   position: absolute !important;
   top: 14px !important;
   right: 14px !important;
   z-index: 2025 !important;
 }
+
 body.yt-floating-comments-open .yt-floating-comments-close-btn:hover {
   background: rgba(255, 255, 255, 0.22) !important;
   transform: scale(1.08) !important;
 }
-.ytp-button.yt-floating-comments-btn {
+
+.ytp-button.yt-floating-comments-btn,
+.ytp-button.yt-pip-screenshot-btn {
   position: relative !important;
   display: inline-flex !important;
   align-items: center !important;
@@ -106,7 +112,9 @@ body.yt-floating-comments-open .yt-floating-comments-close-btn:hover {
   height: 100% !important;
   vertical-align: top !important;
 }
-.yt-floating-comments-tooltip {
+
+.yt-floating-comments-tooltip,
+.yt-pip-screenshot-tooltip {
   position: absolute !important;
   bottom: calc(100% + 10px) !important;
   left: 50% !important;
@@ -129,12 +137,17 @@ body.yt-floating-comments-open .yt-floating-comments-close-btn:hover {
   z-index: 2050 !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
 }
+
 .ytp-button.yt-floating-comments-btn:hover .yt-floating-comments-tooltip,
-.yt-floating-comments-tooltip.show {
+.ytp-button.yt-pip-screenshot-btn:hover .yt-pip-screenshot-tooltip,
+.yt-floating-comments-tooltip.show,
+.yt-pip-screenshot-tooltip.show {
   opacity: 1 !important;
   visibility: visible !important;
 }
-.ytp-button.yt-floating-comments-btn svg {
+
+.ytp-button.yt-floating-comments-btn svg,
+.ytp-button.yt-pip-screenshot-btn svg {
   display: block !important;
   width: 24px !important;
   height: 24px !important;
@@ -143,6 +156,7 @@ body.yt-floating-comments-open .yt-floating-comments-close-btn:hover {
   pointer-events: none !important;
   transition: fill 0.15s ease !important;
 }
+
 .ytp-button.yt-floating-comments-btn.active svg {
   fill: #3ea6ff !important;
 }
