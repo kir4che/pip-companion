@@ -21,9 +21,11 @@
     }
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["https://api.bilibili.com/*"],
   "content_scripts": [
     {
       "matches": ["*://*/*"],
@@ -32,12 +34,9 @@
         "content/pip-audio.js",
         "content/pip-ui.js",
         "content/floating-comments.js",
+        "content/danmaku.js",
         "content/content.js"
       ],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": ["*://*.youtube.com/*"],
       "css": ["content/floating-comments.css"],
       "run_at": "document_idle"
     }

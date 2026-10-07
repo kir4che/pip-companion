@@ -1,6 +1,13 @@
 "use strict";
+
 const VIDEO_SELECTOR = "video.html5-main-video";
 const IS_YOUTUBE = /(^|\.)youtube\.com$/.test(location.hostname);
+const IS_BILIBILI = /(^|\.)bilibili\.com$/.test(location.hostname);
+
+function isBilibiliVideoPage() {
+  return IS_BILIBILI && /^\/video\/(BV[\w]{10}|av\d+)/i.test(location.pathname);
+}
+
 const VOLUME_ICON_PATH =
   "M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-3-4.24v8.47a4.5 4.5 0 0 0 3-4.23z";
 const MUTED_VOLUME_ICON_PATH =
@@ -27,6 +34,7 @@ const state: State = {
   launchShortcut: { ...SHORTCUT_DEFAULTS.launchShortcut },
   commentsShortcut: { ...SHORTCUT_DEFAULTS.commentsShortcut },
   screenshotShortcut: { ...SHORTCUT_DEFAULTS.screenshotShortcut },
+  danmakuShortcut: { ...SHORTCUT_DEFAULTS.danmakuShortcut },
   commentsEnabled: true,
   screenshotEnabled: true,
   lastNonOneRate: 1.25,
@@ -111,6 +119,15 @@ function onPageKeyDown(e: KeyboardEvent) {
     e.preventDefault();
     e.stopPropagation();
     toggleFloatingComments();
+    return;
+  }
+  if (
+    (IS_YOUTUBE || isBilibiliVideoPage()) &&
+    matchesShortcut(e, state.danmakuShortcut)
+  ) {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleDanmakuWithFeedback();
     return;
   }
   if (matchesShortcut(e, state.screenshotShortcut)) {
@@ -722,6 +739,9 @@ function toggleCaptions() {
   renderSubtitle();
   showFeedback(state.captionsOn ? "字幕: 開" : "字幕: 關");
 }
+function toggleDanmakuWithFeedback() {
+  showFeedback(toggleDanmaku() ? "彈幕: 開" : "彈幕: 關");
+}
 function resizePipWindow(innerWidth: number, width: number, height: number) {
   return chrome.runtime.sendMessage({
     type: "RESIZE_PIP_WINDOW",
@@ -751,8 +771,12 @@ function createPipUi(win: Window, video: HTMLVideoElement) {
       getVolumePercent: getSourceVolumePercent,
       toggleCaptions,
       toggleComments: toggleFloatingComments,
+      toggleDanmaku: toggleDanmakuWithFeedback,
       matchesCommentsShortcut: (event) =>
         state.commentsEnabled && matchesShortcut(event, state.commentsShortcut),
+      matchesDanmakuShortcut: (event) =>
+        (IS_YOUTUBE || isBilibiliVideoPage()) &&
+        matchesShortcut(event, state.danmakuShortcut),
       matchesScreenshotShortcut: (event) =>
         state.screenshotEnabled &&
         matchesShortcut(event, state.screenshotShortcut),
@@ -829,6 +853,8 @@ function bindSourceVideo(video: HTMLVideoElement) {
   state.sourceAbort = new AbortController();
   state.sourceVideo = video;
   const signal = state.sourceAbort.signal;
+  setDanmakuPlaybackRate(video.playbackRate);
+  setDanmakuPaused(video.paused);
   const sync = () => {
     updatePlaybackUi();
     refreshSubtitle();
@@ -880,7 +906,7 @@ function bindSourceVideo(video: HTMLVideoElement) {
     "play",
     () => {
       sync();
-      if (state.pipUi) resumePlayback();
+      setDanmakuPaused(false);
     },
     { signal },
   );
@@ -888,8 +914,13 @@ function bindSourceVideo(video: HTMLVideoElement) {
     "pause",
     () => {
       sync();
-      state.pipUi?.video.pause();
+      setDanmakuPaused(true);
     },
+    { signal },
+  );
+  video.addEventListener(
+    "ratechange",
+    () => setDanmakuPlaybackRate(video.playbackRate),
     { signal },
   );
   for (const eventName of [
@@ -934,6 +965,7 @@ function closePiP(closeWindow: boolean) {
   state.captionNode = null;
   state.captionExtract = null;
   state.captionLines = [];
+  destroyDanmakuInPip();
   releasePipVideo();
   if (closeWindow && oldWindow && !oldWindow.closed) oldWindow.close();
 }
@@ -970,6 +1002,7 @@ async function openPiP() {
     state.pipUi = createPipUi(nextWindow, openingVideo);
     if (state.sourceVideo !== openingVideo) throw new Error("source changed");
     remountSourceVideo();
+    if (IS_YOUTUBE || IS_BILIBILI) initDanmakuInPip(nextWindow, openingVideo);
     refreshSubtitle(true);
     updatePlaybackUi();
     if (!state.sourceVideo.paused) resumePlayback();
@@ -1067,6 +1100,7 @@ function scanPage() {
     )
       video = found;
   }
+  if (IS_YOUTUBE) checkAndBindDanmakuChat();
   if (!video) {
     if (state.sourceVideo && !state.sourceVideo.isConnected) {
       closePiP(true);
@@ -1077,6 +1111,7 @@ function scanPage() {
     return;
   }
   if (video !== state.sourceVideo) bindSourceVideo(video);
+  if (IS_BILIBILI) checkAndBindBilibiliDanmaku(state.sourceVideo);
   refreshSubtitle();
   updatePlaybackUi();
 }

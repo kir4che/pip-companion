@@ -7,7 +7,11 @@ interface Shortcut {
   meta: boolean;
 }
 
-type ShortcutKey = "launchShortcut" | "commentsShortcut" | "screenshotShortcut";
+type ShortcutKey =
+  | "launchShortcut"
+  | "commentsShortcut"
+  | "screenshotShortcut"
+  | "danmakuShortcut";
 
 // Browser APIs and YouTube player methods not included in the standard DOM types.
 interface Window {
@@ -58,6 +62,7 @@ interface State {
   launchShortcut: Shortcut;
   commentsShortcut: Shortcut;
   screenshotShortcut: Shortcut;
+  danmakuShortcut: Shortcut;
   commentsEnabled: boolean;
   screenshotEnabled: boolean;
 
@@ -130,7 +135,9 @@ interface PipUiActions {
   getVolumePercent(): number;
   toggleCaptions(): void;
   toggleComments(): void;
+  toggleDanmaku(): void;
   matchesCommentsShortcut(event: KeyboardEvent): boolean;
+  matchesDanmakuShortcut(event: KeyboardEvent): boolean;
   matchesScreenshotShortcut(event: KeyboardEvent): boolean;
   screenshot(): void;
   formatTime(seconds: number): string;
@@ -185,3 +192,15 @@ interface PipCompanionGlobal {
 }
 
 declare var PipCompanion: PipCompanionGlobal;
+
+// Danmaku module functions shared by the content-script modules.
+declare function toggleDanmaku(forceState?: boolean): boolean;
+declare function initDanmakuInPip(win: Window, video: HTMLVideoElement): void;
+declare function destroyDanmakuInPip(): void;
+declare function setDanmakuPaused(paused: boolean): void;
+declare function setDanmakuPlaybackRate(rate: number): void;
+declare function isDanmakuEnabled(): boolean;
+declare function checkAndBindDanmakuChat(): void;
+declare function checkAndBindBilibiliDanmaku(
+  video: HTMLVideoElement | null,
+): void;

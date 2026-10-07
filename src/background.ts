@@ -1,3 +1,7 @@
+import { registerBilibiliDanmakuListener } from "./background/bilibili-danmaku.js";
+
+registerBilibiliDanmakuListener();
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type !== "RESIZE_PIP_WINDOW") return;
 

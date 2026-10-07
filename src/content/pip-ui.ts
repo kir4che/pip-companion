@@ -55,9 +55,13 @@ globalThis.PipCompanion.PipUI = (() => {
     `;
     const contentCss = css`
       .screen > video {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+        object-position: center !important;
+        transform: none !important;
       }
       .subtitle {
         position: absolute;
@@ -714,6 +718,12 @@ globalThis.PipCompanion.PipUI = (() => {
         e.preventDefault();
         e.stopPropagation();
         actions.toggleComments();
+        return;
+      }
+      if (actions.matchesDanmakuShortcut(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        actions.toggleDanmaku();
         return;
       }
       if (actions.matchesScreenshotShortcut(e)) {

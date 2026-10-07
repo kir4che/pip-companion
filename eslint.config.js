@@ -25,6 +25,7 @@ module.exports = [
         "error",
         { allowShortCircuit: true, allowTernary: true },
       ],
+      "no-empty": ["error", { allowEmptyCatch: true }],
     },
   },
   {

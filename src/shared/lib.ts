@@ -24,11 +24,19 @@ globalThis.PipCompanion.util = (() => {
       shift: false,
       meta: false,
     },
+    danmakuShortcut: {
+      code: "KeyD",
+      ctrl: false,
+      alt: true,
+      shift: false,
+      meta: false,
+    },
   };
   const SHORTCUT_KEYS: ShortcutKey[] = [
     "launchShortcut",
     "commentsShortcut",
     "screenshotShortcut",
+    "danmakuShortcut",
   ];
 
   const pin = (label: string, code: string, shift = false) => ({

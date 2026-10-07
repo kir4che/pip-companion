@@ -9,6 +9,9 @@ const commentsToggle = document.querySelector(
 const screenshotToggle = document.querySelector(
   "#screenshot-toggle",
 ) as HTMLInputElement;
+const danmakuToggle = document.querySelector(
+  "#danmaku-toggle",
+) as HTMLInputElement;
 
 const shortcuts = new Map<ShortcutKey, Shortcut>();
 for (const key of util.SHORTCUT_KEYS) {
@@ -60,12 +63,15 @@ async function loadToggles() {
     const stored = await chrome.storage.local.get({
       commentsEnabled: true,
       screenshotEnabled: true,
+      danmakuEnabled: true,
     });
     commentsToggle.checked = stored.commentsEnabled !== false;
     screenshotToggle.checked = stored.screenshotEnabled !== false;
+    danmakuToggle.checked = stored.danmakuEnabled !== false;
   } catch {
     commentsToggle.checked = true;
     screenshotToggle.checked = true;
+    danmakuToggle.checked = true;
   }
 }
 
@@ -77,6 +83,20 @@ screenshotToggle.addEventListener("change", () => {
   void chrome.storage.local.set({
     screenshotEnabled: screenshotToggle.checked,
   });
+});
+
+danmakuToggle.addEventListener("change", async () => {
+  try {
+    await chrome.storage.local.set({ danmakuEnabled: danmakuToggle.checked });
+  } catch {
+    showStatus("無法儲存彈幕設定", true);
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName === "local" && changes.danmakuEnabled) {
+    danmakuToggle.checked = Boolean(changes.danmakuEnabled.newValue);
+  }
 });
 
 openButton.addEventListener("click", async () => {
