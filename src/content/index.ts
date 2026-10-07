@@ -135,9 +135,14 @@ function onPageKeyDown(e: KeyboardEvent) {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "PING") {
+    const video =
+      (state.sourceVideo?.isConnected && state.sourceVideo) ||
+      globalThis.PipCompanion.ContentVideo.findVideo();
     sendResponse({
       ok: true,
       pipOpen: Boolean(state.pipWindow && !state.pipWindow.closed),
+      hasVideo: Boolean(video),
+      videoArea: video ? video.videoWidth * video.videoHeight : 0,
     });
     return;
   }
@@ -152,6 +157,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 function scanPage() {
+  if (
+    window !== window.top &&
+    !state.sourceVideo &&
+    !globalThis.PipCompanion.ContentVideo.findVideo()
+  )
+    return;
+
   if (state.pipWindow?.closed)
     globalThis.PipCompanion.ContentPipLifecycle.closePiP(false);
 

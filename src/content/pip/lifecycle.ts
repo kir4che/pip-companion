@@ -1,6 +1,12 @@
 "use strict";
 
 globalThis.PipCompanion.ContentPipLifecycle = (() => {
+  function notifyPipState(pipOpen: boolean) {
+    void chrome.runtime
+      .sendMessage({ type: "PIP_STATE_CHANGED", pipOpen })
+      .catch(() => {});
+  }
+
   function createPipUi(win: Window, video: HTMLVideoElement) {
     return globalThis.PipCompanion.PipUI.create(
       win,
@@ -244,6 +250,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
     destroyDanmakuInPip();
     releasePipVideo();
+    if (oldWindow) notifyPipState(false);
     if (closeWindow && oldWindow && !oldWindow.closed) oldWindow.close();
   }
 
@@ -287,6 +294,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
       globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
       if (!state.sourceVideo.paused) resumePlayback();
+      notifyPipState(true);
       return { ok: true };
     } catch (error) {
       if (state.pipWindow) closePiP(true);
