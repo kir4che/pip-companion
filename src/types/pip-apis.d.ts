@@ -17,6 +17,28 @@ interface PipAudioApi {
   toggleMute(video: HTMLVideoElement, player: YouTubePlayer | null): void;
 }
 
+// 縮圖預覽影格資訊
+interface StoryboardFrame {
+  url: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  sheetWidth?: number;
+  sheetHeight?: number;
+}
+
+// 巴哈動畫瘋縮圖資料格式
+interface BahaStoryboardData {
+  sn: string;
+  width: number;
+  height: number;
+  cols: number;
+  rows: number;
+  interval: number;
+  images: string[];
+}
+
 // 建立 PiP 介面時會用到的操作與回呼
 interface PipUiActions {
   volumeIconPath: string;
@@ -41,6 +63,7 @@ interface PipUiActions {
   matchesScreenshotShortcut(event: KeyboardEvent): boolean;
   screenshot(): void;
   formatTime(seconds: number): string;
+  getStoryboardFrame?(seconds: number): StoryboardFrame | null;
   resize(innerWidth: number, width: number, height: number): Promise<unknown>;
 }
 
@@ -64,6 +87,8 @@ interface PipUiHandle {
   miniProgress: HTMLElement;
   miniProgressFill: HTMLElement;
   timeTooltip: HTMLElement;
+  timeTooltipThumb: HTMLElement;
+  timeTooltipText: HTMLElement;
 }
 
 interface PipUiApi {
@@ -120,11 +145,21 @@ interface ContentPlaybackApi {
   toggleMute(): void;
   toggleCaptions(): void;
   toggleDanmakuWithFeedback(): void;
+  isLiveStream(video: HTMLVideoElement | null): boolean;
   resizePipWindow(
     innerWidth: number,
     width: number,
     height: number,
   ): Promise<unknown>;
+}
+
+interface ContentStoryboardApi {
+  getFrame(
+    seconds: number,
+    video: HTMLVideoElement | null,
+  ): StoryboardFrame | null;
+  preload(video: HTMLVideoElement | null): void;
+  reset(): void;
 }
 
 interface ContentScreenshotApi {
@@ -145,6 +180,7 @@ interface PipCompanionGlobal {
   ContentCaptions: ContentCaptionsApi;
   ContentFeedback: ContentFeedbackApi;
   ContentPlayback: ContentPlaybackApi;
+  ContentStoryboard: ContentStoryboardApi;
   ContentScreenshot: ContentScreenshotApi;
   ContentPipLifecycle: ContentPipLifecycleApi;
   util: PipCompanionUtil;

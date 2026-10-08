@@ -47,11 +47,12 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     }
 
     if (/(^|\.)youtube\.com$/.test(location.hostname)) {
+      if (document.documentElement.dataset.pipYtIsLive === "true") return true;
       const ytPlayer = getYouTubePlayer();
       if (ytPlayer?.getVideoData?.()?.isLive) return true;
       if (
         document.querySelector(
-          "#movie_player.ytp-live, .ytp-live-badge, ytd-watch-flexy[is-live]",
+          "#movie_player.ytp-live, #movie_player.ytp-live .ytp-live-badge, ytd-watch-flexy[is-live], ytd-watch-flexy[is-live-stream]",
         )
       )
         return true;
@@ -365,6 +366,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     toggleMute,
     toggleCaptions,
     toggleDanmakuWithFeedback,
+    isLiveStream,
     resizePipWindow,
   };
 })();

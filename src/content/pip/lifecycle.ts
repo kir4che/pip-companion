@@ -49,6 +49,11 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           matchesShortcut(event, state.screenshotShortcut),
         screenshot: globalThis.PipCompanion.ContentScreenshot.savePipScreenshot,
         formatTime: globalThis.PipCompanion.util.formatTime,
+        getStoryboardFrame: (seconds) =>
+          globalThis.PipCompanion.ContentStoryboard.getFrame(
+            seconds,
+            state.sourceVideo,
+          ),
         resize: globalThis.PipCompanion.ContentPlayback.resizePipWindow,
       },
       video,
@@ -123,6 +128,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   }
 
   function bindSourceVideo(video: HTMLVideoElement) {
+    if (state.sourceVideo !== video)
+      globalThis.PipCompanion.ContentStoryboard.reset();
     if (state.pipWindow && state.videoStash) restoreSourceVideo();
     state.sourceAbort?.abort();
     state.sourceAbort = new AbortController();
@@ -233,6 +240,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
     globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
     globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
+    globalThis.PipCompanion.ContentStoryboard.preload(video);
     if (state.pipWindow) remountSourceVideo();
   }
 
@@ -253,6 +261,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
     destroyDanmakuInPip();
     releasePipVideo();
+    globalThis.PipCompanion.ContentStoryboard.reset();
     if (oldWindow) notifyPipState(false);
     if (closeWindow && oldWindow && !oldWindow.closed) oldWindow.close();
   }
@@ -292,6 +301,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
       state.pipUi = createPipUi(nextWindow, openingVideo);
       if (state.sourceVideo !== openingVideo) throw new Error("source changed");
+      globalThis.PipCompanion.ContentStoryboard.preload(openingVideo);
       remountSourceVideo();
       if (IS_YOUTUBE || IS_BILIBILI) initDanmakuInPip(nextWindow, openingVideo);
       globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);

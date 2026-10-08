@@ -152,14 +152,32 @@ globalThis.PipCompanion.PipUI = (() => {
         bottom: 52px;
         left: 0;
         transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
         padding: 4px 7px;
-        border-radius: 4px;
+        border-radius: 6px;
         color: #fff;
         background: #111e;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        pointer-events: none;
+      }
+      .time-tooltip.has-thumb {
+        padding: 4px 4px 6px;
+      }
+      .time-tooltip-thumb {
+        display: none;
+        border-radius: 4px;
+        overflow: hidden;
+        background-color: #000;
+        background-repeat: no-repeat;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .time-tooltip-text {
         font-size: 12px;
         line-height: 1;
         white-space: nowrap;
-        pointer-events: none;
       }
       button {
         flex: 0 0 auto;
@@ -425,10 +443,16 @@ globalThis.PipCompanion.PipUI = (() => {
 
     const controls = doc.createElement("div");
     controls.className = "controls";
-    const timeTooltip = doc.createElement("span");
+    const timeTooltip = doc.createElement("div");
     timeTooltip.className = "time-tooltip";
     timeTooltip.hidden = true;
     timeTooltip.setAttribute("aria-hidden", "true");
+    const timeTooltipThumb = doc.createElement("div");
+    timeTooltipThumb.className = "time-tooltip-thumb";
+    const timeTooltipText = doc.createElement("span");
+    timeTooltipText.className = "time-tooltip-text";
+    timeTooltip.append(timeTooltipThumb, timeTooltipText);
+
     const makeButton = (action: string, label: string, ariaLabel: string) => {
       const button = doc.createElement("button");
       button.type = "button";
@@ -553,6 +577,8 @@ globalThis.PipCompanion.PipUI = (() => {
       miniProgress,
       miniProgressFill,
       timeTooltip,
+      timeTooltipThumb,
+      timeTooltipText,
     };
 
     const update = () => actions.updatePlaybackUi();
@@ -833,15 +859,42 @@ globalThis.PipCompanion.PipUI = (() => {
         0,
         Math.min(1, (e.clientX - progressRect.left) / progressRect.width),
       );
-      timeTooltip.textContent = actions.formatTime(
-        videoSource.duration * ratio,
-      );
+      const targetTime = videoSource.duration * ratio;
+      timeTooltipText.textContent = actions.formatTime(targetTime);
+
+      const frame = actions.getStoryboardFrame?.(targetTime);
+      if (frame && frame.url) {
+        timeTooltip.classList.add("has-thumb");
+        timeTooltipThumb.style.display = "block";
+        const maxThumbWidth = Math.min(
+          frame.width,
+          Math.max(80, controlsRect.width - 24),
+        );
+        const scale =
+          maxThumbWidth < frame.width ? maxThumbWidth / frame.width : 1;
+        const width = Math.round(frame.width * scale);
+        const height = Math.round(frame.height * scale);
+        timeTooltipThumb.style.width = `${width}px`;
+        timeTooltipThumb.style.height = `${height}px`;
+        timeTooltipThumb.style.backgroundImage = `url("${frame.url}")`;
+        if (frame.sheetWidth && frame.sheetHeight)
+          timeTooltipThumb.style.backgroundSize = `${Math.round(frame.sheetWidth * scale)}px ${Math.round(frame.sheetHeight * scale)}px`;
+        else timeTooltipThumb.style.backgroundSize = "auto";
+        timeTooltipThumb.style.backgroundPosition = `-${Math.round(frame.x * scale)}px -${Math.round(frame.y * scale)}px`;
+      } else {
+        timeTooltip.classList.remove("has-thumb");
+        timeTooltipThumb.style.display = "none";
+        timeTooltipThumb.style.backgroundImage = "none";
+      }
+
       timeTooltip.hidden = false;
       const halfWidth = timeTooltip.offsetWidth / 2;
       timeTooltip.style.left = `${Math.max(halfWidth, Math.min(controlsRect.width - halfWidth, e.clientX - controlsRect.left))}px`;
     });
     progress.addEventListener("pointerleave", () => {
       timeTooltip.hidden = true;
+      timeTooltip.classList.remove("has-thumb");
+      timeTooltipThumb.style.display = "none";
     });
 
     win.addEventListener(

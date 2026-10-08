@@ -25,7 +25,12 @@
     "type": "module"
   },
   "permissions": ["storage", "activeTab", "scripting"],
-  "host_permissions": ["https://api.bilibili.com/*"],
+  "host_permissions": [
+    "https://api.bilibili.com/*",
+    "*://*.hdslb.com/*",
+    "*://ani.gamer.com.tw/*",
+    "*://*.gamer.com.tw/*"
+  ],
   "content_scripts": [
     {
       "matches": ["*://*/*"],
@@ -33,6 +38,7 @@
       "match_about_blank": true,
       "js": [
         "shared/utils.js",
+        "content/pip/storyboard.js",
         "content/pip/audio.js",
         "content/pip/ui.js",
         "content/floating-comments.js",
@@ -47,6 +53,20 @@
       ],
       "css": ["content/floating-comments.css"],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["*://*.youtube.com/*", "*://youtube.com/*"],
+      "all_frames": true,
+      "world": "MAIN",
+      "js": ["content/yt-bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://ani.gamer.com.tw/*", "*://*.gamer.com.tw/*"],
+      "all_frames": true,
+      "world": "MAIN",
+      "js": ["content/baha-bridge.js"],
+      "run_at": "document_start"
     }
   ]
 }
