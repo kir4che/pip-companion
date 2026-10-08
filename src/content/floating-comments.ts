@@ -37,6 +37,56 @@ function updateFloatingCommentsDimensions() {
   }
 }
 
+function ensureFloatingCommentsButton(shortcut: Shortcut) {
+  const rightControls = document.querySelector(".ytp-right-controls");
+  if (!rightControls) return;
+
+  const shortcutText = globalThis.PipCompanion.util.formatShortcut(shortcut);
+  const tooltipText = `留言區 (${shortcutText})`;
+  const existing = rightControls.querySelector(".yt-floating-comments-btn");
+  if (existing) {
+    if (existing.getAttribute("data-shortcut") === shortcutText) return;
+    existing.remove();
+  }
+
+  const button = document.createElement("button");
+  button.className = "ytp-button yt-floating-comments-btn";
+  button.type = "button";
+  button.setAttribute("aria-label", tooltipText);
+  button.setAttribute("data-tooltip-title", tooltipText);
+  button.setAttribute("data-title-no-tooltip", "留言區");
+  button.setAttribute(
+    "aria-keyshortcuts",
+    globalThis.PipCompanion.util.formatShortcut(shortcut, true),
+  );
+  button.setAttribute("data-shortcut", shortcutText);
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("fill", "currentColor");
+  path.setAttribute(
+    "d",
+    "M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z",
+  );
+  svg.appendChild(path);
+  button.appendChild(svg);
+  button.addEventListener("click", () => toggleFloatingComments());
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "yt-floating-comments-tooltip";
+  tooltip.textContent = tooltipText;
+  button.appendChild(tooltip);
+  button.addEventListener("pointerenter", () => tooltip.classList.add("show"));
+  button.addEventListener("pointerleave", () =>
+    tooltip.classList.remove("show"),
+  );
+
+  const anchor = rightControls.querySelector(".ytp-subtitles-button");
+  if (anchor) anchor.after(button);
+  else rightControls.appendChild(button);
+}
+
 function ensureFloatingCommentsCloseButton(comments: Element) {
   let closeBtn = comments.querySelector<HTMLButtonElement>(
     ".yt-floating-comments-close-btn",
@@ -101,52 +151,4 @@ function toggleFloatingComments(forceState?: boolean) {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function ensureFloatingCommentsButton(shortcut: Shortcut) {
-  const { formatShortcut } = globalThis.PipCompanion.util;
-  const rightControls = document.querySelector(".ytp-right-controls");
-  if (!rightControls) return;
-
-  const shortcutText = formatShortcut(shortcut);
-  const tooltipText = `浮動留言區 (${shortcutText})`;
-  const existing = rightControls.querySelector(".yt-floating-comments-btn");
-  if (existing) {
-    if (existing.getAttribute("data-shortcut") === shortcutText) return;
-    existing.remove();
-  }
-
-  const btn = document.createElement("button");
-  btn.className = "ytp-button yt-floating-comments-btn";
-  btn.setAttribute("aria-label", tooltipText);
-  btn.setAttribute("data-tooltip-title", tooltipText);
-  btn.setAttribute("data-title-no-tooltip", "浮動留言區");
-  btn.setAttribute("aria-keyshortcuts", formatShortcut(shortcut, true));
-  btn.setAttribute("data-shortcut", shortcutText);
-
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("fill", "currentColor");
-  path.setAttribute(
-    "d",
-    "M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z",
-  );
-  svg.appendChild(path);
-  btn.appendChild(svg);
-
-  btn.addEventListener("click", () => toggleFloatingComments());
-
-  const tooltip = document.createElement("div");
-  tooltip.className = "yt-floating-comments-tooltip";
-  tooltip.textContent = tooltipText;
-  btn.appendChild(tooltip);
-  btn.addEventListener("pointerenter", () => tooltip.classList.add("show"));
-  btn.addEventListener("pointerleave", () => tooltip.classList.remove("show"));
-
-  const subtitlesBtn = rightControls.querySelector(".ytp-subtitles-button");
-  if (subtitlesBtn) subtitlesBtn.after(btn);
-  else rightControls.appendChild(btn);
-
-  if (document.body.classList.contains(FLOATING_COMMENTS_BODY_CLASS))
-    btn.classList.add("active");
-}
+Object.assign(globalThis, { ensureFloatingCommentsButton });

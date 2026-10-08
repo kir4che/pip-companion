@@ -1,3 +1,7 @@
+import { registerBilibiliDanmakuListener } from "./bilibili-danmaku.js";
+
+registerBilibiliDanmakuListener();
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type !== "RESIZE_PIP_WINDOW") return;
 
@@ -5,6 +9,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const innerWidth = Number(message.innerWidth);
   const width = Math.round(Number(message.width));
   const height = Math.round(Number(message.height));
+
   if (
     !Number.isFinite(innerWidth) ||
     !Number.isFinite(width) ||
@@ -25,10 +30,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           typeof tab.width === "number" &&
           Math.abs(tab.width - innerWidth) <= 3,
       );
+
       if (pipTab?.windowId === undefined) {
         sendResponse({ ok: false });
         return;
       }
+
       void chrome.windows.update(pipTab.windowId, { width, height }).then(
         () => sendResponse({ ok: true }),
         () => sendResponse({ ok: false }),

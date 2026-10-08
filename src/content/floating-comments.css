@@ -50,6 +50,7 @@ body.yt-floating-comments-open.yt-floating-comments-bottom-sheet
   display: block !important;
   animation: yt-bottom-sheet-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
+
 @keyframes yt-bottom-sheet-slide-up {
   from {
     transform: translateY(100%);
@@ -58,6 +59,7 @@ body.yt-floating-comments-open.yt-floating-comments-bottom-sheet
     transform: translateY(0);
   }
 }
+
 body.yt-floating-comments-open ytd-comments-header-renderer #title {
   display: flex !important;
   align-items: center !important;

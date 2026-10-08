@@ -1,99 +1,4 @@
-// Keyboard shortcut settings shared by the popup and content scripts.
-interface Shortcut {
-  code: string;
-  ctrl: boolean;
-  alt: boolean;
-  shift: boolean;
-  meta: boolean;
-}
-
-type ShortcutKey = "launchShortcut" | "commentsShortcut" | "screenshotShortcut";
-
-// Browser APIs and YouTube player methods not included in the standard DOM types.
-interface Window {
-  documentPictureInPicture?: {
-    requestWindow(options?: {
-      width?: number;
-      height?: number;
-    }): Promise<Window>;
-  } | null;
-}
-
-interface YouTubePlayer extends HTMLElement {
-  nextVideo?: () => void;
-  isMuted?: () => boolean;
-  mute?: () => void;
-  unMute?: () => void;
-  toggleSubtitles?: () => void;
-}
-
-// Caption data copied from YouTube's rendered subtitle DOM.
-interface CaptionSegment {
-  text: string;
-  color?: string;
-  bg?: string;
-  fontFamily?: string;
-  textShadow?: string;
-}
-
-interface CaptionLine {
-  segments: CaptionSegment[];
-}
-
-type CaptionExtract = (node: HTMLElement) => CaptionLine[];
-
-// Content-script state and source-video restoration data.
-type NextControl = HTMLElement & { disabled?: boolean };
-
-interface VideoStash {
-  parent: Node | null;
-  next: Node | null;
-  inlineStyle: string;
-  controls: boolean;
-  placeholder: HTMLElement | null;
-}
-
-interface State {
-  // User preferences.
-  launchShortcut: Shortcut;
-  commentsShortcut: Shortcut;
-  screenshotShortcut: Shortcut;
-  commentsEnabled: boolean;
-  screenshotEnabled: boolean;
-
-  // Source video and PiP lifecycle.
-  lastNonOneRate: number;
-  sourceVideo: HTMLVideoElement | null;
-  sourceAbort: AbortController | null;
-  videoStash: VideoStash | null;
-  pipWindow: Window | null;
-  pipUi: PipUiHandle | null;
-  opening: boolean;
-
-  // Subtitle tracking.
-  nativeCaptionTracks: Set<TextTrack> | null;
-  captionNode: HTMLElement | null;
-  captionExtract: CaptionExtract | null;
-  captionObserver: MutationObserver | null;
-  captionLines: CaptionLine[];
-  captionsOn: boolean;
-  lastCaptionScan: number;
-  captionEmptyCount: number;
-
-  // Page UI, playback controls, and scanning timers.
-  feedbackTimer: number;
-  lastDeepScan: number;
-  deepVideoCache: HTMLVideoElement | null;
-  pageToastEl: HTMLElement | null;
-  pageToastTimer: number;
-  nextControlCacheAt: number;
-  nextControlCache: NextControl | null;
-  nextClickTimer: number;
-  nextClickPending: boolean;
-  scanTimer: number;
-}
-
-// PiP audio module API.
+// PiP 音訊控制功能
 interface PipAudioApi {
   getVolumePercent(video: HTMLVideoElement | null): number;
   isActiveFor(video: HTMLVideoElement | null): boolean;
@@ -112,7 +17,7 @@ interface PipAudioApi {
   toggleMute(video: HTMLVideoElement, player: YouTubePlayer | null): void;
 }
 
-// PiP UI module API and the callbacks supplied by the content-script coordinator.
+// 建立 PiP 介面時會用到的操作與回呼
 interface PipUiActions {
   volumeIconPath: string;
   getVideo(): HTMLVideoElement | null;
@@ -130,7 +35,9 @@ interface PipUiActions {
   getVolumePercent(): number;
   toggleCaptions(): void;
   toggleComments(): void;
+  toggleDanmaku(): void;
   matchesCommentsShortcut(event: KeyboardEvent): boolean;
+  matchesDanmakuShortcut(event: KeyboardEvent): boolean;
   matchesScreenshotShortcut(event: KeyboardEvent): boolean;
   screenshot(): void;
   formatTime(seconds: number): string;
@@ -166,7 +73,7 @@ interface PipUiApi {
   ): PipUiHandle;
 }
 
-// Shared utility API exposed to the popup and content scripts.
+// 擴充功能彈出視窗與頁面共用的工具
 interface PipCompanionUtil {
   SHORTCUT_DEFAULTS: Record<ShortcutKey, Shortcut>;
   SHORTCUT_KEYS: ShortcutKey[];
@@ -178,9 +85,66 @@ interface PipCompanionUtil {
   parseTime(input: string): number | null;
 }
 
+interface ContentVideoApi {
+  getDocumentPip(): Window["documentPictureInPicture"];
+  findVideo(): HTMLVideoElement | null;
+}
+
+interface ContentCaptionsApi {
+  refreshSubtitle(force?: boolean): void;
+  restoreNativeCaptionModes(): void;
+  syncNativeCaptions(): void;
+  renderSubtitle(): void;
+  suppressNativeCaptions(): void;
+}
+
+interface ContentFeedbackApi {
+  showFeedback(text: string): void;
+  showPageToast(text: string): void;
+  showPlaybackFeedback(paused: boolean): void;
+  showFrameStepIcon(backward: boolean): void;
+  showVolumeFeedback(): void;
+}
+
+interface ContentPlaybackApi {
+  VOLUME_ICON_PATH: string;
+  getSourceVolumePercent(): number;
+  setSourceVolumePercent(percent: number, unmute: boolean): void;
+  playNextVideo(): void;
+  updatePlaybackUi(): void;
+  togglePlayback(): void;
+  adjustPlaybackRate(direction: number): void;
+  togglePlaybackRate(): void;
+  toggleMute(): void;
+  toggleCaptions(): void;
+  toggleDanmakuWithFeedback(): void;
+  resizePipWindow(
+    innerWidth: number,
+    width: number,
+    height: number,
+  ): Promise<unknown>;
+}
+
+interface ContentScreenshotApi {
+  savePipScreenshot(): void;
+  ensureScreenshotButton(shortcut: Shortcut): void;
+}
+
+interface ContentPipLifecycleApi {
+  bindSourceVideo(video: HTMLVideoElement): void;
+  closePiP(closeWindow: boolean): void;
+  openPiP(): Promise<{ ok: boolean; message?: string }>;
+}
+
 interface PipCompanionGlobal {
   PipAudio: PipAudioApi;
   PipUI: PipUiApi;
+  ContentVideo: ContentVideoApi;
+  ContentCaptions: ContentCaptionsApi;
+  ContentFeedback: ContentFeedbackApi;
+  ContentPlayback: ContentPlaybackApi;
+  ContentScreenshot: ContentScreenshotApi;
+  ContentPipLifecycle: ContentPipLifecycleApi;
   util: PipCompanionUtil;
 }
 

@@ -1,0 +1,312 @@
+"use strict";
+
+globalThis.PipCompanion.ContentPipLifecycle = (() => {
+  function createPipUi(win: Window, video: HTMLVideoElement) {
+    return globalThis.PipCompanion.PipUI.create(
+      win,
+      {
+        volumeIconPath:
+          globalThis.PipCompanion.ContentPlayback.VOLUME_ICON_PATH,
+        getVideo: () => state.sourceVideo,
+        updatePlaybackUi:
+          globalThis.PipCompanion.ContentPlayback.updatePlaybackUi,
+        togglePlayback: globalThis.PipCompanion.ContentPlayback.togglePlayback,
+        adjustPlaybackRate:
+          globalThis.PipCompanion.ContentPlayback.adjustPlaybackRate,
+        togglePlaybackRate:
+          globalThis.PipCompanion.ContentPlayback.togglePlaybackRate,
+        toggleMute: globalThis.PipCompanion.ContentPlayback.toggleMute,
+        playNext: globalThis.PipCompanion.ContentPlayback.playNextVideo,
+        setVolume:
+          globalThis.PipCompanion.ContentPlayback.setSourceVolumePercent,
+        getMaxVolume: () =>
+          globalThis.PipCompanion.PipAudio.maxVolume(state.sourceVideo),
+        showFeedback: globalThis.PipCompanion.ContentFeedback.showFeedback,
+        showVolumeFeedback:
+          globalThis.PipCompanion.ContentFeedback.showVolumeFeedback,
+        showFrameStepIcon:
+          globalThis.PipCompanion.ContentFeedback.showFrameStepIcon,
+        getVolumePercent:
+          globalThis.PipCompanion.ContentPlayback.getSourceVolumePercent,
+        toggleCaptions: globalThis.PipCompanion.ContentPlayback.toggleCaptions,
+        toggleComments: toggleFloatingComments,
+        toggleDanmaku:
+          globalThis.PipCompanion.ContentPlayback.toggleDanmakuWithFeedback,
+        matchesCommentsShortcut: (event) =>
+          state.commentsEnabled &&
+          matchesShortcut(event, state.commentsShortcut),
+        matchesDanmakuShortcut: (event) =>
+          (IS_YOUTUBE || isBilibiliVideoPage()) &&
+          matchesShortcut(event, state.danmakuShortcut),
+        matchesScreenshotShortcut: (event) =>
+          state.screenshotEnabled &&
+          matchesShortcut(event, state.screenshotShortcut),
+        screenshot: globalThis.PipCompanion.ContentScreenshot.savePipScreenshot,
+        formatTime: globalThis.PipCompanion.util.formatTime,
+        resize: globalThis.PipCompanion.ContentPlayback.resizePipWindow,
+      },
+      video,
+    );
+  }
+
+  function stashSourceVideo() {
+    const video = state.sourceVideo;
+    if (!video) return;
+    const rect = video.getBoundingClientRect();
+    const parent = video.parentNode;
+    state.videoStash = {
+      parent,
+      next: video.nextSibling,
+      inlineStyle: video.style.cssText,
+      controls: video.controls,
+      placeholder: null,
+    };
+
+    if (rect.width > 0 && rect.height > 0 && parent) {
+      const placeholder = video.ownerDocument.createElement("div");
+      placeholder.setAttribute("aria-hidden", "true");
+      const display = getComputedStyle(video).display;
+      placeholder.style.display =
+        display === "inline" ? "inline-block" : display;
+      placeholder.style.width = `${rect.width}px`;
+      placeholder.style.height = `${rect.height}px`;
+      placeholder.style.flex = "0 0 auto";
+      placeholder.style.pointerEvents = "none";
+      parent.insertBefore(placeholder, video);
+      state.videoStash.placeholder = placeholder;
+    }
+    video.controls = false;
+  }
+
+  function restoreSourceVideo() {
+    const stash = state.videoStash;
+    state.videoStash = null;
+    if (!stash || !state.sourceVideo) return;
+    stash.placeholder?.remove();
+    state.sourceVideo.controls = stash.controls;
+    state.sourceVideo.style.cssText = stash.inlineStyle;
+    if (stash.parent?.isConnected) {
+      stash.parent.insertBefore(
+        state.sourceVideo,
+        stash.next?.isConnected ? stash.next : null,
+      );
+    } else state.sourceVideo.remove();
+  }
+
+  function remountSourceVideo() {
+    if (!state.pipUi || !state.sourceVideo) return;
+    const wasPlaying = !state.sourceVideo.paused;
+    stashSourceVideo();
+    state.pipUi.screen.append(state.sourceVideo);
+    state.sourceVideo.style.cssText = "";
+    globalThis.PipCompanion.ContentCaptions.suppressNativeCaptions();
+    globalThis.PipCompanion.PipAudio.start(state.sourceVideo, state.pipWindow);
+    if (wasPlaying) void state.sourceVideo.play().catch(() => {});
+  }
+
+  function releasePipVideo() {
+    globalThis.PipCompanion.PipAudio.stop();
+    globalThis.PipCompanion.ContentCaptions.restoreNativeCaptionModes();
+    restoreSourceVideo();
+  }
+
+  function resumePlayback() {
+    if (!state.pipUi) return;
+    void state.pipUi.video.play().catch(() => {});
+  }
+
+  function bindSourceVideo(video: HTMLVideoElement) {
+    if (state.pipWindow && state.videoStash) restoreSourceVideo();
+    state.sourceAbort?.abort();
+    state.sourceAbort = new AbortController();
+    state.sourceVideo = video;
+    const signal = state.sourceAbort.signal;
+    setDanmakuPlaybackRate(video.playbackRate);
+    setDanmakuPaused(video.paused);
+
+    const sync = () => {
+      globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
+      globalThis.PipCompanion.ContentCaptions.refreshSubtitle();
+    };
+    const resetPipAudioToNative = () => {
+      if (!globalThis.PipCompanion.PipAudio.isActiveFor(video)) return;
+      globalThis.PipCompanion.PipAudio.resetToNative(video);
+      globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
+    };
+    const syncVolume = () => {
+      globalThis.PipCompanion.PipAudio.syncNativeVolume(video);
+      sync();
+    };
+    const isNativeVolumeControl = (target: EventTarget | null) =>
+      Boolean(
+        target instanceof Element &&
+        target.closest(".ytp-volume-panel, .ytp-mute-button"),
+      );
+    document.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (isNativeVolumeControl(e.target)) resetPipAudioToNative();
+      },
+      { capture: true, signal },
+    );
+
+    document.addEventListener(
+      "wheel",
+      (e) => {
+        if (isNativeVolumeControl(e.target)) resetPipAudioToNative();
+      },
+      { capture: true, passive: true, signal },
+    );
+
+    document.addEventListener(
+      "keydown",
+      (e) => {
+        const target = e.target as Element;
+        const activeElement = document.activeElement;
+        if (
+          !["ArrowUp", "ArrowDown", "m"].includes(e.key.toLowerCase()) ||
+          (!target?.closest?.("#movie_player") &&
+            !activeElement?.closest?.("#movie_player"))
+        )
+          return;
+        resetPipAudioToNative();
+      },
+      { capture: true, signal },
+    );
+    video.addEventListener(
+      "play",
+      () => {
+        sync();
+        setDanmakuPaused(false);
+      },
+      { signal },
+    );
+
+    video.addEventListener(
+      "pause",
+      () => {
+        sync();
+        setDanmakuPaused(true);
+      },
+      { signal },
+    );
+
+    video.addEventListener(
+      "ratechange",
+      () => setDanmakuPlaybackRate(video.playbackRate),
+      { signal },
+    );
+    for (const eventName of [
+      "timeupdate",
+      "durationchange",
+      "seeked",
+      "ratechange",
+    ]) {
+      video.addEventListener(eventName, sync, { signal });
+    }
+    video.addEventListener("volumechange", syncVolume, { signal });
+    const trackList = video.textTracks;
+    const syncCaptions = () =>
+      globalThis.PipCompanion.ContentCaptions.syncNativeCaptions();
+    trackList.addEventListener("change", syncCaptions, { signal });
+    trackList.addEventListener("removetrack", syncCaptions, { signal });
+    trackList.addEventListener(
+      "addtrack",
+      (e) => {
+        e.track?.addEventListener("cuechange", syncCaptions, { signal });
+        syncCaptions();
+      },
+      { signal },
+    );
+    for (const track of trackList) {
+      track.addEventListener("cuechange", syncCaptions, { signal });
+    }
+
+    globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
+    globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
+    if (state.pipWindow) remountSourceVideo();
+  }
+
+  function closePiP(closeWindow: boolean) {
+    const oldWindow = state.pipWindow;
+    window.clearTimeout(state.feedbackTimer);
+    state.feedbackTimer = 0;
+    window.clearTimeout(state.nextClickTimer);
+    state.nextClickTimer = 0;
+    state.nextClickPending = false;
+    state.pipWindow = null;
+    state.pipUi = null;
+    state.captionObserver?.disconnect();
+    state.captionObserver = null;
+    state.captionNode = null;
+    state.captionExtract = null;
+    state.captionLines = [];
+
+    destroyDanmakuInPip();
+    releasePipVideo();
+    if (closeWindow && oldWindow && !oldWindow.closed) oldWindow.close();
+  }
+
+  async function openPiP() {
+    if (state.opening) return { ok: false, message: "浮窗正在開啟" };
+    if (!state.sourceVideo)
+      return { ok: false, message: "請先開啟有影片的頁面" };
+    if (state.pipWindow && !state.pipWindow.closed) {
+      state.pipWindow.focus();
+      return { ok: true };
+    }
+    state.opening = true;
+    const openingVideo = state.sourceVideo;
+
+    try {
+      const documentPip = globalThis.PipCompanion.ContentVideo.getDocumentPip();
+      if (!documentPip) throw new Error("Document PiP unavailable");
+      globalThis.PipCompanion.PipAudio.prepare();
+      const windowPromise = documentPip.requestWindow({
+        width: 640,
+        height: 360,
+      });
+      const nextWindow = await windowPromise;
+      if (state.sourceVideo !== openingVideo) {
+        nextWindow.close();
+        throw new Error("source changed");
+      }
+      state.pipWindow = nextWindow;
+      nextWindow.addEventListener(
+        "pagehide",
+        () => {
+          if (state.pipWindow === nextWindow) closePiP(false);
+        },
+        { once: true },
+      );
+
+      state.pipUi = createPipUi(nextWindow, openingVideo);
+      if (state.sourceVideo !== openingVideo) throw new Error("source changed");
+      remountSourceVideo();
+      if (IS_YOUTUBE || IS_BILIBILI) initDanmakuInPip(nextWindow, openingVideo);
+      globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
+      globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
+      if (!state.sourceVideo.paused) resumePlayback();
+      return { ok: true };
+    } catch (error) {
+      if (state.pipWindow) closePiP(true);
+      console.warn("[Caption PiP] Could not open PiP:", error);
+      const gestureRequired =
+        error instanceof DOMException && error.name === "NotAllowedError";
+      return {
+        ok: false,
+        message: gestureRequired
+          ? "Chrome 要求在頁面上操作；請關閉選單後按設定的快捷鍵。"
+          : "此影片目前無法開啟浮窗，請稍後再試。",
+      };
+    } finally {
+      state.opening = false;
+    }
+  }
+
+  return {
+    bindSourceVideo,
+    closePiP,
+    openPiP,
+  };
+})();

@@ -36,8 +36,7 @@
               >
               <span class="help-row"><span>靜音</span><kbd>M</kbd></span>
               <span class="help-row"
-                ><span>倍速控制</span
-                ><kbd>Shift + &lt; / Shift + &gt;</kbd></span
+                ><span>倍速控制</span><kbd>Shift + , / Shift + .</kbd></span
               >
             </span>
           </button>
@@ -68,9 +67,19 @@
             Alt+P
           </button>
         </div>
+        <div class="shortcut-row">
+          <span>彈幕</span>
+          <button
+            class="shortcut"
+            data-shortcut="danmakuShortcut"
+            type="button"
+          >
+            Alt+D
+          </button>
+        </div>
       </div>
       <div class="toggle-list">
-        <p class="list-title">額外功能</p>
+        <p class="list-title">功能開關</p>
         <label class="toggle-row">
           <span>浮動留言區</span>
           <input type="checkbox" id="comments-toggle" checked />
@@ -82,7 +91,7 @@
       </div>
       <p id="status" role="status"></p>
     </main>
-    <script src="shared/lib.js"></script>
-    <script src="popup/popup.js"></script>
+    <script src="shared/utils.js"></script>
+    <script src="popup/index.js"></script>
   </body>
 </html>

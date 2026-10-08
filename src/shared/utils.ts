@@ -24,17 +24,26 @@ globalThis.PipCompanion.util = (() => {
       shift: false,
       meta: false,
     },
+    danmakuShortcut: {
+      code: "KeyD",
+      ctrl: false,
+      alt: true,
+      shift: false,
+      meta: false,
+    },
   };
   const SHORTCUT_KEYS: ShortcutKey[] = [
     "launchShortcut",
     "commentsShortcut",
     "screenshotShortcut",
+    "danmakuShortcut",
   ];
 
   const pin = (label: string, code: string, shift = false) => ({
     label,
     shortcut: { code, ctrl: false, alt: false, shift, meta: false },
   });
+
   const FIXED_SHORTCUTS: { label: string; shortcut: Shortcut }[] = [
     pin("播放/暫停", "Space"),
     pin("字幕", "KeyC"),
@@ -51,6 +60,7 @@ globalThis.PipCompanion.util = (() => {
 
   function normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut {
     if (!value || typeof value !== "object") return { ...fallback };
+
     const shortcut = value as Partial<Shortcut>;
     return {
       code: typeof shortcut.code === "string" ? shortcut.code : fallback.code,
@@ -79,6 +89,7 @@ globalThis.PipCompanion.util = (() => {
     if (value.alt) parts.push(mac ? "⌥" : "Alt");
     if (value.shift) parts.push(mac ? "⇧" : "Shift");
     if (value.meta) parts.push(mac ? "⌘" : "Meta");
+
     const key = value.code.startsWith("Key")
       ? value.code.slice(3)
       : value.code.startsWith("Digit")
@@ -92,10 +103,12 @@ globalThis.PipCompanion.util = (() => {
 
   function formatTime(seconds: number) {
     if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+
     const total = Math.floor(seconds);
     const hours = Math.floor(total / 3600);
     const minutes = Math.floor((total % 3600) / 60);
     const remainder = total % 60;
+
     return hours > 0
       ? `${hours}:${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`
       : `${minutes}:${String(remainder).padStart(2, "0")}`;
@@ -104,13 +117,16 @@ globalThis.PipCompanion.util = (() => {
   function parseTime(input: string): number | null {
     const text = input.trim();
     if (!text) return null;
+
     const parts = text.split(":");
     if (parts.length > 3 || !parts.every((part) => /^\d{1,5}$/.test(part)))
       return null;
+
     const nums = parts.map(Number);
     const seconds = nums.pop() ?? 0;
     const minutes = nums.pop() ?? 0;
     const hours = nums.pop() ?? 0;
+
     if (parts.length >= 2 && seconds > 59) return null;
     if (parts.length === 3 && minutes > 59) return null;
     return hours * 3600 + minutes * 60 + seconds;
