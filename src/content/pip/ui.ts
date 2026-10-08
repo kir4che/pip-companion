@@ -245,6 +245,9 @@ globalThis.PipCompanion.PipUI = (() => {
         accent-color: #f33;
         transform: scaleY(0.85);
       }
+      .progress:focus-visible {
+        outline: none;
+      }
       button svg {
         width: 18px;
         height: 18px;
@@ -869,6 +872,7 @@ globalThis.PipCompanion.PipUI = (() => {
         timeTooltipThumb.style.display = "block";
         const maxThumbWidth = Math.min(
           frame.width,
+          180,
           Math.max(80, controlsRect.width - 24),
         );
         const scale =

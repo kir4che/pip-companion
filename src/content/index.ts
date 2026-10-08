@@ -188,7 +188,7 @@ function scanPage() {
     globalThis.PipCompanion.ContentPipLifecycle.closePiP(false);
 
   if (IS_YOUTUBE || IS_BILIBILI) {
-    if (state.commentsEnabled)
+    if (state.commentsEnabled && IS_YOUTUBE)
       ensureFloatingCommentsButton(state.commentsShortcut);
     else
       document
