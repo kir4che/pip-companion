@@ -343,10 +343,9 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     );
   }
 
-  function toggleDanmakuWithFeedback() {
-    globalThis.PipCompanion.ContentFeedback.showFeedback(
-      toggleDanmaku() ? "彈幕: 開" : "彈幕: 關",
-    );
+  function toggleDanmakuFromShortcut() {
+    if (!isDanmakuEnabled()) return;
+    toggleDanmaku();
   }
 
   function resizePipWindow(innerWidth: number, width: number, height: number) {
@@ -369,7 +368,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     togglePlaybackRate,
     toggleMute,
     toggleCaptions,
-    toggleDanmakuWithFeedback,
+    toggleDanmakuFromShortcut,
     isLiveStream,
     resizePipWindow,
   };

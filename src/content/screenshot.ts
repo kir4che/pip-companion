@@ -31,7 +31,7 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
   }
 
   function resolveScreenshotVideo(): HTMLVideoElement | null {
-    // 1. 若浮窗開啟中，以浮窗內掛載的影片為準
+    // 1. 若 PiP 開啟中，以 PiP 內掛載的影片為準
     if (state.pipWindow && !state.pipWindow.closed) {
       if (state.sourceVideo?.videoWidth && state.sourceVideo.videoHeight)
         return state.sourceVideo;

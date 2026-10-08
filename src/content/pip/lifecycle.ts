@@ -37,20 +37,22 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         toggleCaptions: globalThis.PipCompanion.ContentPlayback.toggleCaptions,
         toggleComments: toggleFloatingComments,
         toggleDanmaku:
-          globalThis.PipCompanion.ContentPlayback.toggleDanmakuWithFeedback,
-        matchesCommentsShortcut: (event) =>
-          state.commentsEnabled &&
-          matchesShortcut(event, state.commentsShortcut),
-        matchesDanmakuShortcut: (event) =>
+          globalThis.PipCompanion.ContentPlayback.toggleDanmakuFromShortcut,
+        matchesCommentsShortcut: (e) =>
+          state.commentsEnabled && matchesShortcut(e, state.commentsShortcut),
+        matchesDanmakuShortcut: (e) =>
+          state.danmakuEnabled &&
+          isDanmakuEnabled() &&
           (IS_YOUTUBE ||
-            isBilibiliVideoPage() ||
-            isBilibiliLivePage() ||
+            IS_BILIBILI ||
             /(^|\.)twitch\.tv$/.test(location.hostname) ||
             location.hostname === "ani.gamer.com.tw") &&
-          matchesShortcut(event, state.danmakuShortcut),
-        matchesScreenshotShortcut: (event) =>
+          matchesShortcut(e, state.danmakuShortcut),
+        matchesScreenshotShortcut: (e) =>
           state.screenshotEnabled &&
-          matchesShortcut(event, state.screenshotShortcut),
+          matchesShortcut(e, state.screenshotShortcut),
+        matchesLaunchShortcut: (e) => matchesShortcut(e, state.launchShortcut),
+        closePip: () => closePiP(true),
         screenshot: globalThis.PipCompanion.ContentScreenshot.savePipScreenshot,
         formatTime: globalThis.PipCompanion.util.formatTime,
         getStoryboardFrame: (seconds) =>
@@ -271,7 +273,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   }
 
   async function openPiP() {
-    if (state.opening) return { ok: false, message: "浮窗正在開啟" };
+    if (state.opening) return { ok: false, message: "子母畫面正在開啟" };
     if (!state.sourceVideo)
       return { ok: false, message: "請先開啟有影片的頁面" };
     if (state.pipWindow && !state.pipWindow.closed) {
@@ -322,7 +324,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         ok: false,
         message: gestureRequired
           ? "Chrome 要求在頁面上操作；請關閉選單後按設定的快捷鍵。"
-          : "此影片目前無法開啟浮窗，請稍後再試。",
+          : "此影片目前無法開啟子母畫面，請稍後再試。",
       };
     } finally {
       state.opening = false;

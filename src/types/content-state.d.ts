@@ -17,6 +17,7 @@ interface State {
   danmakuShortcut: Shortcut;
   commentsEnabled: boolean;
   screenshotEnabled: boolean;
+  danmakuEnabled: boolean;
 
   // 目前播放的影片與浮動視窗狀態
   lastNonOneRate: number;
@@ -25,6 +26,7 @@ interface State {
   videoStash: VideoStash | null;
   pipWindow: Window | null;
   pipUi: PipUiHandle | null;
+  globalPipOpen: boolean;
   opening: boolean;
 
   // 字幕來源與顯示狀態

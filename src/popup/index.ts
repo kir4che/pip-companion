@@ -1,35 +1,113 @@
 "use strict";
 
 const util = globalThis.PipCompanion.util;
+const popupDanmakuSettings = globalThis.PipCompanion.danmakuSettings;
 const openButton = document.querySelector("#open-pip") as HTMLButtonElement;
 const statusEl = document.querySelector("#status") as HTMLElement;
+const menuView = document.querySelector("#menu-view") as HTMLElement;
+const danmakuSettingsView = document.querySelector(
+  "#danmaku-settings-view",
+) as HTMLElement;
+const danmakuSettingsOpen = document.querySelector(
+  "#danmaku-settings-open",
+) as HTMLButtonElement;
+const danmakuSettingsBack = document.querySelector(
+  "#danmaku-settings-back",
+) as HTMLButtonElement;
+
+function setDanmakuSettingsView(open: boolean) {
+  menuView.hidden = open;
+  danmakuSettingsView.hidden = !open;
+  (open ? danmakuSettingsBack : danmakuSettingsOpen).focus();
+}
+
+danmakuSettingsOpen.addEventListener("click", () =>
+  setDanmakuSettingsView(true),
+);
+danmakuSettingsBack.addEventListener("click", () =>
+  setDanmakuSettingsView(false),
+);
 
 let pipOpen = false;
 let pipStateSyncPending = false;
 
 function setPipOpen(open: boolean) {
   pipOpen = open;
-  openButton.textContent = open ? "關閉浮窗" : "開啟浮窗";
+  openButton.textContent = open ? "關閉子母畫面" : "開啟子母畫面";
 }
 
 async function syncPipState() {
   if (pipStateSyncPending) return;
   pipStateSyncPending = true;
   try {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
+    const response = await chrome.runtime.sendMessage({
+      type: "GET_PIP_STATE",
     });
-    if (tab?.id === undefined) return;
-    const response = await chrome.tabs.sendMessage(tab.id, { type: "PING" });
     setPipOpen(response?.pipOpen === true);
   } catch {
-    // 內容指令碼尚未載入時，維持「開啟浮窗」。
+    // 背景指令碼尚未回應時，維持目前狀態。
   } finally {
     pipStateSyncPending = false;
   }
 }
 
+chrome.runtime.onMessage.addListener((message) => {
+  if (message?.type === "PIP_GLOBAL_STATE")
+    setPipOpen(message.pipOpen === true);
+});
+
+const danmakuToggle = document.querySelector(
+  "#danmaku-toggle",
+) as HTMLInputElement;
+const danmakuFontFamily = document.querySelector(
+  "#danmaku-font-family",
+) as HTMLSelectElement;
+const danmakuStyleControls = [
+  {
+    key: "fontSizeScale",
+    input: document.querySelector("#danmaku-size") as HTMLInputElement,
+    output: document.querySelector("#danmaku-size-value") as HTMLOutputElement,
+  },
+  {
+    key: "maxFontSize",
+    input: document.querySelector("#danmaku-max-size") as HTMLInputElement,
+    output: document.querySelector(
+      "#danmaku-max-size-value",
+    ) as HTMLOutputElement,
+  },
+  {
+    key: "opacity",
+    input: document.querySelector("#danmaku-opacity") as HTMLInputElement,
+    output: document.querySelector(
+      "#danmaku-opacity-value",
+    ) as HTMLOutputElement,
+  },
+  {
+    key: "speedScale",
+    input: document.querySelector("#danmaku-speed") as HTMLInputElement,
+    output: document.querySelector("#danmaku-speed-value") as HTMLOutputElement,
+  },
+  {
+    key: "fontWeight",
+    input: document.querySelector("#danmaku-weight") as HTMLInputElement,
+    output: document.querySelector(
+      "#danmaku-weight-value",
+    ) as HTMLOutputElement,
+  },
+  {
+    key: "displayArea",
+    input: document.querySelector("#danmaku-area") as HTMLInputElement,
+    output: document.querySelector("#danmaku-area-value") as HTMLOutputElement,
+  },
+] as const;
+const danmakuStyleReset = document.querySelector(
+  "#danmaku-style-reset",
+) as HTMLButtonElement;
+let popupDanmakuStyle = { ...popupDanmakuSettings.DEFAULTS };
+let popupDanmakuStyleRevision = 0;
+let popupDanmakuStyleDirty = false;
+let danmakuStyleSaveQueue: Promise<void> = Promise.resolve();
+let danmakuStyleSaveTimer: ReturnType<typeof setTimeout> | undefined;
 const commentsToggle = document.querySelector(
   "#comments-toggle",
 ) as HTMLInputElement;
@@ -56,12 +134,96 @@ function showStatus(message: string, error = false) {
   statusEl.dataset.error = String(error);
 }
 
+function setDanmakuStyleControlsDisabled(disabled: boolean) {
+  danmakuFontFamily.disabled = disabled;
+  for (const control of danmakuStyleControls) control.input.disabled = disabled;
+  danmakuStyleReset.disabled = disabled;
+}
+
+function renderDanmakuStyle() {
+  for (const control of danmakuStyleControls) {
+    const value = popupDanmakuStyle[control.key];
+    const speedIndex = popupDanmakuSettings.SPEED_OPTIONS.findIndex(
+      ({ value: speed }) => speed === value,
+    );
+    const label =
+      control.key === "speedScale"
+        ? (popupDanmakuSettings.SPEED_OPTIONS[speedIndex]?.label ?? "")
+        : control.key === "fontWeight"
+          ? String(value)
+          : control.key === "maxFontSize"
+            ? `${value}px`
+            : `${value}%`;
+    control.input.value =
+      control.key === "speedScale" ? String(speedIndex) : String(value);
+    control.output.value = label;
+    if (control.key === "speedScale")
+      control.input.setAttribute("aria-valuetext", label);
+  }
+  danmakuFontFamily.value = popupDanmakuStyle.fontFamily;
+}
+
+function updatePopupDanmakuStyle(value: unknown) {
+  popupDanmakuStyle = popupDanmakuSettings.normalize(value);
+  popupDanmakuStyleRevision++;
+  popupDanmakuStyleDirty = true;
+  renderDanmakuStyle();
+}
+
+async function saveDanmakuStyle() {
+  const style = { ...popupDanmakuStyle };
+  const revision = popupDanmakuStyleRevision;
+  const save = danmakuStyleSaveQueue.then(() =>
+    chrome.storage.local.set({
+      [popupDanmakuSettings.STORAGE_KEY]: style,
+    }),
+  );
+  danmakuStyleSaveQueue = save.catch(() => {});
+  try {
+    await save;
+    if (revision === popupDanmakuStyleRevision) popupDanmakuStyleDirty = false;
+    showStatus("");
+  } catch {
+    showStatus("無法儲存彈幕設定，請重新嘗試。", true);
+  }
+}
+
+function scheduleDanmakuStyleSave() {
+  if (danmakuStyleSaveTimer) clearTimeout(danmakuStyleSaveTimer);
+  danmakuStyleSaveTimer = setTimeout(() => {
+    danmakuStyleSaveTimer = undefined;
+    void saveDanmakuStyle();
+  }, 120);
+}
+
+async function loadDanmakuStyle() {
+  const revision = popupDanmakuStyleRevision;
+  let style: typeof popupDanmakuStyle;
+  try {
+    const stored = await chrome.storage.local.get(
+      popupDanmakuSettings.STORAGE_KEY,
+    );
+    style = popupDanmakuSettings.normalize(
+      stored[popupDanmakuSettings.STORAGE_KEY],
+    );
+  } catch {
+    style = { ...popupDanmakuSettings.DEFAULTS };
+  }
+  if (revision === popupDanmakuStyleRevision) {
+    popupDanmakuStyle = style;
+    renderDanmakuStyle();
+  }
+  setDanmakuStyleControlsDisabled(false);
+}
+
 function setShortcutVisibility(
-  key: "commentsShortcut" | "screenshotShortcut",
+  key: "commentsShortcut" | "screenshotShortcut" | "danmakuShortcut",
   enabled: boolean,
 ) {
-  const row = shortcutButtons.get(key)?.closest<HTMLElement>(".shortcut-row");
+  const button = shortcutButtons.get(key);
+  const row = button?.closest<HTMLElement>(".shortcut-row");
   if (row) row.hidden = !enabled;
+  if (button) button.disabled = !enabled;
 
   if (!enabled && recordingKey === key) {
     recordingKey = null;
@@ -100,19 +262,80 @@ async function loadShortcuts() {
 async function loadToggles() {
   try {
     const stored = await chrome.storage.local.get({
+      danmakuEnabled: true,
       commentsEnabled: true,
       screenshotEnabled: true,
     });
+    danmakuToggle.checked = stored.danmakuEnabled !== false;
     commentsToggle.checked = stored.commentsEnabled !== false;
     screenshotToggle.checked = stored.screenshotEnabled !== false;
   } catch {
+    danmakuToggle.checked = true;
     commentsToggle.checked = true;
     screenshotToggle.checked = true;
   }
 
+  setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
   setShortcutVisibility("commentsShortcut", commentsToggle.checked);
   setShortcutVisibility("screenshotShortcut", screenshotToggle.checked);
 }
+
+danmakuToggle.addEventListener("change", () => {
+  setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
+  void chrome.storage.local.set({ danmakuEnabled: danmakuToggle.checked });
+});
+
+danmakuFontFamily.addEventListener("change", () => {
+  updatePopupDanmakuStyle({
+    ...popupDanmakuStyle,
+    fontFamily: danmakuFontFamily.value,
+  });
+  void saveDanmakuStyle();
+});
+
+function getDanmakuStyleControlValue(
+  control: (typeof danmakuStyleControls)[number],
+) {
+  const value = Number(control.input.value);
+  return control.key === "speedScale"
+    ? popupDanmakuSettings.SPEED_OPTIONS[value]?.value
+    : value;
+}
+
+for (const control of danmakuStyleControls) {
+  control.input.addEventListener("input", () => {
+    updatePopupDanmakuStyle({
+      ...popupDanmakuStyle,
+      [control.key]: getDanmakuStyleControlValue(control),
+    });
+    scheduleDanmakuStyleSave();
+  });
+  control.input.addEventListener("change", () => {
+    if (danmakuStyleSaveTimer) clearTimeout(danmakuStyleSaveTimer);
+    danmakuStyleSaveTimer = undefined;
+    void saveDanmakuStyle();
+  });
+}
+
+danmakuStyleReset.addEventListener("click", () => {
+  updatePopupDanmakuStyle(popupDanmakuSettings.DEFAULTS);
+  void saveDanmakuStyle();
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "local") return;
+
+  if (changes.danmakuEnabled) {
+    danmakuToggle.checked = changes.danmakuEnabled.newValue !== false;
+    setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
+  }
+
+  const change = changes[popupDanmakuSettings.STORAGE_KEY];
+  if (!change || popupDanmakuStyleDirty) return;
+  popupDanmakuStyle = popupDanmakuSettings.normalize(change.newValue);
+  popupDanmakuStyleRevision++;
+  renderDanmakuStyle();
+});
 
 commentsToggle.addEventListener("change", () => {
   setShortcutVisibility("commentsShortcut", commentsToggle.checked);
@@ -128,9 +351,27 @@ screenshotToggle.addEventListener("change", () => {
 
 openButton.addEventListener("click", async () => {
   openButton.disabled = true;
-  showStatus("正在確認浮窗狀態…");
+  showStatus("正在確認子母畫面狀態…");
 
   try {
+    const globalState = await chrome.runtime.sendMessage({
+      type: "GET_PIP_STATE",
+    });
+    setPipOpen(globalState?.pipOpen === true);
+    if (pipOpen) {
+      showStatus("正在關閉子母畫面…");
+      const result = await chrome.runtime.sendMessage({
+        type: "CLOSE_ALL_PIP",
+      });
+      if (!result?.ok) {
+        showStatus("無法關閉子母畫面。", true);
+        return;
+      }
+      setPipOpen(false);
+      showStatus("");
+      return;
+    }
+
     const [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
@@ -162,12 +403,11 @@ openButton.addEventListener("click", async () => {
 
     setPipOpen(pipState?.pipOpen === true);
     if (pipOpen) {
-      showStatus("正在關閉浮窗…");
-      const result = await chrome.tabs.sendMessage(tab.id, {
-        type: "CLOSE_PIP",
+      const result = await chrome.runtime.sendMessage({
+        type: "CLOSE_ALL_PIP",
       });
       if (!result?.ok) {
-        showStatus(result?.message ?? "無法關閉浮窗。", true);
+        showStatus("無法關閉子母畫面。", true);
         return;
       }
       setPipOpen(false);
@@ -190,7 +430,7 @@ openButton.addEventListener("click", async () => {
 
     if (!result?.ok) {
       showStatus(
-        result?.message ?? "無法開啟浮窗，請確認頁面中有可播放的影片。",
+        result?.message ?? "無法開啟子母畫面，請確認頁面中有可播放的影片。",
         true,
       );
       return;
@@ -199,7 +439,7 @@ openButton.addEventListener("click", async () => {
     setPipOpen(true);
     showStatus("");
   } catch {
-    showStatus("無法操作浮窗，請確認目前頁面允許擴充功能存取。", true);
+    showStatus("無法操作子母畫面，請確認目前頁面允許擴充功能存取。", true);
   } finally {
     openButton.disabled = false;
   }
@@ -310,7 +550,9 @@ document.addEventListener(
   true,
 );
 
+setDanmakuStyleControlsDisabled(true);
+renderDanmakuStyle();
 void loadShortcuts();
 void loadToggles();
+void loadDanmakuStyle();
 void syncPipState();
-window.setInterval(() => void syncPipState(), 500);

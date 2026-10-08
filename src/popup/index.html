@@ -8,90 +8,244 @@
   </head>
   <body>
     <main>
-      <button class="primary" id="open-pip" type="button">開啟浮窗</button>
-      <div class="shortcut-list">
-        <p class="list-title">
-          快捷鍵
-          <button
-            class="help"
-            type="button"
-            aria-label="固定快捷鍵"
-            aria-describedby="fixed-shortcut"
-          >
-            ?
-            <span class="help-tip" id="fixed-shortcut">
-              <span class="help-title">固定快捷鍵</span>
-              <span class="help-row"
-                ><span>播放 / 暫停</span><kbd>Space</kbd></span
+      <button class="primary" id="open-pip" type="button">開啟子母畫面</button>
+      <div class="popup-views">
+        <section id="menu-view" class="popup-view" aria-label="主選單">
+          <div class="shortcut-list">
+            <p class="list-title">
+              快捷鍵
+              <button
+                class="help"
+                type="button"
+                aria-label="固定快捷鍵"
+                aria-describedby="fixed-shortcut"
               >
-              <span class="help-row"><span>字幕開關</span><kbd>C</kbd></span>
-              <span class="help-row"
-                ><span>快退快進</span><kbd>← / →</kbd></span
+                ?
+                <span class="help-tip" id="fixed-shortcut">
+                  <span class="help-title">固定快捷鍵</span>
+                  <span class="help-row"
+                    ><span>播放 / 暫停</span><kbd>Space</kbd></span
+                  >
+                  <span class="help-row"
+                    ><span>字幕開關</span><kbd>C</kbd></span
+                  >
+                  <span class="help-row"
+                    ><span>快退快進</span><kbd>← / →</kbd></span
+                  >
+                  <span class="help-row"
+                    ><span>逐格後退 / 前進</span><kbd>, / .</kbd></span
+                  >
+                  <span class="help-row"
+                    ><span>音量控制</span><kbd>↓ / ↑</kbd></span
+                  >
+                  <span class="help-row"><span>靜音</span><kbd>M</kbd></span>
+                  <span class="help-row"
+                    ><span>倍速控制</span><kbd>Shift + , / Shift + .</kbd></span
+                  >
+                </span>
+              </button>
+            </p>
+            <div class="shortcut-row">
+              <span>子母畫面</span>
+              <button
+                class="shortcut"
+                data-shortcut="launchShortcut"
+                type="button"
               >
-              <span class="help-row"
-                ><span>逐格後退 / 前進</span><kbd>, / .</kbd></span
+                Alt+Shift+P
+              </button>
+            </div>
+            <div class="shortcut-row">
+              <span>彈幕</span>
+              <button
+                class="shortcut"
+                data-shortcut="danmakuShortcut"
+                type="button"
               >
-              <span class="help-row"
-                ><span>音量控制</span><kbd>↓ / ↑</kbd></span
+                D
+              </button>
+            </div>
+            <div class="shortcut-row">
+              <span>截圖</span>
+              <button
+                class="shortcut"
+                data-shortcut="screenshotShortcut"
+                type="button"
               >
-              <span class="help-row"><span>靜音</span><kbd>M</kbd></span>
-              <span class="help-row"
-                ><span>倍速控制</span><kbd>Shift + , / Shift + .</kbd></span
+                Alt+P
+              </button>
+            </div>
+            <div class="shortcut-row">
+              <span>浮動留言區</span>
+              <button
+                class="shortcut"
+                data-shortcut="commentsShortcut"
+                type="button"
               >
-            </span>
+                Alt+C
+              </button>
+            </div>
+          </div>
+          <div class="toggle-list">
+            <p class="list-title">功能開關</p>
+            <div class="danmaku-toggle-row">
+              <div class="danmaku-label">
+                <label for="danmaku-toggle">彈幕</label>
+                <button
+                  class="settings-open"
+                  id="danmaku-settings-open"
+                  type="button"
+                  aria-label="彈幕顯示設定"
+                  title="彈幕顯示設定"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    width="17"
+                    height="17"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.16 7.16 0 0 0-1.63-.94L14.37 2.8a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42L9.17 5.32c-.59.23-1.13.54-1.63.94l-2.39-.96a.5.5 0 0 0-.61.22L2.62 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.07.62-.07.94s.02.63.07.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.21.37.3.61.22l2.39-.96c.5.4 1.04.71 1.63.94l.36 2.52c.05.24.25.42.5.42h3.84c.25 0 .45-.18.5-.42l.36-2.52c.59-.23 1.13-.54 1.63-.94l2.39.96c.24.08.49-.01.61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <input
+                class="danmaku-switch"
+                type="checkbox"
+                id="danmaku-toggle"
+                checked
+              />
+            </div>
+            <label class="toggle-row">
+              <span>截圖</span>
+              <input type="checkbox" id="screenshot-toggle" checked />
+            </label>
+            <label class="toggle-row">
+              <span>浮動留言區</span>
+              <input type="checkbox" id="comments-toggle" checked />
+            </label>
+          </div>
+        </section>
+        <section
+          id="danmaku-settings-view"
+          class="popup-view danmaku-settings-view"
+          aria-labelledby="danmaku-settings-title"
+          hidden
+        >
+          <header class="settings-page-header">
+            <button
+              class="back-button"
+              id="danmaku-settings-back"
+              type="button"
+              aria-label="返回主選單"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <h1 id="danmaku-settings-title">彈幕設定</h1>
+          </header>
+          <label class="range-row" for="danmaku-size">
+            <span>字體大小 <output id="danmaku-size-value">120%</output></span>
+            <input id="danmaku-size" type="range" min="50" max="400" step="5" />
+          </label>
+          <label class="range-row" for="danmaku-speed">
+            <span>滾動速度 <output id="danmaku-speed-value">適中</output></span>
+            <input
+              id="danmaku-speed"
+              type="range"
+              min="0"
+              max="4"
+              step="1"
+              list="danmaku-speed-levels"
+              aria-valuetext="適中"
+            />
+            <datalist id="danmaku-speed-levels">
+              <option value="0"></option>
+              <option value="1"></option>
+              <option value="2"></option>
+              <option value="3"></option>
+              <option value="4"></option>
+            </datalist>
+          </label>
+          <label class="range-row" for="danmaku-opacity">
+            <span
+              >不透明度 <output id="danmaku-opacity-value">85%</output></span
+            >
+            <input
+              id="danmaku-opacity"
+              type="range"
+              min="10"
+              max="100"
+              step="5"
+            />
+          </label>
+          <label class="range-row" for="danmaku-area">
+            <span>顯示區域 <output id="danmaku-area-value">50%</output></span>
+            <input id="danmaku-area" type="range" min="10" max="100" step="1" />
+          </label>
+          <label class="range-row" for="danmaku-font-family">
+            <span>字體</span>
+            <select id="danmaku-font-family">
+              <option value="default">預設</option>
+              <option value="system">系統字體</option>
+              <option value="arial">Arial</option>
+              <option value="notoSansTC">Noto Sans TC</option>
+              <option value="microsoftJhengHei">黑體</option>
+              <option value="song">宋體／明體</option>
+              <option value="newSong">新宋體</option>
+              <option value="fangSong">仿宋</option>
+              <option value="kai">標楷體</option>
+            </select>
+          </label>
+          <label class="range-row" for="danmaku-weight">
+            <span>字重 <output id="danmaku-weight-value">500</output></span>
+            <input
+              id="danmaku-weight"
+              type="range"
+              min="400"
+              max="900"
+              step="100"
+            />
+          </label>
+          <label class="range-row" for="danmaku-max-size">
+            <span
+              >最大字體大小
+              <output id="danmaku-max-size-value">40px</output></span
+            >
+            <input
+              id="danmaku-max-size"
+              type="range"
+              min="16"
+              max="96"
+              step="1"
+            />
+          </label>
+          <button id="danmaku-style-reset" class="secondary" type="button">
+            重設彈幕樣式
           </button>
-        </p>
-        <div class="shortcut-row">
-          <span>開啟浮窗</span>
-          <button class="shortcut" data-shortcut="launchShortcut" type="button">
-            Alt+Shift+P
-          </button>
-        </div>
-        <div class="shortcut-row">
-          <span>浮動留言區</span>
-          <button
-            class="shortcut"
-            data-shortcut="commentsShortcut"
-            type="button"
-          >
-            Alt+C
-          </button>
-        </div>
-        <div class="shortcut-row">
-          <span>截圖</span>
-          <button
-            class="shortcut"
-            data-shortcut="screenshotShortcut"
-            type="button"
-          >
-            Alt+P
-          </button>
-        </div>
-        <div class="shortcut-row">
-          <span>彈幕</span>
-          <button
-            class="shortcut"
-            data-shortcut="danmakuShortcut"
-            type="button"
-          >
-            Alt+D
-          </button>
-        </div>
-      </div>
-      <div class="toggle-list">
-        <p class="list-title">功能開關</p>
-        <label class="toggle-row">
-          <span>浮動留言區</span>
-          <input type="checkbox" id="comments-toggle" checked />
-        </label>
-        <label class="toggle-row">
-          <span>截圖</span>
-          <input type="checkbox" id="screenshot-toggle" checked />
-        </label>
+        </section>
       </div>
       <p id="status" role="status"></p>
     </main>
     <script src="shared/utils.js"></script>
+    <script src="shared/danmaku-settings.js"></script>
     <script src="popup/index.js"></script>
   </body>
 </html>

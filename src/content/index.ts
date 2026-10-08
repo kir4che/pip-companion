@@ -5,10 +5,6 @@ const IS_BILIBILI = /(^|\.)bilibili\.com$/.test(location.hostname);
 const IS_TWITCH = /(^|\.)twitch\.tv$/.test(location.hostname);
 const IS_BAHAMUT = location.hostname === "ani.gamer.com.tw";
 
-function isBilibiliVideoPage() {
-  return IS_BILIBILI && /^\/video\/(BV[\w]{10}|av\d+)/i.test(location.pathname);
-}
-
 function isBilibiliLivePage() {
   return location.hostname === "live.bilibili.com";
 }
@@ -22,6 +18,7 @@ const state: State = {
   danmakuShortcut: { ...SHORTCUT_DEFAULTS.danmakuShortcut },
   commentsEnabled: true,
   screenshotEnabled: true,
+  danmakuEnabled: true,
   lastNonOneRate: 1.25,
   sourceVideo: null,
   sourceAbort: null,
@@ -30,6 +27,7 @@ const state: State = {
   youtubeCaptionsInitiallyEnabled: null,
   pipWindow: null,
   pipUi: null,
+  globalPipOpen: false,
   captionNode: null,
   captionExtract: null,
   captionObserver: null,
@@ -67,6 +65,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.commentsEnabled = changes.commentsEnabled.newValue !== false;
   if (changes.screenshotEnabled)
     state.screenshotEnabled = changes.screenshotEnabled.newValue !== false;
+  if (changes.danmakuEnabled)
+    state.danmakuEnabled = changes.danmakuEnabled.newValue !== false;
   if (shortcutChanged || changes.commentsEnabled || changes.screenshotEnabled)
     nudgeScan();
 });
@@ -77,18 +77,21 @@ async function loadSettings() {
       ...SHORTCUT_DEFAULTS,
       commentsEnabled: true,
       screenshotEnabled: true,
+      danmakuEnabled: true,
     });
     for (const key of SHORTCUT_KEYS) {
       state[key] = normalizeShortcut(stored[key], SHORTCUT_DEFAULTS[key]);
     }
     state.commentsEnabled = stored.commentsEnabled !== false;
     state.screenshotEnabled = stored.screenshotEnabled !== false;
+    state.danmakuEnabled = stored.danmakuEnabled !== false;
   } catch {
     for (const key of SHORTCUT_KEYS) {
       state[key] = { ...SHORTCUT_DEFAULTS[key] };
     }
     state.commentsEnabled = true;
     state.screenshotEnabled = true;
+    state.danmakuEnabled = true;
   }
 
   nudgeScan();
@@ -96,35 +99,56 @@ async function loadSettings() {
 
 function onPageKeyDown(e: KeyboardEvent) {
   const target = e.target;
-  if (
-    !state.sourceVideo ||
-    e.repeat ||
-    e.isComposing ||
-    (target instanceof HTMLElement &&
-      (target.isContentEditable ||
-        target.closest("input, textarea, select, [contenteditable='true']")))
-  )
-    return;
+  if (e.repeat || e.isComposing) return;
 
+  const isEditableTarget =
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      target.closest("input, textarea, select, [contenteditable='true']"));
+
+  if (matchesShortcut(e, state.launchShortcut)) {
+    if (state.pipWindow && !state.pipWindow.closed) {
+      e.preventDefault();
+      e.stopPropagation();
+      globalThis.PipCompanion.ContentPipLifecycle.closePiP(true);
+    } else if (state.globalPipOpen) {
+      e.preventDefault();
+      e.stopPropagation();
+      void chrome.runtime.sendMessage({ type: "CLOSE_ALL_PIP" });
+    } else if (!state.sourceVideo || isEditableTarget)
+      void chrome.runtime.sendMessage({ type: "CLOSE_ALL_PIP" });
+    else {
+      e.preventDefault();
+      e.stopPropagation();
+      void globalThis.PipCompanion.ContentPipLifecycle.openPiP().then(
+        (result) => {
+          if (!result?.ok)
+            globalThis.PipCompanion.ContentFeedback.showPageToast(
+              result?.message ?? "無法開啟子母畫面",
+            );
+        },
+      );
+    }
+    return;
+  }
+
+  if (isEditableTarget || !state.sourceVideo) return;
   if (matchesShortcut(e, state.commentsShortcut)) {
-    if (!(IS_YOUTUBE || isBilibiliVideoPage()) || !state.commentsEnabled)
-      return;
+    if (!(IS_YOUTUBE || IS_BILIBILI) || !state.commentsEnabled) return;
     e.preventDefault();
     e.stopPropagation();
     toggleFloatingComments();
     return;
   }
   if (
-    (IS_YOUTUBE ||
-      isBilibiliVideoPage() ||
-      isBilibiliLivePage() ||
-      IS_TWITCH ||
-      IS_BAHAMUT) &&
+    state.danmakuEnabled &&
+    isDanmakuEnabled() &&
+    (IS_YOUTUBE || IS_BILIBILI || IS_TWITCH || IS_BAHAMUT) &&
     matchesShortcut(e, state.danmakuShortcut)
   ) {
     e.preventDefault();
     e.stopPropagation();
-    globalThis.PipCompanion.ContentPlayback.toggleDanmakuWithFeedback();
+    globalThis.PipCompanion.ContentPlayback.toggleDanmakuFromShortcut();
     return;
   }
   if (matchesShortcut(e, state.screenshotShortcut)) {
@@ -134,18 +158,13 @@ function onPageKeyDown(e: KeyboardEvent) {
     globalThis.PipCompanion.ContentScreenshot.savePipScreenshot();
     return;
   }
-  if (!matchesShortcut(e, state.launchShortcut)) return;
-  e.preventDefault();
-  e.stopPropagation();
-  void globalThis.PipCompanion.ContentPipLifecycle.openPiP().then((result) => {
-    if (!result?.ok)
-      globalThis.PipCompanion.ContentFeedback.showPageToast(
-        result?.message ?? "無法開啟浮窗",
-      );
-  });
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message?.type === "PIP_GLOBAL_STATE") {
+    state.globalPipOpen = message.pipOpen === true;
+    return;
+  }
   if (message?.type === "PING") {
     sendResponse({
       ok: true,
@@ -167,7 +186,7 @@ function scanPage() {
   if (state.pipWindow?.closed)
     globalThis.PipCompanion.ContentPipLifecycle.closePiP(false);
 
-  if (IS_YOUTUBE || isBilibiliVideoPage()) {
+  if (IS_YOUTUBE || IS_BILIBILI) {
     if (state.commentsEnabled)
       ensureFloatingCommentsButton(state.commentsShortcut);
     else
@@ -216,7 +235,8 @@ function scanPage() {
 
   if (video !== state.sourceVideo)
     globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
-  if (isBilibiliVideoPage()) checkAndBindBilibiliDanmaku(state.sourceVideo);
+  if (IS_BILIBILI && !isBilibiliLivePage())
+    checkAndBindBilibiliDanmaku(state.sourceVideo);
   globalThis.PipCompanion.ContentCaptions.refreshSubtitle();
   globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
 }
@@ -248,6 +268,12 @@ function nudgeScan() {
 }
 
 window.addEventListener("keydown", onPageKeyDown, true);
+void chrome.runtime
+  .sendMessage({ type: "GET_PIP_STATE" })
+  .then((response) => {
+    state.globalPipOpen = response?.pipOpen === true;
+  })
+  .catch(() => {});
 window.addEventListener("yt-navigate-finish", () => {
   toggleFloatingComments(false);
   nudgeScan();

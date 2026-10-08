@@ -1,4 +1,8 @@
-const BILIBILI_SEGMENT_SECONDS = 120;
+import "../shared/bilibili-danmaku-config.js";
+import { parseBilibiliAdvancedDanmaku } from "../shared/bilibili-advanced-danmaku.js";
+
+const BILIBILI_SEGMENT_SECONDS =
+  globalThis.PipCompanion.bilibiliDanmakuConfig.segmentSeconds;
 const BILIBILI_MAX_SEGMENTS = 180;
 const BILIBILI_MAX_SEGMENT_BYTES = 8_000_000;
 const BILIBILI_MAX_TOTAL_BYTES = 32_000_000;
@@ -297,6 +301,7 @@ function parseBilibiliDanmakuXml(xml: string) {
     type: "right" | "top" | "bottom";
     color: string;
     text: string;
+    advanced?: BilibiliAdvancedDanmaku;
   }[] = [];
   const decoder = new RegExp(
     "<d\\b[^>]*\\bp=(?:\"([^\"]*)\"|'([^']*)')[^>]*>([\\s\\S]*?)<\\/d>",
@@ -310,15 +315,18 @@ function parseBilibiliDanmakuXml(xml: string) {
     const color = Number(attributes[3]);
     const id = attributes[7]?.trim();
     const text = decodeBilibiliXmlText(match[3]).trim();
+    const advanced =
+      mode === 7 ? parseBilibiliAdvancedDanmaku(text) : undefined;
+    const displayText = advanced?.text || text;
 
     if (
       !Number.isFinite(replayTime) ||
       replayTime < 0 ||
-      ![1, 2, 3, 4, 5].includes(mode) ||
+      (![1, 2, 3, 4, 5].includes(mode) && !advanced) ||
       !Number.isInteger(color) ||
       color < 0 ||
       color > 0xffffff ||
-      !text
+      !displayText
     )
       continue;
     comments.push({
@@ -326,7 +334,8 @@ function parseBilibiliDanmakuXml(xml: string) {
       replayTime,
       type: mode === 4 ? "bottom" : mode === 5 ? "top" : "right",
       color: `#${color.toString(16).padStart(6, "0")}`,
-      text,
+      text: displayText,
+      ...(advanced ? { advanced } : {}),
     });
   }
   return comments;
@@ -385,6 +394,7 @@ function parseBilibiliSegment(bytes: Uint8Array) {
     type: "right" | "top" | "bottom";
     color: string;
     text: string;
+    advanced?: BilibiliAdvancedDanmaku;
   }[] = [];
   let offset = 0;
   const decoder = new TextDecoder();
@@ -439,22 +449,26 @@ function parseBilibiliSegment(bytes: Uint8Array) {
       } else offset = skipProtoField(bytes, fieldWireType, offset, end);
     }
 
+    const advanced =
+      mode === 7 ? parseBilibiliAdvancedDanmaku(text.trim()) : undefined;
+    const displayText = advanced?.text || text.trim();
     if (
       progress !== null &&
       Number.isSafeInteger(progress) &&
       progress >= 0 &&
-      [1, 2, 3, 4, 5].includes(mode) &&
+      ([1, 2, 3, 4, 5].includes(mode) || Boolean(advanced)) &&
       Number.isInteger(color) &&
       color >= 0 &&
       color <= 0xffffff &&
-      text.trim()
+      displayText
     ) {
       comments.push({
         id,
         replayTime: progress / 1000,
         type: mode === 4 ? "bottom" : mode === 5 ? "top" : "right",
         color: `#${color.toString(16).padStart(6, "0")}`,
-        text: text.trim(),
+        text: displayText,
+        ...(advanced ? { advanced } : {}),
       });
     }
 

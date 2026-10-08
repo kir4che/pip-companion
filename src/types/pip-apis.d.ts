@@ -58,9 +58,11 @@ interface PipUiActions {
   toggleCaptions(): void;
   toggleComments(): void;
   toggleDanmaku(): void;
-  matchesCommentsShortcut(event: KeyboardEvent): boolean;
-  matchesDanmakuShortcut(event: KeyboardEvent): boolean;
-  matchesScreenshotShortcut(event: KeyboardEvent): boolean;
+  matchesCommentsShortcut(e: KeyboardEvent): boolean;
+  matchesDanmakuShortcut(e: KeyboardEvent): boolean;
+  matchesScreenshotShortcut(e: KeyboardEvent): boolean;
+  matchesLaunchShortcut(e: KeyboardEvent): boolean;
+  closePip(): void;
   screenshot(): void;
   formatTime(seconds: number): string;
   getStoryboardFrame?(seconds: number): StoryboardFrame | null;
@@ -100,12 +102,53 @@ interface PipUiApi {
 }
 
 // 擴充功能彈出視窗與頁面共用的工具
+interface DanmakuSettingsApi {
+  STORAGE_KEY: string;
+  FONT_FAMILIES: Record<DanmakuFontFamily, string>;
+  SPEED_OPTIONS: readonly { value: number; label: string }[];
+  DEFAULTS: DanmakuStyleSettings;
+  normalize(value: unknown): DanmakuStyleSettings;
+}
+
+interface BilibiliDanmakuRenderer {
+  duration: number;
+  clear(): void;
+  beginSeekRestore(): void;
+  endSeekRestore(): void;
+  emit(data: DanmakuData, options?: DanmakuEmitOptions): void;
+  setPlaybackRate(rate: number): void;
+}
+
+interface ContentBilibiliDanmakuDependencies {
+  getRenderer(): BilibiliDanmakuRenderer | null;
+  isSettingsLoaded(): boolean;
+  isVisible(): boolean;
+  getSpeedScale(): number;
+  lateToleranceSeconds: number;
+  restoreWindowSeconds: number;
+  maxScrollRestoreSeconds: number;
+  maxFixedRestoreSeconds: number;
+  maxAdvancedRestoreSeconds: number;
+}
+
+interface ContentBilibiliDanmakuController {
+  setSourceVideo(video: HTMLVideoElement | null): void;
+  checkAndBind(video: HTMLVideoElement | null): void;
+  destroy(): void;
+}
+
+interface ContentBilibiliDanmakuApi {
+  create(
+    dependencies: ContentBilibiliDanmakuDependencies,
+  ): ContentBilibiliDanmakuController;
+}
+
 interface PipCompanionUtil {
   SHORTCUT_DEFAULTS: Record<ShortcutKey, Shortcut>;
   SHORTCUT_KEYS: ShortcutKey[];
   FIXED_SHORTCUTS: { label: string; shortcut: Shortcut }[];
   normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut;
-  matchesShortcut(event: KeyboardEvent, shortcut: Shortcut): boolean;
+  matchesShortcut(e: KeyboardEvent, shortcut: Shortcut): boolean;
   formatShortcut(value: Shortcut, forAria?: boolean): string;
   formatTime(seconds: number): string;
   parseTime(input: string): number | null;
@@ -144,7 +187,7 @@ interface ContentPlaybackApi {
   togglePlaybackRate(): void;
   toggleMute(): void;
   toggleCaptions(): void;
-  toggleDanmakuWithFeedback(): void;
+  toggleDanmakuFromShortcut(): void;
   isLiveStream(video: HTMLVideoElement | null): boolean;
   resizePipWindow(
     innerWidth: number,
@@ -173,6 +216,10 @@ interface ContentPipLifecycleApi {
   openPiP(): Promise<{ ok: boolean; message?: string }>;
 }
 
+interface BilibiliDanmakuConfigApi {
+  segmentSeconds: number;
+}
+
 interface PipCompanionGlobal {
   PipAudio: PipAudioApi;
   PipUI: PipUiApi;
@@ -183,6 +230,12 @@ interface PipCompanionGlobal {
   ContentStoryboard: ContentStoryboardApi;
   ContentScreenshot: ContentScreenshotApi;
   ContentPipLifecycle: ContentPipLifecycleApi;
+  ContentBilibiliDanmaku: ContentBilibiliDanmakuApi;
+  ContentDanmakuRenderer: ContentDanmakuRendererApi;
+  ContentDanmakuSources: ContentDanmakuSourcesApi;
+  ContentYouTubeDanmaku: ContentYouTubeDanmakuApi;
+  bilibiliDanmakuConfig: BilibiliDanmakuConfigApi;
+  danmakuSettings: DanmakuSettingsApi;
   util: PipCompanionUtil;
 }
 

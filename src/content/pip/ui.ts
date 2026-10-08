@@ -555,7 +555,7 @@ globalThis.PipCompanion.PipUI = (() => {
     app.append(screen);
     doc.head.replaceChildren(style);
     doc.body.replaceChildren(app);
-    doc.title = "字幕浮窗";
+    doc.title = "幕伴 PiP";
 
     const ui = {
       video,
@@ -769,6 +769,12 @@ globalThis.PipCompanion.PipUI = (() => {
         e.preventDefault();
         e.stopPropagation();
         actions.screenshot();
+        return;
+      }
+      if (actions.matchesLaunchShortcut(e)) {
+        e.preventDefault();
+        e.stopPropagation();
+        actions.closePip();
         return;
       }
       const key = e.code === "Space" ? " " : e.key.toLowerCase();

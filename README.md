@@ -15,11 +15,9 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
   - **Progress bar & previews:** keeps the mini progress bar visible at the bottom when controls fade out, and hover over the seek bar to preview thumbnails (supported on YouTube, Bilibili, and Bahamut Anime Crazy).
   - **Jump to a timestamp:** enter a video time to jump directly to that point.
 - **Captions:** display captions readable from the video in the PiP window.
-- **Danmaku sources:**
-  - Bilibili
-  - Twitch
-  - Bahamut
-  - YouTube Live
+- **Danmaku:**
+  - Native danmaku from Bilibili and Bahamut Anime Crazy can be shown in PiP.
+  - YouTube Live and Twitch chat messages are rendered as danmaku and shown in the native player and PiP.
 - **Floating comments:** open the comments panel on YouTube and Bilibili video pages while watching.
 - **Screenshots:** save the video frame as a PNG file.
 - **Keyboard shortcuts:** customize shortcuts for opening or closing PiP, comments, screenshots, and danmaku.
@@ -27,16 +25,19 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 
 ## Controls and Shortcuts
 
-Click the toolbar icon to open or close the PiP window. To customize a shortcut, click its field in the extension popup and press a new key combination. Press `Esc` to cancel.
+- Toggle PiP: on a page with a playable video, click the toolbar icon then the toggle button in the popup; or press `Alt+Shift+P` on the video page.
+- Customize shortcuts: click a shortcut button in the popup, then press a new combination when it shows "Press shortcut…"; press `Esc` to cancel.
 
 Default shortcuts:
 
-| Action                   | Shortcut      |
-| ------------------------ | ------------- |
-| Open or close PiP        | `Alt+Shift+P` |
-| Toggle floating comments | `Alt+C`       |
-| Take a screenshot        | `Alt+P`       |
-| Toggle danmaku           | `Alt+D`       |
+These shortcuts work on supported video pages; PiP does not need to be open.
+
+| Action                       | Shortcut      | Disable in popup? |
+| ---------------------------- | ------------- | ----------------- |
+| Open/close PiP               | `Alt+Shift+P` | —                 |
+| Turn danmaku on/off          | `D`           | ✅                |
+| Screenshot                   | `Alt+P`       | ✅                |
+| Open/close floating comments | `Alt+C`       | ✅                |
 
 Shortcuts inside the PiP window:
 

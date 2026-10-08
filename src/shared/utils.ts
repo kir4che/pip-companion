@@ -27,7 +27,7 @@ globalThis.PipCompanion.util = (() => {
     danmakuShortcut: {
       code: "KeyD",
       ctrl: false,
-      alt: true,
+      alt: false,
       shift: false,
       meta: false,
     },
