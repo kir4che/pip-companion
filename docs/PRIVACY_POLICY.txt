@@ -1,0 +1,27 @@
+PiP Companion Privacy Policy
+
+Last updated: 2026-10-08
+
+This policy explains how PiP Companion handles data.
+
+1. Accounts and analytics
+The extension does not provide its own account or sign-in system. It contains no advertising, analytics, tracking, or telemetry code, and the developer does not operate a backend server to collect user data.
+
+2. Data processing
+The extension looks for videos on webpages and processes captions, chat/danmaku, and player state locally to provide Picture-in-Picture features. This webpage content is not sent to the developer.
+
+Shortcut and feature preferences (such as danmaku, screenshot, and floating-comments settings) are stored in the browser's local extension storage and are not synced to the developer's servers. Screenshots are downloaded to the user's device when the user requests one.
+
+To find playable videos, the extension runs content scripts on webpages and matching embedded frames, inspecting their content locally. The browser may therefore show a broad website-access permission during installation.
+
+3. Third-party services
+When the Bilibili danmaku feature is used, the extension makes direct requests to the Bilibili API (api.bilibili.com) for video information and danmaku. These requests include video identifiers and the required danmaku segment information. Depending on browser settings, Bilibili cookies may be included. Bilibili's handling of these requests is governed by Bilibili's own privacy policy. The extension does not send data to the developer or analytics services.
+
+Data processing by other websites is governed by each site's own privacy policy.
+
+4. Data retention and deletion
+The extension stores only the preferences described above in the browser's local extension storage. Removing the extension or clearing its browser extension data removes these preferences. Users manage downloaded screenshots themselves. Bilibili determines how long it retains API request data.
+
+5. Changes and contact
+Updates to this policy will be published in this file. For privacy questions, contact the project through GitHub Issues:
+https://github.com/kir4che/pip-companion/issues
