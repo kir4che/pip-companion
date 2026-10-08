@@ -2,9 +2,15 @@
 
 const IS_YOUTUBE = /(^|\.)youtube\.com$/.test(location.hostname);
 const IS_BILIBILI = /(^|\.)bilibili\.com$/.test(location.hostname);
+const IS_TWITCH = /(^|\.)twitch\.tv$/.test(location.hostname);
+const IS_BAHAMUT = location.hostname === "ani.gamer.com.tw";
 
 function isBilibiliVideoPage() {
   return IS_BILIBILI && /^\/video\/(BV[\w]{10}|av\d+)/i.test(location.pathname);
+}
+
+function isBilibiliLivePage() {
+  return location.hostname === "live.bilibili.com";
 }
 
 const { SHORTCUT_DEFAULTS, SHORTCUT_KEYS, normalizeShortcut, matchesShortcut } =
@@ -109,7 +115,11 @@ function onPageKeyDown(e: KeyboardEvent) {
     return;
   }
   if (
-    (IS_YOUTUBE || isBilibiliVideoPage()) &&
+    (IS_YOUTUBE ||
+      isBilibiliVideoPage() ||
+      isBilibiliLivePage() ||
+      IS_TWITCH ||
+      IS_BAHAMUT) &&
     matchesShortcut(e, state.danmakuShortcut)
   ) {
     e.preventDefault();
@@ -137,14 +147,9 @@ function onPageKeyDown(e: KeyboardEvent) {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "PING") {
-    const video =
-      (state.sourceVideo?.isConnected && state.sourceVideo) ||
-      globalThis.PipCompanion.ContentVideo.findVideo();
     sendResponse({
       ok: true,
       pipOpen: Boolean(state.pipWindow && !state.pipWindow.closed),
-      hasVideo: Boolean(video),
-      videoArea: video ? video.videoWidth * video.videoHeight : 0,
     });
     return;
   }
@@ -159,13 +164,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 function scanPage() {
-  if (
-    window !== window.top &&
-    !state.sourceVideo &&
-    !globalThis.PipCompanion.ContentVideo.findVideo()
-  )
-    return;
-
   if (state.pipWindow?.closed)
     globalThis.PipCompanion.ContentPipLifecycle.closePiP(false);
 
@@ -204,6 +202,8 @@ function scanPage() {
       video = found;
   }
   if (IS_YOUTUBE) checkAndBindDanmakuChat();
+  if (IS_TWITCH || IS_BAHAMUT || isBilibiliLivePage())
+    checkAndBindSiteDanmaku();
   if (!video) {
     if (state.sourceVideo && !state.sourceVideo.isConnected) {
       globalThis.PipCompanion.ContentPipLifecycle.closePiP(true);
@@ -216,7 +216,7 @@ function scanPage() {
 
   if (video !== state.sourceVideo)
     globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
-  if (IS_BILIBILI) checkAndBindBilibiliDanmaku(state.sourceVideo);
+  if (isBilibiliVideoPage()) checkAndBindBilibiliDanmaku(state.sourceVideo);
   globalThis.PipCompanion.ContentCaptions.refreshSubtitle();
   globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
 }

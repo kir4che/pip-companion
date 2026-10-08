@@ -42,7 +42,11 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           state.commentsEnabled &&
           matchesShortcut(event, state.commentsShortcut),
         matchesDanmakuShortcut: (event) =>
-          (IS_YOUTUBE || isBilibiliVideoPage()) &&
+          (IS_YOUTUBE ||
+            isBilibiliVideoPage() ||
+            isBilibiliLivePage() ||
+            /(^|\.)twitch\.tv$/.test(location.hostname) ||
+            location.hostname === "ani.gamer.com.tw") &&
           matchesShortcut(event, state.danmakuShortcut),
         matchesScreenshotShortcut: (event) =>
           state.screenshotEnabled &&
@@ -303,7 +307,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       if (state.sourceVideo !== openingVideo) throw new Error("source changed");
       globalThis.PipCompanion.ContentStoryboard.preload(openingVideo);
       remountSourceVideo();
-      if (IS_YOUTUBE || IS_BILIBILI) initDanmakuInPip(nextWindow, openingVideo);
+      initDanmakuInPip(nextWindow, openingVideo);
       globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
       globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
       if (!state.sourceVideo.paused) resumePlayback();

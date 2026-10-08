@@ -89,6 +89,10 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     ".bilibili-player",
     ".watch-video",
     "[data-uia='player']",
+    "#ani_video",
+    ".anime_video_area",
+    ".anime-video-area",
+    ".video-js",
   ];
   const NEXT_LABEL = /next|下一|下一个|下一個|다음/i;
 
@@ -109,7 +113,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       ).find((element) => {
         const label = `${element.getAttribute("aria-label") ?? ""} ${
           element.getAttribute("title") ?? ""
-        }`;
+        } ${element.textContent ?? ""}`;
         return !element.disabled && NEXT_LABEL.test(label);
       });
       if (candidate) return candidate;

@@ -4,88 +4,12 @@ const util = globalThis.PipCompanion.util;
 const openButton = document.querySelector("#open-pip") as HTMLButtonElement;
 const statusEl = document.querySelector("#status") as HTMLElement;
 
+let pipOpen = false;
 let pipStateSyncPending = false;
-let pipFrameId = 0;
-let activeTabId: number | undefined;
-let frameScanDone = false;
 
 function setPipOpen(open: boolean) {
+  pipOpen = open;
   openButton.textContent = open ? "關閉浮窗" : "開啟浮窗";
-}
-
-type FramePipState = {
-  frameId: number;
-  pipOpen: boolean;
-  hasVideo: boolean;
-  videoArea: number;
-};
-
-async function pingFrame(
-  tabId: number,
-  frameId: number,
-): Promise<FramePipState | null> {
-  try {
-    const response = await chrome.tabs.sendMessage(
-      tabId,
-      { type: "PING" },
-      { frameId },
-    );
-    return {
-      frameId,
-      pipOpen: response?.pipOpen === true,
-      hasVideo: response?.hasVideo === true,
-      videoArea: Number(response?.videoArea) || 0,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function getFrameStates(tabId: number): Promise<FramePipState[]> {
-  let frameIds: number[] = [];
-  try {
-    const results = await chrome.scripting.executeScript({
-      target: { tabId, allFrames: true },
-      func: () => true,
-    });
-    frameIds = results.flatMap((result) =>
-      result.frameId === undefined ? [] : [result.frameId],
-    );
-  } catch {
-    // Restricted pages may reject frame enumeration; fall back to the main frame.
-  }
-
-  const states = (
-    await Promise.all([...new Set(frameIds)].map((id) => pingFrame(tabId, id)))
-  ).filter((state): state is FramePipState => state !== null);
-  if (states.length) return states;
-
-  let mainFrameState = await pingFrame(tabId, 0);
-  if (mainFrameState) return [mainFrameState];
-
-  const contentScripts = chrome.runtime
-    .getManifest()
-    .content_scripts?.find((entry) =>
-      entry.js?.includes("content/index.js"),
-    )?.js;
-  if (!contentScripts) return [];
-
-  await chrome.scripting.executeScript({
-    target: { tabId },
-    files: contentScripts,
-  });
-  mainFrameState = await pingFrame(tabId, 0);
-  return mainFrameState ? [mainFrameState] : [];
-}
-
-function chooseVideoFrame(states: FramePipState[]) {
-  return (
-    states
-      .filter((state) => state.hasVideo)
-      .sort((a, b) => b.videoArea - a.videoArea || a.frameId - b.frameId)[0] ??
-    states.find((state) => state.frameId === 0) ??
-    null
-  );
 }
 
 async function syncPipState() {
@@ -97,36 +21,14 @@ async function syncPipState() {
       currentWindow: true,
     });
     if (tab?.id === undefined) return;
-    if (activeTabId !== tab.id) {
-      activeTabId = tab.id;
-      frameScanDone = false;
-    }
-
-    if (!frameScanDone) {
-      const states = await getFrameStates(tab.id);
-      const activeFrame = states.find((state) => state.pipOpen);
-      pipFrameId = activeFrame?.frameId ?? 0;
-      frameScanDone = true;
-      setPipOpen(Boolean(activeFrame));
-      return;
-    }
-
-    const response = await pingFrame(tab.id, pipFrameId);
-    if (response) setPipOpen(response.pipOpen);
-    else setPipOpen(false);
+    const response = await chrome.tabs.sendMessage(tab.id, { type: "PING" });
+    setPipOpen(response?.pipOpen === true);
   } catch {
-    // 內容指令碼尚未載入時，維持目前顯示狀態。
+    // 內容指令碼尚未載入時，維持「開啟浮窗」。
   } finally {
     pipStateSyncPending = false;
   }
 }
-
-chrome.runtime.onMessage.addListener((message, sender) => {
-  if (message?.type !== "PIP_STATE_CHANGED" || sender.tab?.id !== activeTabId)
-    return;
-  pipFrameId = sender.frameId ?? 0;
-  setPipOpen(message.pipOpen === true);
-});
 
 const commentsToggle = document.querySelector(
   "#comments-toggle",
@@ -239,61 +141,51 @@ openButton.addEventListener("click", async () => {
       showStatus("請在可存取的網頁上開啟影片。", true);
       return;
     }
-    activeTabId = tab.id;
-    const states = await getFrameStates(tab.id);
-    frameScanDone = true;
-    const activeFrame = states.find((state) => state.pipOpen);
-    if (activeFrame) {
-      pipFrameId = activeFrame.frameId;
-      setPipOpen(true);
+    let pipState;
+    try {
+      pipState = await chrome.tabs.sendMessage(tab.id, { type: "PING" });
+    } catch {
+      const contentScripts = chrome.runtime
+        .getManifest()
+        .content_scripts?.find((entry) =>
+          entry.js?.includes("content/index.js"),
+        )?.js;
+      if (!contentScripts)
+        throw new Error("Content scripts are not configured");
+
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: contentScripts,
+      });
+      pipState = { pipOpen: false };
+    }
+
+    setPipOpen(pipState?.pipOpen === true);
+    if (pipOpen) {
       showStatus("正在關閉浮窗…");
-      const result = await chrome.tabs.sendMessage(
-        tab.id,
-        { type: "CLOSE_PIP" },
-        { frameId: activeFrame.frameId },
-      );
+      const result = await chrome.tabs.sendMessage(tab.id, {
+        type: "CLOSE_PIP",
+      });
       if (!result?.ok) {
         showStatus(result?.message ?? "無法關閉浮窗。", true);
         return;
       }
-      pipFrameId = 0;
       setPipOpen(false);
       showStatus("");
       return;
     }
 
-    let targetFrame: FramePipState | null = chooseVideoFrame(states);
-    if (!targetFrame) {
-      await new Promise((resolve) => setTimeout(resolve, 400));
-      const refreshedStates = await getFrameStates(tab.id);
-      targetFrame = chooseVideoFrame(refreshedStates);
-    }
-    if (!targetFrame) {
-      const fallbackStates =
-        states.length > 0 ? states : await getFrameStates(tab.id);
-      targetFrame = fallbackStates.find((state) => state.frameId === 0) ?? null;
-    }
-    if (!targetFrame) throw new Error("No content script frame found");
-
     showStatus("正在開啟…");
-    let result = await chrome.tabs.sendMessage(
-      tab.id,
-      { type: "OPEN_PIP" },
-      { frameId: targetFrame.frameId },
-    );
+    let result;
+    try {
+      result = await chrome.tabs.sendMessage(tab.id, { type: "OPEN_PIP" });
+    } catch {
+      result = null;
+    }
 
     if (result && !result.ok && /請先開啟/.test(result.message ?? "")) {
       await new Promise((resolve) => setTimeout(resolve, 400));
-      const refreshedStates = await getFrameStates(tab.id);
-      const refreshedFrame = chooseVideoFrame(refreshedStates);
-      if (refreshedFrame) {
-        targetFrame = refreshedFrame;
-        result = await chrome.tabs.sendMessage(
-          tab.id,
-          { type: "OPEN_PIP" },
-          { frameId: targetFrame.frameId },
-        );
-      }
+      result = await chrome.tabs.sendMessage(tab.id, { type: "OPEN_PIP" });
     }
 
     if (!result?.ok) {
@@ -304,7 +196,6 @@ openButton.addEventListener("click", async () => {
       return;
     }
 
-    pipFrameId = targetFrame.frameId;
     setPipOpen(true);
     showStatus("");
   } catch {

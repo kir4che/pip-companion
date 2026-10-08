@@ -50,6 +50,8 @@ Shortcuts inside the PiP window:
 | Step one frame        | `,` / `.`             |
 | Adjust playback speed | `Shift+,` / `Shift+.` |
 
+Cross-origin videos may not support screenshots or volume above 100%, and captions require readable subtitle data from the site. Shortcuts and feature settings are stored locally in the browser. The extension has no backend; Bilibili danmaku is loaded through the Bilibili API.
+
 ## Installation
 
 Requires Chrome 116 or later. From the project directory, run `npm ci` and `npm run build`. Then open `chrome://extensions`, enable Developer mode, and load the `dist/` directory.

@@ -90,7 +90,14 @@ interface DanmakuEmitOptions {
 const DANMAKU_STORAGE_KEY = "danmakuEnabled";
 const DANMAKU_IS_YOUTUBE = /(^|\.)youtube\.com$/.test(location.hostname);
 const DANMAKU_IS_BILIBILI = /(^|\.)bilibili\.com$/.test(location.hostname);
-const DANMAKU_IS_SUPPORTED_SITE = DANMAKU_IS_YOUTUBE || DANMAKU_IS_BILIBILI;
+const DANMAKU_IS_BILIBILI_LIVE = location.hostname === "live.bilibili.com";
+const DANMAKU_IS_TWITCH = /(^|\.)twitch\.tv$/.test(location.hostname);
+const DANMAKU_IS_BAHAMUT = location.hostname === "ani.gamer.com.tw";
+const DANMAKU_IS_SUPPORTED_SITE =
+  DANMAKU_IS_YOUTUBE ||
+  DANMAKU_IS_BILIBILI ||
+  DANMAKU_IS_TWITCH ||
+  DANMAKU_IS_BAHAMUT;
 const MAX_REPLAY_MESSAGES = 2000;
 const REPLAY_LATE_TOLERANCE_SECONDS = 3;
 const REPLAY_RESTORE_WINDOW_SECONDS = 5;
@@ -107,6 +114,9 @@ let pipDanmakuRenderer: DanmakuRenderer | null = null;
 let backgroundChatFrame: HTMLIFrameElement | null = null;
 let chatObserver: MutationObserver | null = null;
 let chatDocumentObserver: MutationObserver | null = null;
+let siteDanmakuObserver: MutationObserver | null = null;
+let siteDanmakuRoot: Element | null = null;
+const processedSiteDanmaku = new WeakMap<Element, string>();
 let observedChatDocument: Document | null = null;
 let observedChatFrame: HTMLIFrameElement | null = null;
 let observedItemsNode: Element | null = null;
@@ -125,6 +135,7 @@ let bilibiliSeekedBeforeLoad = false;
 let bilibiliRequestGeneration = 0;
 const bilibiliLoadedSegments = new Set<number>();
 const bilibiliLoadingSegments = new Set<number>();
+const bilibiliUnavailableSegments = new Set<number>();
 const bilibiliSegmentRetryAt = new Map<number, number>();
 let bilibiliSegmentCount = 0;
 let bilibiliPendingRestore = false;
@@ -167,7 +178,10 @@ function updateAllDanmakuVisibility(): void {
   pipDanmakuRenderer?.updateVisibility();
 
   if (DANMAKU_IS_YOUTUBE) checkAndBindDanmakuChat();
-  if (DANMAKU_IS_BILIBILI) checkAndBindBilibiliDanmaku(bilibiliPipSourceVideo);
+  if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE)
+    checkAndBindBilibiliDanmaku(bilibiliPipSourceVideo);
+  if (DANMAKU_IS_TWITCH || DANMAKU_IS_BAHAMUT || DANMAKU_IS_BILIBILI_LIVE)
+    checkAndBindSiteDanmaku();
 }
 
 function toggleDanmaku(forceState?: boolean): boolean {
@@ -931,8 +945,12 @@ function initDanmakuInPip(
     video?.playbackRate ?? danmakuPlaybackRate,
   );
   pipDanmakuRenderer.setPaused(video?.paused ?? danmakuPaused);
-  if (DANMAKU_IS_BILIBILI) bilibiliPipSourceVideo = video;
-  checkAndBindBilibiliDanmaku(video);
+  if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE) {
+    bilibiliPipSourceVideo = video;
+    checkAndBindBilibiliDanmaku(video);
+  }
+  if (DANMAKU_IS_TWITCH || DANMAKU_IS_BAHAMUT || DANMAKU_IS_BILIBILI_LIVE)
+    checkAndBindSiteDanmaku();
 }
 
 function resetBilibiliState(): void {
@@ -943,6 +961,7 @@ function resetBilibiliState(): void {
   bilibiliRequestGeneration++;
   bilibiliLoadedSegments.clear();
   bilibiliLoadingSegments.clear();
+  bilibiliUnavailableSegments.clear();
   bilibiliSegmentRetryAt.clear();
   bilibiliSegmentCount = 0;
   bilibiliPendingRestore = false;
@@ -1151,13 +1170,14 @@ function updateBilibiliSegmentAvailability(
   if (response.legacyFallback) {
     bilibiliLegacyFallback = true;
     bilibiliLoadedSegments.clear();
+    bilibiliUnavailableSegments.clear();
     return;
   }
-  const unavailable = new Set(
+  const unavailable = new Map(
     (Array.isArray(response.unavailableSegments)
       ? response.unavailableSegments
       : []
-    ).map(({ segment }) => segment),
+    ).map(({ segment, status }) => [segment, status]),
   );
   const retryAt = Date.now() + 5000;
   for (
@@ -1165,11 +1185,18 @@ function updateBilibiliSegmentAvailability(
     segment <= response.segmentEnd;
     segment++
   ) {
-    if (unavailable.has(segment)) {
+    const status = unavailable.get(segment);
+    if (status === 404 && !response.fallbackError) {
       bilibiliLoadedSegments.delete(segment);
+      bilibiliUnavailableSegments.add(segment);
+      bilibiliSegmentRetryAt.delete(segment);
+    } else if (status) {
+      bilibiliLoadedSegments.delete(segment);
+      bilibiliUnavailableSegments.delete(segment);
       bilibiliSegmentRetryAt.set(segment, retryAt);
     } else {
       bilibiliLoadedSegments.add(segment);
+      bilibiliUnavailableSegments.delete(segment);
       bilibiliSegmentRetryAt.delete(segment);
     }
   }
@@ -1200,16 +1227,27 @@ function logBilibiliResponse(response: BilibiliDanmakuResponse): void {
       .join(", ");
     console.info(`[Caption PiP] Recovered Bilibili danmaku: ${recovered}.`);
   }
-  if (
-    Array.isArray(response.unavailableSegments) &&
-    response.unavailableSegments.length
-  ) {
-    const unavailable = response.unavailableSegments
-      .map(({ segment, status }) => `#${segment} HTTP ${status}`)
-      .join(", ");
-    console.warn(
-      `[Caption PiP] Bilibili danmaku segments still unavailable: ${unavailable}.`,
+  if (Array.isArray(response.unavailableSegments)) {
+    const missing = response.unavailableSegments.filter(
+      ({ status }) => status === 404 && !response.fallbackError,
     );
+    if (missing.length) {
+      const segments = missing.map(({ segment }) => `#${segment}`).join(", ");
+      console.info(
+        `[Caption PiP] Bilibili danmaku is unavailable for segments ${segments} (HTTP 404); these segments will not be retried during this PiP session.`,
+      );
+    }
+    const otherUnavailable = response.unavailableSegments.filter(
+      ({ status }) => status !== 404 || Boolean(response.fallbackError),
+    );
+    if (otherUnavailable.length) {
+      const unavailable = otherUnavailable
+        .map(({ segment, status }) => `#${segment} HTTP ${status}`)
+        .join(", ");
+      console.warn(
+        `[Caption PiP] Bilibili danmaku segments still unavailable: ${unavailable}.`,
+      );
+    }
   }
   if (response.fallbackError) {
     console.warn(
@@ -1238,6 +1276,7 @@ function requestBilibiliSegments(
     if (
       !bilibiliLoadedSegments.has(segment) &&
       !bilibiliLoadingSegments.has(segment) &&
+      !bilibiliUnavailableSegments.has(segment) &&
       !isBilibiliSegmentCoolingDown(segment, now)
     ) {
       segments.push(segment);
@@ -1553,9 +1592,9 @@ function bindReplayVideo(): void {
     replayVideoId = videoId;
   }
 
-  const video = document.querySelector<HTMLVideoElement>(
-    "video.html5-main-video",
-  );
+  const video =
+    document.querySelector<HTMLVideoElement>("video.html5-main-video") ||
+    state.sourceVideo;
   if (video === replayVideo) return;
   unbindReplayVideo();
   replayVideo = video;
@@ -1824,6 +1863,166 @@ function checkAndBindDanmakuChat(): void {
   chatObserver.observe(itemsContainer, { childList: true, subtree: true });
 }
 
+const TWITCH_CHAT_ROOT_SELECTOR =
+  '[data-test-selector="chat-scrollable-area__message-container"], .chat-scrollable-area__message-container, [data-a-target="chat-scroller"], .video-chat__message-list-wrapper ul';
+const TWITCH_MESSAGE_SELECTOR =
+  '[data-a-target="chat-line-message"], .chat-line__message, [data-test-selector="chat-line-message"], [data-test-selector="chat-line"], .vod-message';
+const TWITCH_VOD_MESSAGE_SELECTOR = ".video-chat__message-list-wrapper ul > *";
+
+function isTwitchVodPage(): boolean {
+  return DANMAKU_IS_TWITCH && /^\/videos\/\d+/.test(location.pathname);
+}
+
+const BAHAMUT_DANMAKU_SELECTOR =
+  '[class*="danmu" i], [class*="danmaku" i], [id*="danmu" i], [id*="danmaku" i]';
+const BILIBILI_LIVE_DANMAKU_SELECTOR = ".danmaku-item";
+
+function getSiteDanmakuRoot(): Element | null {
+  if (DANMAKU_IS_TWITCH) {
+    const chatRoot = document.querySelector(TWITCH_CHAT_ROOT_SELECTOR);
+    if (chatRoot) return chatRoot;
+
+    for (const frame of document.querySelectorAll("iframe")) {
+      try {
+        const frameRoot = frame.contentDocument?.querySelector(
+          TWITCH_CHAT_ROOT_SELECTOR,
+        );
+        if (frameRoot) return frameRoot;
+      } catch {}
+    }
+
+    return location.pathname.startsWith("/videos/") ? document.body : null;
+  }
+  if (DANMAKU_IS_BILIBILI_LIVE) return document.querySelector("#chat-items");
+  if (!DANMAKU_IS_BAHAMUT) return null;
+
+  const video = document.querySelector("video");
+  return (
+    video?.closest(
+      ".anime_video_area, .anime-video-area, #ani_video, .video-js",
+    ) ||
+    video?.parentElement?.parentElement?.parentElement ||
+    document.body
+  );
+}
+
+function getSiteDanmakuCandidates(node: Node): Element[] {
+  const selector = DANMAKU_IS_TWITCH
+    ? isTwitchVodPage()
+      ? TWITCH_VOD_MESSAGE_SELECTOR
+      : TWITCH_MESSAGE_SELECTOR
+    : DANMAKU_IS_BILIBILI_LIVE
+      ? BILIBILI_LIVE_DANMAKU_SELECTOR
+      : BAHAMUT_DANMAKU_SELECTOR;
+  const candidates: Element[] = [];
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const element = node as Element;
+    if (element.matches(selector)) candidates.push(element);
+    candidates.push(...element.querySelectorAll(selector));
+  } else if (node.parentElement) {
+    const candidate = node.parentElement.closest(selector);
+    if (candidate) candidates.push(candidate);
+  }
+
+  if (DANMAKU_IS_BAHAMUT)
+    return candidates.filter((candidate) => !candidate.querySelector(selector));
+  return candidates;
+}
+
+function extractSiteDanmaku(node: Element): DanmakuData | null {
+  let messageNode = node;
+  let author = "";
+  if (DANMAKU_IS_BILIBILI_LIVE) {
+    const liveMessage = node as HTMLElement & {
+      danmaku?: string;
+      uname?: string;
+    };
+    author = (
+      liveMessage.uname ||
+      node.getAttribute("data-uname") ||
+      node.querySelector(".user-name")?.textContent ||
+      ""
+    ).trim();
+    messageNode = node.querySelector(".danmaku-item-right") || node;
+    const { parts, text } = extractMessageContent(messageNode);
+    const danmakuText = liveMessage.danmaku?.trim();
+    if (!text && danmakuText) {
+      return {
+        text: danmakuText,
+        parts: [{ type: "text", text: danmakuText }],
+        author,
+      };
+    }
+    return text ? { text, parts, author } : null;
+  }
+  if (DANMAKU_IS_TWITCH) {
+    const body = node.querySelector(
+      '[data-a-target="chat-line-message-body"], [data-a-target="chat-message-text"], .text-fragment, .message',
+    );
+    if (body) messageNode = body;
+    const authorNode = node.querySelector(
+      '[data-a-target="chat-message-username"], .chat-author__display-name',
+    );
+    author = (authorNode?.textContent || "").trim();
+  }
+
+  const { parts, text } = extractMessageContent(messageNode);
+  if (!text) return null;
+  return { text, parts, author };
+}
+
+function processSiteDanmakuNode(node: Node, initial = false): void {
+  for (const candidate of getSiteDanmakuCandidates(node)) {
+    const data = extractSiteDanmaku(candidate);
+    if (!data) continue;
+    const signature = `${data.author || ""}\u0000${data.text || ""}`;
+    if (processedSiteDanmaku.get(candidate) === signature) continue;
+    processedSiteDanmaku.set(candidate, signature);
+    if (!initial) broadcastDanmaku(data);
+  }
+}
+
+function checkAndBindSiteDanmaku(): void {
+  if (!DANMAKU_IS_TWITCH && !DANMAKU_IS_BAHAMUT && !DANMAKU_IS_BILIBILI_LIVE)
+    return;
+  if (!danmakuSettingsLoaded || !danmakuEnabled) {
+    siteDanmakuObserver?.disconnect();
+    siteDanmakuObserver = null;
+    siteDanmakuRoot = null;
+    return;
+  }
+
+  const root = getSiteDanmakuRoot();
+  if (!root) return;
+  if (root === siteDanmakuRoot && siteDanmakuObserver) return;
+  siteDanmakuObserver?.disconnect();
+  siteDanmakuRoot = root;
+
+  const initialSelector = DANMAKU_IS_TWITCH
+    ? isTwitchVodPage()
+      ? TWITCH_VOD_MESSAGE_SELECTOR
+      : TWITCH_MESSAGE_SELECTOR
+    : DANMAKU_IS_BILIBILI_LIVE
+      ? BILIBILI_LIVE_DANMAKU_SELECTOR
+      : BAHAMUT_DANMAKU_SELECTOR;
+  root.querySelectorAll(initialSelector).forEach((node) => {
+    processSiteDanmakuNode(node, true);
+  });
+
+  siteDanmakuObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) processSiteDanmakuNode(node);
+      if (mutation.type === "characterData")
+        processSiteDanmakuNode(mutation.target);
+    }
+  });
+  siteDanmakuObserver.observe(root, {
+    childList: true,
+    characterData: true,
+    subtree: true,
+  });
+}
+
 Object.assign(globalThis, {
   toggleDanmaku,
   initDanmakuInPip,
@@ -1833,6 +2032,7 @@ Object.assign(globalThis, {
   isDanmakuEnabled,
   checkAndBindDanmakuChat,
   checkAndBindBilibiliDanmaku,
+  checkAndBindSiteDanmaku,
   broadcastDanmaku,
 });
 
