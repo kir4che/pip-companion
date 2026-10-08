@@ -229,6 +229,13 @@ button {
   cursor: pointer;
 }
 
+.settings-open,
+.back-button {
+  border: 0;
+  background: transparent;
+  color: #a1a1aa;
+}
+
 .settings-open {
   display: grid;
   flex: 0 0 24px;
@@ -236,12 +243,10 @@ button {
   height: 24px;
   place-items: center;
   padding: 0;
-  border: 0;
-  background: transparent;
-  color: #a1a1aa;
 }
 
-.settings-open:hover {
+.settings-open:hover,
+.back-button:hover {
   color: #f4f4f5;
 }
 
@@ -264,14 +269,7 @@ button {
 .back-button {
   display: inline-flex;
   align-items: center;
-  border: 0;
-  background: transparent;
-  color: #a1a1aa;
   font-size: 11px;
-}
-
-.back-button:hover {
-  color: #f4f4f5;
 }
 
 .range-row {

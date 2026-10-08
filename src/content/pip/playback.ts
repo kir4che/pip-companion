@@ -46,7 +46,8 @@ globalThis.PipCompanion.ContentPlayback = (() => {
         return true;
     }
 
-    if (/(^|\.)youtube\.com$/.test(location.hostname)) {
+    const site = globalThis.PipCompanion.site;
+    if (site.isYouTubeHost(location.hostname)) {
       if (document.documentElement.dataset.pipYtIsLive === "true") return true;
       const ytPlayer = getYouTubePlayer();
       if (ytPlayer?.getVideoData?.()?.isLive) return true;
@@ -59,7 +60,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       if (location.pathname.startsWith("/live/")) return true;
     }
 
-    if (/(^|\.)twitch\.tv$/.test(location.hostname)) {
+    if (site.isTwitchHost(location.hostname)) {
       const isVod =
         /^\/(videos|\w+\/clip)\//.test(location.pathname) ||
         location.hostname.startsWith("clips.");
@@ -74,7 +75,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     }
 
     if (
-      location.hostname === "live.bilibili.com" ||
+      site.isBilibiliLiveHost(location.hostname) ||
       document.querySelector("#live-player, .live-room-app")
     )
       return true;

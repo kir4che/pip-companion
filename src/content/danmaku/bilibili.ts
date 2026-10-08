@@ -34,7 +34,9 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
   const BILIBILI_SEGMENT_SECONDS =
     globalThis.PipCompanion.bilibiliDanmakuConfig.segmentSeconds;
   const MAX_SEEK_RESTORE_MESSAGES = 100;
-  const isBilibili = /(^|\.)bilibili\.com$/.test(location.hostname);
+  const isBilibili = globalThis.PipCompanion.site.isBilibiliHost(
+    location.hostname,
+  );
 
   function create(
     dependencies: ContentBilibiliDanmakuDependencies,
@@ -102,16 +104,17 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       if (/^\/bangumi\/play\/(?:ss|ep)\d+/i.test(location.pathname))
         return getBangumiVideoIdentity();
 
-      const match = location.pathname.match(/^\/video\/(BV[\w]{10}|av\d+)/i);
+      const video = globalThis.PipCompanion.site.parseBilibiliVideoPath(
+        location.pathname,
+      );
       const page = Number(new URL(location.href).searchParams.get("p") || 1);
-      if (!match || !Number.isInteger(page) || page < 1 || page > 1000)
+      if (!video || !Number.isInteger(page) || page < 1 || page > 1000)
         return null;
-      const videoId = match[1];
       return {
-        bvid: /^BV/i.test(videoId) ? videoId : "",
-        avid: /^av/i.test(videoId) ? videoId.slice(2) : "",
+        bvid: video.bvid,
+        avid: video.avid,
         page,
-        key: `${videoId}:${page}`,
+        key: `${video.videoId}:${page}`,
       };
     }
 

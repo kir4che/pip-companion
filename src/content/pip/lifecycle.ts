@@ -45,8 +45,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           isDanmakuEnabled() &&
           (IS_YOUTUBE ||
             IS_BILIBILI ||
-            /(^|\.)twitch\.tv$/.test(location.hostname) ||
-            location.hostname === "ani.gamer.com.tw") &&
+            globalThis.PipCompanion.site.isTwitchHost(location.hostname) ||
+            globalThis.PipCompanion.site.isBahamutHost(location.hostname)) &&
           matchesShortcut(e, state.danmakuShortcut),
         matchesScreenshotShortcut: (e) =>
           state.screenshotEnabled &&

@@ -73,7 +73,7 @@ globalThis.PipCompanion.ContentVideo = (() => {
     }
   }
 
-  const DEEP_SCAN_MS = 1000;
+  const DEEP_SCAN_MS = 5000;
 
   function findVideo(): HTMLVideoElement | null {
     for (const selector of PREFERRED_SELECTORS) {

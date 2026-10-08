@@ -4,11 +4,14 @@ const DANMAKU_STORAGE_KEY = "danmakuEnabled";
 const DANMAKU_VISIBILITY_STORAGE_KEY = "danmakuVisible";
 const DANMAKU_STYLE_STORAGE_KEY =
   globalThis.PipCompanion.danmakuSettings.STORAGE_KEY;
-const DANMAKU_IS_YOUTUBE = /(^|\.)youtube\.com$/.test(location.hostname);
-const DANMAKU_IS_BILIBILI = /(^|\.)bilibili\.com$/.test(location.hostname);
-const DANMAKU_IS_BILIBILI_LIVE = location.hostname === "live.bilibili.com";
-const DANMAKU_IS_TWITCH = /(^|\.)twitch\.tv$/.test(location.hostname);
-const DANMAKU_IS_BAHAMUT = location.hostname === "ani.gamer.com.tw";
+const danmakuSiteUtils = globalThis.PipCompanion.site;
+const DANMAKU_IS_YOUTUBE = danmakuSiteUtils.isYouTubeHost(location.hostname);
+const DANMAKU_IS_BILIBILI = danmakuSiteUtils.isBilibiliHost(location.hostname);
+const DANMAKU_IS_BILIBILI_LIVE = danmakuSiteUtils.isBilibiliLiveHost(
+  location.hostname,
+);
+const DANMAKU_IS_TWITCH = danmakuSiteUtils.isTwitchHost(location.hostname);
+const DANMAKU_IS_BAHAMUT = danmakuSiteUtils.isBahamutHost(location.hostname);
 const DANMAKU_IS_SUPPORTED_SITE =
   DANMAKU_IS_YOUTUBE ||
   DANMAKU_IS_BILIBILI ||

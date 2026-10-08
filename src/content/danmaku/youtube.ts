@@ -1,7 +1,9 @@
 "use strict";
 
 (() => {
-  const YOUTUBE_IS_PAGE = /(^|\.)youtube\.com$/.test(location.hostname);
+  const YOUTUBE_IS_PAGE = globalThis.PipCompanion.site.isYouTubeHost(
+    location.hostname,
+  );
   const YOUTUBE_MAX_REPLAY_MESSAGES = 2000;
 
   function createYouTubeDanmaku(
@@ -27,6 +29,7 @@
     let replaySeeking = false;
     let replayVideoId = "";
     const replayMessages = new Map<string | symbol, ReplayMessageEntry>();
+    const pendingReplayMessages = new Set<ReplayMessageEntry>();
 
     function processReplayMessages(): void {
       const currentTime = replayVideo?.currentTime;
@@ -37,13 +40,12 @@
       )
         return;
 
-      const dueMessages = [...replayMessages.values()]
-        .filter(
-          (entry) => !entry.emitted && entry.replayTime <= currentTime + 0.1,
-        )
+      const dueMessages = [...pendingReplayMessages]
+        .filter((entry) => entry.replayTime <= currentTime + 0.1)
         .sort((a, b) => a.replayTime - b.replayTime);
 
       for (const entry of dueMessages) {
+        pendingReplayMessages.delete(entry);
         entry.emitted = true;
         const elapsed = Math.max(0, currentTime - entry.replayTime);
         if (elapsed > dependencies.lateToleranceSeconds) continue;
@@ -82,9 +84,14 @@
             data.replayTime < currentTime - dependencies.lateToleranceSeconds,
         };
         replayMessages.set(messageKey, entry);
+        if (!entry.emitted) pendingReplayMessages.add(entry);
         if (replayMessages.size > YOUTUBE_MAX_REPLAY_MESSAGES) {
           const firstKey = replayMessages.keys().next().value;
-          if (firstKey !== undefined) replayMessages.delete(firstKey);
+          if (firstKey !== undefined) {
+            const firstEntry = replayMessages.get(firstKey);
+            if (firstEntry) pendingReplayMessages.delete(firstEntry);
+            replayMessages.delete(firstKey);
+          }
         }
       } else entry.data = data;
 
@@ -137,15 +144,14 @@
 
     function getYouTubeVideoId(): string {
       return (
-        new URL(location.href).searchParams.get("v") ||
-        location.pathname.match(/^\/(?:live|shorts|embed)\/([^/?]+)/)?.[1] ||
-        ""
+        globalThis.PipCompanion.site.parseYouTubeVideoId(location.href) || ""
       );
     }
 
     function resetReplayMessagesForVideo(videoId: string): void {
       if (videoId === replayVideoId) return;
       replayMessages.clear();
+      pendingReplayMessages.clear();
       dependencies.clear();
       replayVideoId = videoId;
     }
@@ -212,10 +218,12 @@
 
           for (const renderer of restoringRenderers)
             renderer.beginSeekRestore();
+          pendingReplayMessages.clear();
           try {
             for (const entry of entries) {
               const elapsed = currentTime - entry.replayTime;
               entry.emitted = elapsed >= 0;
+              if (elapsed < 0) pendingReplayMessages.add(entry);
               if (elapsed < 0 || elapsed > restoreWindow) continue;
               dependencies.broadcast(entry.data, { elapsed, restore: true });
             }
@@ -605,6 +613,7 @@
         unbindReplayVideo();
         removeBackgroundChatFrame();
         replayMessages.clear();
+        pendingReplayMessages.clear();
       },
     };
   }

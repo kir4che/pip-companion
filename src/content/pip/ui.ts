@@ -7,12 +7,7 @@ globalThis.PipCompanion.PipUI = (() => {
     doc.documentElement.lang = "zh-Hant";
 
     const style = doc.createElement("style");
-    const css = (strings: TemplateStringsArray, ...values: string[]) =>
-      strings.reduce(
-        (out, chunk, index) => out + chunk + (values[index] ?? ""),
-        "",
-      );
-    const baseCss = css`
+    const baseCss = `
       * {
         box-sizing: border-box;
         -webkit-user-select: none;
@@ -60,7 +55,7 @@ globalThis.PipCompanion.PipUI = (() => {
         outline: none;
       }
     `;
-    const contentCss = css`
+    const contentCss = `
       .screen > video {
         width: 100% !important;
         height: 100% !important;
@@ -103,7 +98,7 @@ globalThis.PipCompanion.PipUI = (() => {
         -webkit-box-decoration-break: clone;
       }
     `;
-    const controlsCss = css`
+    const controlsCss = `
       .controls {
         position: absolute;
         inset: auto 0 0;
@@ -256,7 +251,7 @@ globalThis.PipCompanion.PipUI = (() => {
         fill: currentColor;
       }
     `;
-    const popoverCss = css`
+    const popoverCss = `
       .volume-control,
       .speed-control {
         position: relative;
@@ -374,7 +369,7 @@ globalThis.PipCompanion.PipUI = (() => {
         }
       }
     `;
-    const responsiveCss = css`
+    const responsiveCss = `
       @media (max-width: 440px) {
         .controls {
           gap: 5px;

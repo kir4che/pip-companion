@@ -7,12 +7,12 @@ const FLOATING_COMMENTS_PANEL_CLASS = "pc-floating-comments-panel";
 const BILIBILI_FLOATING_COMMENTS_BODY_CLASS = "bili-floating-comments-open";
 
 function getFloatingCommentsRoot(): Element | null {
-  if (/(^|\.)youtube\.com$/.test(location.hostname))
+  if (globalThis.PipCompanion.site.isYouTubeHost(location.hostname))
     return (
       document.querySelector("#comments") ||
       document.querySelector("ytd-comments")
     );
-  if (/(^|\.)bilibili\.com$/.test(location.hostname))
+  if (globalThis.PipCompanion.site.isBilibiliHost(location.hostname))
     return (
       document.querySelector("#comment .reply-warp") ||
       document.querySelector(".reply-warp") ||
@@ -23,7 +23,9 @@ function getFloatingCommentsRoot(): Element | null {
 }
 
 function updateFloatingCommentsDimensions() {
-  const isBilibili = /(^|\.)bilibili\.com$/.test(location.hostname);
+  const isBilibili = globalThis.PipCompanion.site.isBilibiliHost(
+    location.hostname,
+  );
   if (isBilibili) {
     document.body.classList.add(
       FLOATING_COMMENTS_BOTTOM_SHEET_CLASS,
@@ -75,7 +77,9 @@ function updateFloatingCommentsDimensions() {
 }
 
 function ensureFloatingCommentsButton(shortcut: Shortcut) {
-  const isBilibili = /(^|\.)bilibili\.com$/.test(location.hostname);
+  const isBilibili = globalThis.PipCompanion.site.isBilibiliHost(
+    location.hostname,
+  );
   const rightControls = isBilibili
     ? (document.querySelector(".bpx-player-control-bottom-right") ??
       document.querySelector(".bpx-player-control-wrap"))
@@ -178,7 +182,9 @@ function toggleFloatingComments(forceState?: boolean) {
     comments.removeAttribute("hidden");
     updateFloatingCommentsDimensions();
     document.body.classList.add(FLOATING_COMMENTS_BODY_CLASS);
-    const isBilibili = /(^|\.)bilibili\.com$/.test(location.hostname);
+    const isBilibili = globalThis.PipCompanion.site.isBilibiliHost(
+      location.hostname,
+    );
     if (isBilibili)
       document.body.classList.add(BILIBILI_FLOATING_COMMENTS_BODY_CLASS);
     toggleBtn?.classList.add("active");

@@ -36,12 +36,13 @@
       "matches": ["*://*/*"],
       "js": [
         "shared/utils.js",
+        "shared/site-utils.js",
         "shared/danmaku-settings.js",
         "shared/bilibili-danmaku-config.js",
         "content/pip/storyboard.js",
         "content/pip/audio.js",
         "content/pip/ui.js",
-        "content/floating-comments.js",
+        "content/floating-comments/index.js",
         "content/danmaku/renderer.js",
         "content/danmaku/sources.js",
         "content/danmaku/bilibili.js",
@@ -55,21 +56,21 @@
         "content/pip/lifecycle.js",
         "content/index.js"
       ],
-      "css": ["content/floating-comments.css"],
+      "css": ["content/floating-comments/index.css"],
       "run_at": "document_idle"
     },
     {
       "matches": ["*://*.youtube.com/*", "*://youtube.com/*"],
       "all_frames": true,
       "world": "MAIN",
-      "js": ["content/yt-bridge.js"],
+      "js": ["content/bridges/youtube.js"],
       "run_at": "document_start"
     },
     {
       "matches": ["*://ani.gamer.com.tw/*", "*://*.gamer.com.tw/*"],
       "all_frames": true,
       "world": "MAIN",
-      "js": ["content/baha-bridge.js"],
+      "js": ["content/bridges/bahamut.js"],
       "run_at": "document_start"
     }
   ]

@@ -1,12 +1,13 @@
 "use strict";
 
-const IS_YOUTUBE = /(^|\.)youtube\.com$/.test(location.hostname);
-const IS_BILIBILI = /(^|\.)bilibili\.com$/.test(location.hostname);
-const IS_TWITCH = /(^|\.)twitch\.tv$/.test(location.hostname);
-const IS_BAHAMUT = location.hostname === "ani.gamer.com.tw";
+const contentSiteUtils = globalThis.PipCompanion.site;
+const IS_YOUTUBE = contentSiteUtils.isYouTubeHost(location.hostname);
+const IS_BILIBILI = contentSiteUtils.isBilibiliHost(location.hostname);
+const IS_TWITCH = contentSiteUtils.isTwitchHost(location.hostname);
+const IS_BAHAMUT = contentSiteUtils.isBahamutHost(location.hostname);
 
 function isBilibiliLivePage() {
-  return location.hostname === "live.bilibili.com";
+  return contentSiteUtils.isBilibiliLiveHost(location.hostname);
 }
 
 const { SHORTCUT_DEFAULTS, SHORTCUT_KEYS, normalizeShortcut, matchesShortcut } =

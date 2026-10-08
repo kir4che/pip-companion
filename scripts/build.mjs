@@ -5,7 +5,10 @@ const staticFiles = [
   ["manifest.json", "manifest.json"],
   ["src/popup/index.html", "popup.html"],
   ["src/popup/index.css", "popup.css"],
-  ["src/content/floating-comments.css", "content/floating-comments.css"],
+  [
+    "src/content/floating-comments/index.css",
+    "content/floating-comments/index.css",
+  ],
 ];
 
 const out = "dist";

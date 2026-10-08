@@ -220,6 +220,23 @@ interface BilibiliDanmakuConfigApi {
   segmentSeconds: number;
 }
 
+interface BilibiliVideoPath {
+  videoId: string;
+  bvid: string;
+  avid: string;
+}
+
+interface PipCompanionSiteUtils {
+  isYouTubeHost(hostname: string): boolean;
+  isBilibiliHost(hostname: string): boolean;
+  isBilibiliLiveHost(hostname: string): boolean;
+  isTwitchHost(hostname: string): boolean;
+  isBahamutHost(hostname: string): boolean;
+  isGamerHost(hostname: string): boolean;
+  parseYouTubeVideoId(href: string): string | null;
+  parseBilibiliVideoPath(pathname: string): BilibiliVideoPath | null;
+}
+
 interface PipCompanionGlobal {
   PipAudio: PipAudioApi;
   PipUI: PipUiApi;
@@ -236,6 +253,7 @@ interface PipCompanionGlobal {
   ContentYouTubeDanmaku: ContentYouTubeDanmakuApi;
   bilibiliDanmakuConfig: BilibiliDanmakuConfigApi;
   danmakuSettings: DanmakuSettingsApi;
+  site: PipCompanionSiteUtils;
   util: PipCompanionUtil;
 }
 

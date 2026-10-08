@@ -53,17 +53,11 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
   }
 
   function getYouTubeVideoId(): string | null {
-    try {
-      const url = new URL(location.href);
-      if (url.searchParams.has("v")) return url.searchParams.get("v");
-      const shortsMatch = url.pathname.match(/\/shorts\/([^/?]+)/);
-      if (shortsMatch) return shortsMatch[1];
-      const embedMatch = url.pathname.match(/\/embed\/([^/?]+)/);
-      if (embedMatch) return embedMatch[1];
-      const liveMatch = url.pathname.match(/\/live\/([^/?]+)/);
-      if (liveMatch) return liveMatch[1];
-    } catch {}
-    return document.documentElement?.dataset.pipYtVideoId || null;
+    return (
+      globalThis.PipCompanion.site.parseYouTubeVideoId(location.href) ||
+      document.documentElement?.dataset.pipYtVideoId ||
+      null
+    );
   }
 
   function parseYouTubeSpec(spec: string): ParsedYouTubeStoryboard | null {
@@ -267,8 +261,10 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
   }
 
   function getBilibiliBvid(): string | null {
-    const match = location.pathname.match(/\/video\/(BV[\w]{10})/i);
-    return match ? match[1] : null;
+    return (
+      globalThis.PipCompanion.site.parseBilibiliVideoPath(location.pathname)
+        ?.bvid || null
+    );
   }
 
   async function resolveBilibiliImagesToBlobs(
@@ -465,11 +461,12 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
   type Platform = "youtube" | "bilibili" | "bahamut" | "unknown";
 
   function getPlatform(): Platform {
+    const site = globalThis.PipCompanion.site;
     const host = location.hostname;
-    if (/(^|\.)youtube\.com$/.test(host)) return "youtube";
-    if (/(^|\.)bilibili\.com$/.test(host) && host !== "live.bilibili.com")
+    if (site.isYouTubeHost(host)) return "youtube";
+    if (site.isBilibiliHost(host) && !site.isBilibiliLiveHost(host))
       return "bilibili";
-    if (/(^|\.)gamer\.com\.tw$/.test(host)) return "bahamut";
+    if (site.isGamerHost(host)) return "bahamut";
     return "unknown";
   }
 

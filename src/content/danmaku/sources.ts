@@ -1,9 +1,10 @@
 "use strict";
 
 (() => {
-  const SOURCE_IS_TWITCH = /(^|\.)twitch\.tv$/.test(location.hostname);
-  const SOURCE_IS_BAHAMUT = location.hostname === "ani.gamer.com.tw";
-  const SOURCE_IS_BILIBILI_LIVE = location.hostname === "live.bilibili.com";
+  const site = globalThis.PipCompanion.site;
+  const SOURCE_IS_TWITCH = site.isTwitchHost(location.hostname);
+  const SOURCE_IS_BAHAMUT = site.isBahamutHost(location.hostname);
+  const SOURCE_IS_BILIBILI_LIVE = site.isBilibiliLiveHost(location.hostname);
 
   function getSuperChatColor(node: HTMLElement): string {
     const primary =
