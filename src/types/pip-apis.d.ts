@@ -54,6 +54,7 @@ interface PipUiHandle {
   volumePath: Element;
   playButton: HTMLButtonElement;
   nextButton: HTMLButtonElement;
+  speedControl: HTMLElement;
   speedButton: HTMLButtonElement;
   speedSlider: HTMLInputElement;
   volumeSlider: HTMLInputElement;

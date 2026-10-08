@@ -14,4 +14,5 @@ interface YouTubePlayer extends HTMLElement {
   mute?: () => void;
   unMute?: () => void;
   toggleSubtitles?: () => void;
+  getVideoData?: () => { isLive?: boolean };
 }

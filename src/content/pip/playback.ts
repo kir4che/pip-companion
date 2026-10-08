@@ -38,6 +38,49 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     updatePlaybackUi();
   }
 
+  function isLiveStream(video: HTMLVideoElement | null): boolean {
+    if (!video) return false;
+
+    if (video.readyState >= 1) {
+      if (!Number.isFinite(video.duration) || video.duration === Infinity)
+        return true;
+    }
+
+    if (/(^|\.)youtube\.com$/.test(location.hostname)) {
+      const ytPlayer = getYouTubePlayer();
+      if (ytPlayer?.getVideoData?.()?.isLive) return true;
+      if (
+        document.querySelector(
+          "#movie_player.ytp-live, .ytp-live-badge, ytd-watch-flexy[is-live]",
+        )
+      )
+        return true;
+      if (location.pathname.startsWith("/live/")) return true;
+    }
+
+    if (/(^|\.)twitch\.tv$/.test(location.hostname)) {
+      const isVod =
+        /^\/(videos|\w+\/clip)\//.test(location.pathname) ||
+        location.hostname.startsWith("clips.");
+      if (
+        !isVod &&
+        (document.querySelector(
+          '[data-a-target="live-indicator"], .live-channel-stream-information',
+        ) ||
+          !video.duration)
+      )
+        return true;
+    }
+
+    if (
+      location.hostname === "live.bilibili.com" ||
+      document.querySelector("#live-player, .live-room-app")
+    )
+      return true;
+
+    return false;
+  }
+
   const PLAYER_CONTAINERS = [
     "#movie_player",
     ".bpx-player",
@@ -215,12 +258,21 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     }
 
     const nextControl = findNextControlCached();
-    state.pipUi.nextButton.disabled = player
-      ? !player.nextVideo &&
-        (!nextControl ||
-          nextControl.disabled ||
-          nextControl.getAttribute("aria-disabled") === "true")
-      : !nextControl;
+    const canPlayNext = Boolean(
+      player
+        ? player.nextVideo ||
+            (nextControl &&
+              !nextControl.disabled &&
+              nextControl.getAttribute("aria-disabled") !== "true")
+        : nextControl &&
+            !nextControl.disabled &&
+            nextControl.getAttribute("aria-disabled") !== "true",
+    );
+    state.pipUi.nextButton.disabled = !canPlayNext;
+    state.pipUi.nextButton.hidden = !canPlayNext;
+
+    const isLive = isLiveStream(state.sourceVideo);
+    state.pipUi.speedControl.hidden = isLive;
   }
 
   function togglePlayback() {
@@ -233,7 +285,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
 
   function adjustPlaybackRate(direction: number) {
     const video = state.sourceVideo;
-    if (!video) return;
+    if (!video || isLiveStream(video)) return;
     let nextRate;
     if (direction > 0)
       nextRate = PLAYBACK_RATES.find(
@@ -256,7 +308,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
 
   function togglePlaybackRate() {
     const video = state.sourceVideo;
-    if (!video) return;
+    if (!video || isLiveStream(video)) return;
     if (Math.abs(video.playbackRate - 1) > 0.001) {
       state.lastNonOneRate = video.playbackRate;
       video.playbackRate = 1;

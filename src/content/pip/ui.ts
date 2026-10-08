@@ -440,6 +440,7 @@ globalThis.PipCompanion.PipUI = (() => {
 
     const playButton = makeButton("play", "▶", "播放影片");
     const nextButton = makeButton("next", "", "下一部影片");
+    nextButton.hidden = true;
     const nextIcon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
     nextIcon.setAttribute("viewBox", "0 0 24 24");
     nextIcon.setAttribute("aria-hidden", "true");
@@ -542,6 +543,7 @@ globalThis.PipCompanion.PipUI = (() => {
       volumePath,
       playButton,
       nextButton,
+      speedControl,
       speedButton,
       speedSlider,
       volumeSlider,
