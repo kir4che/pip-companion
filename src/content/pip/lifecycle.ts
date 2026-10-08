@@ -307,6 +307,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
       state.pipUi = createPipUi(nextWindow, openingVideo);
       if (state.sourceVideo !== openingVideo) throw new Error("source changed");
+      globalThis.PipCompanion.ContentCaptions.initializeCaptionsOn();
       globalThis.PipCompanion.ContentStoryboard.preload(openingVideo);
       remountSourceVideo();
       initDanmakuInPip(nextWindow, openingVideo);

@@ -11,6 +11,20 @@ globalThis.PipCompanion.ContentCaptions = (() => {
     );
   }
 
+  function initializeCaptionsOn() {
+    const button = getYouTubeCaptionButton();
+    if (button) {
+      state.captionsOn = button.getAttribute("aria-pressed") === "true";
+      return;
+    }
+
+    const tracks = Array.from(state.sourceVideo?.textTracks ?? []).filter(
+      (track) => track.kind === "subtitles" || track.kind === "captions",
+    );
+    if (tracks.length)
+      state.captionsOn = tracks.some((track) => track.mode === "showing");
+  }
+
   function enableYouTubeCaptions() {
     const button = getYouTubeCaptionButton();
     if (!button) return;
@@ -175,6 +189,7 @@ globalThis.PipCompanion.ContentCaptions = (() => {
   }
 
   function prepareNativeCaptions() {
+    if (!state.captionsOn) return;
     enableYouTubeCaptions();
     if (state.captionNode || !state.videoStash) return;
     suppressNativeCaptions();
@@ -242,6 +257,7 @@ globalThis.PipCompanion.ContentCaptions = (() => {
   }
 
   return {
+    initializeCaptionsOn,
     refreshSubtitle,
     prepareNativeCaptions,
     restoreNativeCaptionModes,
