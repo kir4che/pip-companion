@@ -101,7 +101,8 @@ function onPageKeyDown(e: KeyboardEvent) {
     return;
 
   if (matchesShortcut(e, state.commentsShortcut)) {
-    if (!IS_YOUTUBE || !state.commentsEnabled) return;
+    if (!(IS_YOUTUBE || isBilibiliVideoPage()) || !state.commentsEnabled)
+      return;
     e.preventDefault();
     e.stopPropagation();
     toggleFloatingComments();
@@ -168,19 +169,22 @@ function scanPage() {
   if (state.pipWindow?.closed)
     globalThis.PipCompanion.ContentPipLifecycle.closePiP(false);
 
-  if (IS_YOUTUBE) {
+  if (IS_YOUTUBE || isBilibiliVideoPage()) {
     if (state.commentsEnabled)
       ensureFloatingCommentsButton(state.commentsShortcut);
-    else document.querySelector(".yt-floating-comments-btn")?.remove();
+    else
+      document
+        .querySelectorAll(
+          ".yt-floating-comments-btn, .bili-floating-comments-btn",
+        )
+        .forEach((button) => button.remove());
     if (state.screenshotEnabled)
       globalThis.PipCompanion.ContentScreenshot.ensureScreenshotButton(
         state.screenshotShortcut,
       );
     else document.querySelector(".yt-pip-screenshot-btn")?.remove();
     if (document.body.classList.contains(FLOATING_COMMENTS_BODY_CLASS)) {
-      const comments =
-        document.querySelector("#comments") ||
-        document.querySelector("ytd-comments");
+      const comments = getFloatingCommentsRoot();
       if (comments) ensureFloatingCommentsCloseButton(comments);
     }
   }
@@ -262,10 +266,10 @@ document.addEventListener(
   "pointerdown",
   (e) => {
     if (!document.body.classList.contains(FLOATING_COMMENTS_BODY_CLASS)) return;
-    const comments =
-      document.querySelector("#comments") ||
-      document.querySelector("ytd-comments");
-    const toggleBtn = document.querySelector(".yt-floating-comments-btn");
+    const comments = getFloatingCommentsRoot();
+    const toggleBtn = document.querySelector(
+      ".yt-floating-comments-btn, .bili-floating-comments-btn",
+    );
     const target = e.target as Element;
     if (
       comments &&

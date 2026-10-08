@@ -3,7 +3,7 @@
   "name": "幕伴 PiP · PiP Companion",
   "version": "0.1.0",
   "minimum_chrome_version": "116",
-  "description": "讓網頁影片在子母畫面中播放，支援字幕、彈幕、截圖與 YouTube 浮動留言區。",
+  "description": "讓網頁影片在子母畫面中播放，支援字幕、彈幕、截圖與浮動留言區。",
   "icons": {
     "16": "assets/icon-16.png",
     "32": "assets/icon-32.png",

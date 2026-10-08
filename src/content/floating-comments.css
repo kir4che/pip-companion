@@ -51,6 +51,31 @@ body.yt-floating-comments-open.yt-floating-comments-bottom-sheet
   animation: yt-bottom-sheet-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
+body.bili-floating-comments-open .pc-floating-comments-panel {
+  position: fixed !important;
+  inset: var(--yt-floating-comments-top, 50%) 0 0 !important;
+  width: 100vw !important;
+  max-height: calc(100vh - var(--yt-floating-comments-top, 50%)) !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  padding: 20px !important;
+  border-radius: 16px 16px 0 0 !important;
+  background: #18191c !important;
+  color: #e3e5e7 !important;
+  box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.55) !important;
+  z-index: 2022 !important;
+}
+
+body.bili-floating-comments-open
+  .pc-floating-comments-panel
+  > .yt-floating-comments-close-btn {
+  position: sticky !important;
+  float: right !important;
+  top: 0 !important;
+  margin: 0 0 8px 8px !important;
+  z-index: 2025 !important;
+}
+
 @keyframes yt-bottom-sheet-slide-up {
   from {
     transform: translateY(100%);
@@ -103,6 +128,7 @@ body.yt-floating-comments-open .yt-floating-comments-close-btn:hover {
   transform: scale(1.08) !important;
 }
 
+.bili-floating-comments-btn,
 .ytp-button.yt-floating-comments-btn,
 .ytp-button.yt-pip-screenshot-btn {
   position: relative !important;
@@ -148,6 +174,7 @@ body.yt-floating-comments-open .yt-floating-comments-close-btn:hover {
   visibility: visible !important;
 }
 
+.bili-floating-comments-btn svg,
 .ytp-button.yt-floating-comments-btn svg,
 .ytp-button.yt-pip-screenshot-btn svg {
   display: block !important;
@@ -159,6 +186,7 @@ body.yt-floating-comments-open .yt-floating-comments-close-btn:hover {
   transition: fill 0.15s ease !important;
 }
 
-.ytp-button.yt-floating-comments-btn.active svg {
+.ytp-button.yt-floating-comments-btn.active svg,
+.bili-floating-comments-btn.active svg {
   fill: #3ea6ff !important;
 }

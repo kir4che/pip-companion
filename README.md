@@ -2,7 +2,7 @@
 
 English | [繁體中文](README.zh-TW.md)
 
-A browser extension that brings web videos into Picture-in-Picture, with captions, danmaku, screenshots, and a floating YouTube comments panel.
+A browser extension that brings web videos into Picture-in-Picture, with captions, danmaku, screenshots, and floating comments panels.
 
 > For problems or feature requests, please report them in [Issues](https://github.com/kir4che/pip-companion/issues).
 
@@ -20,7 +20,7 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
   - Twitch
   - Bahamut
   - YouTube Live
-- **YouTube comments:** a YouTube-only floating panel lets you browse comments while watching a video.
+- **Floating comments:** open the comments panel on YouTube and Bilibili video pages while watching.
 - **Screenshots:** save the video frame as a PNG file.
 - **Keyboard shortcuts:** customize shortcuts for opening or closing PiP, comments, screenshots, and danmaku.
 - **Embedded videos:** detect videos in matching iframes. Cross-origin compatibility depends on the website and browser permissions, so not every player is guaranteed to work.
@@ -31,12 +31,12 @@ Click the toolbar icon to open or close the PiP window. To customize a shortcut,
 
 Default shortcuts:
 
-| Action                  | Shortcut      |
-| ----------------------- | ------------- |
-| Open or close PiP       | `Alt+Shift+P` |
-| Toggle YouTube comments | `Alt+C`       |
-| Take a screenshot       | `Alt+P`       |
-| Toggle danmaku          | `Alt+D`       |
+| Action                   | Shortcut      |
+| ------------------------ | ------------- |
+| Open or close PiP        | `Alt+Shift+P` |
+| Toggle floating comments | `Alt+C`       |
+| Take a screenshot        | `Alt+P`       |
+| Toggle danmaku           | `Alt+D`       |
 
 Shortcuts inside the PiP window:
 
