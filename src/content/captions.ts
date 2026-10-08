@@ -232,14 +232,28 @@ globalThis.PipCompanion.ContentCaptions = (() => {
     if (!state.pipUi) return;
     state.pipUi.subtitle.replaceChildren();
 
-    if (!state.captionsOn || !state.captionLines.length) {
+    const seen = new Set<string>();
+    const lines = state.captionLines.filter((line) => {
+      const text = line.segments
+        .map((segment) => segment.text)
+        .join("")
+        .replace(/\s+/g, " ")
+        .trim()
+        .normalize("NFC")
+        .toLowerCase();
+      if (!text || seen.has(text)) return false;
+      seen.add(text);
+      return true;
+    });
+
+    if (!state.captionsOn || !lines.length) {
       state.pipUi.subtitle.hidden = true;
       return;
     }
 
     state.pipUi.subtitle.hidden = false;
     const doc = state.pipUi.subtitle.ownerDocument;
-    for (const line of state.captionLines) {
+    for (const line of lines) {
       const lineEl = doc.createElement("div");
       lineEl.className = "subtitle-line";
       for (const seg of line.segments) {
