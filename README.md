@@ -18,14 +18,15 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 - **Danmaku:**
   - Native danmaku from Bilibili and Bahamut Anime Crazy can be shown in PiP.
   - YouTube Live and Twitch chat messages are rendered as danmaku and shown in the native player and PiP.
+  - Customize the font, size, weight, speed, opacity, and display area.
 - **Floating comments:** open the comments panel on YouTube and Bilibili video pages while watching.
 - **Screenshots:** save the video frame as a PNG file.
-- **Keyboard shortcuts:** customize shortcuts for opening or closing PiP, comments, screenshots, and danmaku.
+- **Feature toggles and keyboard shortcuts:** toggle danmaku, screenshots, and floating comments individually; customize shortcuts for PiP, comments, screenshots, and danmaku.
 - **Embedded videos:** detect videos in matching iframes. Cross-origin compatibility depends on the website and browser permissions, so not every player is guaranteed to work.
 
 ## Controls and Shortcuts
 
-- Toggle PiP: on a page with a playable video, click the toolbar icon then the toggle button in the popup; or press `Alt+Shift+P` on the video page.
+- Toggle PiP: on a page with a playable video, click the PiP button in the extension popup or press `Alt+Shift+P` on the video page.
 - Customize shortcuts: click a shortcut button in the popup, then press a new combination when it shows "Press shortcut…"; press `Esc` to cancel.
 
 Default shortcuts:
@@ -50,8 +51,6 @@ Shortcuts inside the PiP window:
 | Toggle mute           | `M`                   |
 | Step one frame        | `,` / `.`             |
 | Adjust playback speed | `Shift+,` / `Shift+.` |
-
-Cross-origin videos may not support screenshots or volume above 100%, and captions require readable subtitle data from the site. Shortcuts and feature settings are stored locally in the browser. The extension has no backend; Bilibili danmaku is loaded through the Bilibili API.
 
 ## Installation
 
