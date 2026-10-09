@@ -90,11 +90,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes.seekSeconds)
     state.seekSeconds = normalizeSeekSeconds(changes.seekSeconds.newValue);
-  if (changes[captionSettings.STORAGE_KEY]) {
+  const captionStyleChange = changes[captionSettings.STORAGE_KEY];
+  if (captionStyleChange) {
     captionStyleRevision++;
-    state.captionStyle = captionSettings.normalize(
-      changes[captionSettings.STORAGE_KEY].newValue,
-    );
+    state.captionStyle = captionSettings.normalize(captionStyleChange.newValue);
     globalThis.PipCompanion.ContentCaptions.renderSubtitle();
   }
   if (shortcutChanged || changes.commentsEnabled || changes.screenshotEnabled)
@@ -160,7 +159,9 @@ function onPageKeyDown(e: KeyboardEvent) {
     } else if (state.globalPipOpen) {
       e.preventDefault();
       e.stopPropagation();
-      void chrome.runtime.sendMessage({ type: "CLOSE_ALL_PIP" });
+      void chrome.runtime.sendMessage({
+        type: "CLOSE_ALL_PIP",
+      } satisfies ExtensionMessage);
     } else if (isEditableTarget) return;
     else {
       const video =
@@ -210,27 +211,32 @@ function onPageKeyDown(e: KeyboardEvent) {
   }
 }
 
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message?.type === "PIP_GLOBAL_STATE") {
-    state.globalPipOpen = message.pipOpen === true;
-    return;
-  }
-  if (message?.type === "PING") {
-    sendResponse({
-      ok: true,
-      pipOpen: Boolean(state.pipWindow && !state.pipWindow.closed),
-    });
-    return;
-  }
-  if (message?.type === "CLOSE_PIP") {
-    globalThis.PipCompanion.ContentPipLifecycle.closePiP(true);
-    sendResponse({ ok: true });
-    return;
-  }
-  if (message?.type !== "OPEN_PIP") return;
-  void globalThis.PipCompanion.ContentPipLifecycle.openPiP().then(sendResponse);
-  return true;
-});
+chrome.runtime.onMessage.addListener(
+  (message: unknown, _sender, sendResponse) => {
+    if (!globalThis.PipCompanion.util.isExtensionMessage(message)) return;
+    if (message.type === "PIP_GLOBAL_STATE") {
+      state.globalPipOpen = message.pipOpen === true;
+      return;
+    }
+    if (message?.type === "PING") {
+      sendResponse({
+        ok: true,
+        pipOpen: Boolean(state.pipWindow && !state.pipWindow.closed),
+      });
+      return;
+    }
+    if (message?.type === "CLOSE_PIP") {
+      globalThis.PipCompanion.ContentPipLifecycle.closePiP(true);
+      sendResponse({ ok: true });
+      return;
+    }
+    if (message?.type !== "OPEN_PIP") return;
+    void globalThis.PipCompanion.ContentPipLifecycle.openPiP().then(
+      sendResponse,
+    );
+    return true;
+  },
+);
 
 function scanPage() {
   if (state.pipWindow?.closed)
@@ -319,7 +325,7 @@ function nudgeScan() {
 
 window.addEventListener("keydown", onPageKeyDown, true);
 void chrome.runtime
-  .sendMessage({ type: "GET_PIP_STATE" })
+  .sendMessage({ type: "GET_PIP_STATE" } satisfies ExtensionMessage)
   .then((response) => {
     state.globalPipOpen = response?.pipOpen === true;
   })
@@ -346,7 +352,8 @@ document.addEventListener(
     const toggleBtn = document.querySelector(
       ".yt-floating-comments-btn, .bili-floating-comments-btn",
     );
-    const target = e.target as Element;
+    const target = e.target;
+    if (!(target instanceof Element)) return;
     if (
       comments &&
       !comments.contains(target) &&

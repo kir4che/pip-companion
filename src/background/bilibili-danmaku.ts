@@ -1,5 +1,6 @@
 import "../shared/bilibili-danmaku-config.js";
 import { parseBilibiliAdvancedDanmaku } from "../shared/bilibili-advanced-danmaku.js";
+import { isRecord } from "../shared/type-guards.js";
 
 const BILIBILI_SEGMENT_SECONDS =
   globalThis.PipCompanion.bilibiliDanmakuConfig.segmentSeconds;
@@ -14,6 +15,24 @@ const WBI_MIXIN_KEY_TABLE = [
   26, 17, 0, 1, 60, 51, 30, 4, 22, 25, 54, 21, 56, 59, 6, 63, 57, 62, 11, 36,
   20, 34, 44, 52,
 ];
+
+function isBilibiliDanmakuRequest(
+  value: unknown,
+): value is Extract<ExtensionMessage, { type: "GET_BILIBILI_DANMAKU" }> {
+  if (
+    !isRecord(value) ||
+    value.type !== "GET_BILIBILI_DANMAKU" ||
+    !Number.isSafeInteger(value.page) ||
+    (value.startSegment !== undefined &&
+      !Number.isSafeInteger(value.startSegment)) ||
+    (value.endSegment !== undefined && !Number.isSafeInteger(value.endSegment))
+  )
+    return false;
+  return (
+    (typeof value.bvid === "string" && value.avid === undefined) ||
+    (typeof value.avid === "string" && value.bvid === undefined)
+  );
+}
 
 let cachedLegacyDanmaku: {
   cid: string;
@@ -48,7 +67,8 @@ async function fetchWithRetry(
       if (attempt === BILIBILI_RETRY_DELAYS_MS.length) throw error;
     }
 
-    await wait(BILIBILI_RETRY_DELAYS_MS[attempt]);
+    const retryDelay = BILIBILI_RETRY_DELAYS_MS[attempt];
+    if (retryDelay !== undefined) await wait(retryDelay);
   }
   throw lastError instanceof Error ? lastError : new Error(`${label} failed`);
 }
@@ -108,8 +128,10 @@ function md5(input: string): string {
         wordIndex = (7 * index) % 16;
       }
 
-      const sum = (a + f + constants[index] + words[wordIndex]) >>> 0;
-      const shift = shifts[index];
+      const constant = constants[index]!;
+      const word = words[wordIndex]!;
+      const shift = shifts[index]!;
+      const sum = (a + f + constant + word) >>> 0;
       const rotated = (sum << shift) | (sum >>> (32 - shift));
       const previousD = d;
       d = c;
@@ -179,19 +201,16 @@ async function getWbiMixinKey(): Promise<string> {
     "WBI key",
   );
   if (!response.ok) throw new Error(`WBI key HTTP ${response.status}`);
-  const result = await response.json();
-  const images = result?.data?.wbi_img;
-  const imageKey = String(images?.img_url || "")
-    .split("/")
-    .pop()
-    ?.split(".")[0];
-  const subKey = String(images?.sub_url || "")
-    .split("/")
-    .pop()
-    ?.split(".")[0];
-  const source = `${imageKey || ""}${subKey || ""}`;
+  const result: unknown = await response.json();
+  const data = isRecord(result) && isRecord(result.data) ? result.data : null;
+  const images = data && isRecord(data.wbi_img) ? data.wbi_img : null;
+  const imageUrl = typeof images?.img_url === "string" ? images.img_url : "";
+  const subUrl = typeof images?.sub_url === "string" ? images.sub_url : "";
+  const imageKey = imageUrl.split("/").pop()?.split(".")[0] || "";
+  const subKey = subUrl.split("/").pop()?.split(".")[0] || "";
+  const source = `${imageKey}${subKey}`;
 
-  if (result?.code !== 0 || source.length < 64)
+  if (!isRecord(result) || result.code !== 0 || source.length < 64)
     throw new Error("Bilibili WBI keys are unavailable");
 
   cachedWbiMixinKey = WBI_MIXIN_KEY_TABLE.map((index) => source[index])
@@ -236,6 +255,8 @@ function readProtoVarint(
   let shift = 0n;
   while (offset < limit && shift <= 63n) {
     const byte = bytes[offset++];
+    if (byte === undefined)
+      throw new Error("Truncated Bilibili danmaku protobuf");
     if (shift === 63n && byte > 1)
       throw new Error("Invalid Bilibili danmaku protobuf");
     value |= BigInt(byte & 0x7f) << shift;
@@ -309,12 +330,15 @@ function parseBilibiliDanmakuXml(xml: string) {
   );
   let match: RegExpExecArray | null;
   while ((match = decoder.exec(xml))) {
-    const attributes = (match[1] ?? match[2]).split(",");
+    const rawAttributes = match[1] ?? match[2];
+    const rawText = match[3];
+    if (rawAttributes === undefined || rawText === undefined) continue;
+    const attributes = rawAttributes.split(",");
     const replayTime = Number(attributes[0]);
     const mode = Number(attributes[1]);
     const color = Number(attributes[3]);
     const id = attributes[7]?.trim();
-    const text = decodeBilibiliXmlText(match[3]).trim();
+    const text = decodeBilibiliXmlText(rawText).trim();
     const advanced =
       mode === 7 ? parseBilibiliAdvancedDanmaku(text) : undefined;
     const displayText = advanced?.text || text;
@@ -478,22 +502,18 @@ function parseBilibiliSegment(bytes: Uint8Array) {
 }
 
 export function registerBilibiliDanmakuListener() {
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message?.type === "GET_BILIBILI_DANMAKU") {
+  chrome.runtime.onMessage.addListener(
+    (message: unknown, sender, sendResponse) => {
+      if (!isBilibiliDanmakuRequest(message)) return;
+
       const senderUrl = sender.url || sender.tab?.url || "";
-      const bvid = String(message.bvid || "");
-      const avid = String(message.avid || "");
-      const page = Number(message.page);
-      const requestedStartSegment = Number(message.startSegment);
-      const requestedEndSegment = Number(message.endSegment);
+      const bvid = message.bvid || "";
+      const avid = message.avid || "";
+      const page = message.page;
+      const requestedStartSegment = message.startSegment ?? 1;
+      const requestedEndSegment = message.endSegment ?? requestedStartSegment;
       const rangeRequested =
         message.startSegment !== undefined || message.endSegment !== undefined;
-      const requestedRangeStart =
-        message.startSegment === undefined ? 1 : requestedStartSegment;
-      const requestedRangeEnd =
-        message.endSegment === undefined
-          ? requestedRangeStart
-          : requestedEndSegment;
 
       if (
         !/^https:\/\/(www\.)?bilibili\.com\//.test(senderUrl) ||
@@ -502,15 +522,11 @@ export function registerBilibiliDanmakuListener() {
         !Number.isInteger(page) ||
         page < 1 ||
         page > 1000 ||
-        (message.startSegment !== undefined &&
-          (!Number.isInteger(requestedStartSegment) ||
-            requestedStartSegment < 1)) ||
-        (message.endSegment !== undefined &&
-          (!Number.isInteger(requestedEndSegment) ||
-            requestedEndSegment < 1)) ||
+        (message.startSegment !== undefined && requestedStartSegment < 1) ||
+        (message.endSegment !== undefined && requestedEndSegment < 1) ||
         (rangeRequested &&
-          (requestedRangeEnd < requestedRangeStart ||
-            requestedRangeEnd - requestedRangeStart > 5))
+          (requestedEndSegment < requestedStartSegment ||
+            requestedEndSegment - requestedStartSegment > 5))
       ) {
         sendResponse({ ok: false, error: "Invalid Bilibili video request" });
         return;
@@ -530,16 +546,22 @@ export function registerBilibiliDanmakuListener() {
           if (!videoResponse.ok)
             throw new Error(`Video info HTTP ${videoResponse.status}`);
 
-          const videoInfo = await videoResponse.json();
-          const part = videoInfo?.data?.pages?.[page - 1];
-          const cid = part?.cid;
-          const aid = videoInfo?.data?.aid;
-          const duration = Number(part?.duration);
+          const videoInfo: unknown = await videoResponse.json();
+          const videoData =
+            isRecord(videoInfo) && isRecord(videoInfo.data)
+              ? videoInfo.data
+              : null;
+          const pages = Array.isArray(videoData?.pages) ? videoData.pages : [];
+          const part = pages[page - 1];
+          const cid = String(isRecord(part) ? (part.cid ?? "") : "");
+          const aid = String(videoData?.aid ?? "");
+          const duration = Number(isRecord(part) ? part.duration : undefined);
 
           if (
-            videoInfo?.code !== 0 ||
-            !/^\d+$/.test(String(cid ?? "")) ||
-            !/^\d+$/.test(String(aid ?? "")) ||
+            !isRecord(videoInfo) ||
+            videoInfo.code !== 0 ||
+            !/^\d+$/.test(cid) ||
+            !/^\d+$/.test(aid) ||
             !Number.isFinite(duration) ||
             duration <= 0
           )
@@ -654,9 +676,14 @@ export function registerBilibiliDanmakuListener() {
               throw new Error("Bilibili danmaku responses are too large");
 
             if (bytes[0] === 0x7b) {
-              const result = JSON.parse(new TextDecoder().decode(bytes));
+              const result: unknown = JSON.parse(
+                new TextDecoder().decode(bytes),
+              );
+              const errorDetail = isRecord(result)
+                ? result.message || result.code || "invalid response"
+                : "invalid response";
               throw new Error(
-                `Bilibili danmaku API error: ${result?.message || result?.code || "invalid response"}`,
+                `Bilibili danmaku API error: ${String(errorDetail)}`,
               );
             }
 
@@ -744,6 +771,6 @@ export function registerBilibiliDanmakuListener() {
         }
       })();
       return true;
-    }
-  });
+    },
+  );
 }

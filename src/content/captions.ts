@@ -102,9 +102,7 @@ globalThis.PipCompanion.ContentCaptions = (() => {
     const selector =
       '[class*="subtitle" i], [class*="caption" i], [class*="timedtext" i], [id*="subtitle" i], [id*="caption" i]';
     const scored: { element: HTMLElement; score: number }[] = [];
-    for (const element of document.querySelectorAll(
-      selector,
-    ) as NodeListOf<HTMLElement>) {
+    for (const element of document.querySelectorAll<HTMLElement>(selector)) {
       const text = (element.innerText || "").trim();
       if (!text || text.length > 300) continue;
       if (element.querySelector("button, a, input, select, video")) continue;
@@ -139,7 +137,9 @@ globalThis.PipCompanion.ContentCaptions = (() => {
       top.find(
         (element) =>
           !top.some((other) => other !== element && other.contains(element)),
-      ) ?? top[0]
+      ) ??
+      top[0] ??
+      null
     );
   }
 
@@ -162,8 +162,8 @@ globalThis.PipCompanion.ContentCaptions = (() => {
       )
         continue;
       for (const cue of track.activeCues ?? []) {
-        const vtt = cue as VTTCue;
-        const text = (vtt.text || "").replace(/<[^>]*>/g, "");
+        if (!(cue instanceof VTTCue)) continue;
+        const text = (cue.text || "").replace(/<[^>]*>/g, "");
         for (const part of text.split(/\r?\n/)) {
           if (part.trim()) lines.push({ segments: [{ text: part.trim() }] });
         }

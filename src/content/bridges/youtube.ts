@@ -1,6 +1,10 @@
 "use strict";
 
 (() => {
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
   function extractSpecFromObject(obj: unknown, depth = 0): string {
     if (!obj || depth > 5) return "";
     try {
@@ -16,16 +20,13 @@
           return "";
         }
       }
-      if (typeof obj !== "object" || obj === null) return "";
-      const o = obj as Record<string, unknown>;
+      if (!isRecord(obj)) return "";
+      const o = obj;
 
       if (typeof o.spec === "string" && o.spec.includes("|")) return o.spec;
-      if (
-        o.playerStoryboardSpecRenderer &&
-        typeof (o.playerStoryboardSpecRenderer as { spec?: string }).spec ===
-          "string"
-      )
-        return (o.playerStoryboardSpecRenderer as { spec: string }).spec;
+      const renderer = o.playerStoryboardSpecRenderer;
+      if (isRecord(renderer) && typeof renderer.spec === "string")
+        return renderer.spec;
       if (o.storyboards) {
         const found = extractSpecFromObject(o.storyboards, depth + 1);
         if (found) return found;
@@ -49,14 +50,7 @@
 
   function syncYouTubeData() {
     try {
-      const player = document.querySelector("#movie_player") as {
-        getStoryboardFormat?: () => string;
-        getPlayerResponse?: () => unknown;
-        getVideoData?: () => {
-          video_id?: string;
-          isLive?: boolean;
-        };
-      } | null;
+      const player = document.querySelector<YouTubePlayer>("#movie_player");
 
       let spec = "";
       let isLive = false;
@@ -89,27 +83,14 @@
 
       if (!spec) {
         try {
-          const ytWin = window as unknown as {
-            ytInitialPlayerResponse?: unknown;
-            ytplayer?: {
-              config?: {
-                args?: Record<string, unknown>;
-              };
-            };
-            ytcfg?: {
-              get?: (k: string) => unknown;
-              data_?: Record<string, unknown>;
-            };
-          };
-
-          if (ytWin.ytInitialPlayerResponse)
-            spec = extractSpecFromObject(ytWin.ytInitialPlayerResponse);
-          if (!spec && ytWin.ytplayer?.config?.args)
-            spec = extractSpecFromObject(ytWin.ytplayer.config.args);
-          if (!spec && ytWin.ytcfg?.get)
-            spec = extractSpecFromObject(ytWin.ytcfg.get("PLAYER_VARS"));
-          if (!spec && ytWin.ytcfg?.data_?.PLAYER_VARS)
-            spec = extractSpecFromObject(ytWin.ytcfg.data_.PLAYER_VARS);
+          if (window.ytInitialPlayerResponse)
+            spec = extractSpecFromObject(window.ytInitialPlayerResponse);
+          if (!spec && window.ytplayer?.config?.args)
+            spec = extractSpecFromObject(window.ytplayer.config.args);
+          if (!spec && window.ytcfg?.get)
+            spec = extractSpecFromObject(window.ytcfg.get("PLAYER_VARS"));
+          if (!spec && window.ytcfg?.data_?.PLAYER_VARS)
+            spec = extractSpecFromObject(window.ytcfg.data_.PLAYER_VARS);
         } catch {}
       }
 

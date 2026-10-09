@@ -280,7 +280,8 @@
         else if (char === "{") depth++;
         else if (char === "}" && --depth === 0) {
           try {
-            return JSON.parse(source.slice(start, index + 1)) as unknown;
+            const parsed: unknown = JSON.parse(source.slice(start, index + 1));
+            return parsed;
           } catch {
             return null;
           }
@@ -581,14 +582,14 @@
         }
         for (const mutation of mutations) {
           for (const addedNode of mutation.addedNodes) {
-            if (addedNode.nodeType !== Node.ELEMENT_NODE) continue;
+            if (!(addedNode instanceof Element)) continue;
             const data =
               globalThis.PipCompanion.ContentDanmakuSources.parseYouTubeMessage(
                 addedNode,
               );
             if (data) receiveDanmaku(data);
-            else if ((addedNode as Element).querySelectorAll) {
-              const children = (addedNode as Element).querySelectorAll(
+            else {
+              const children = addedNode.querySelectorAll(
                 "yt-live-chat-text-message-renderer, yt-live-chat-paid-message-renderer",
               );
               children.forEach((child) => {

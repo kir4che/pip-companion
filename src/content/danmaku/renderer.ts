@@ -209,12 +209,9 @@ interface DanmakuRendererOptions {
         item.style.fontWeight = String(this.dependencies.getStyle().fontWeight);
         item.style.opacity = String(this.dependencies.getStyle().opacity / 100);
         const opacityEffect = item.danmakuOpacityAnimation?.effect;
-        if (opacityEffect) {
+        if (opacityEffect instanceof KeyframeEffect) {
           const opacity = this.dependencies.getStyle().opacity / 100;
-          (opacityEffect as KeyframeEffect).setKeyframes([
-            { opacity },
-            { opacity },
-          ]);
+          opacityEffect.setKeyframes([{ opacity }, { opacity }]);
         }
         item.style.color = !item.classList.contains("is-superchat")
           ? item.dataset.danmakuColor || ""
@@ -399,6 +396,7 @@ interface DanmakuRendererOptions {
         let rendered = false;
         for (let index = 0; index < this.pendingDanmaku.length; index++) {
           const entry = this.pendingDanmaku[index];
+          if (!entry) continue;
           const type: DanmakuType =
             entry.data.type === "top" || entry.data.type === "bottom"
               ? entry.data.type
@@ -435,15 +433,19 @@ interface DanmakuRendererOptions {
             Number.isFinite(endTime) &&
             endTime > now,
         );
+        const oldestPending = this.pendingDanmaku[0];
+        if (!oldestPending) return;
         const nextPendingExpiry =
-          this.pendingDanmaku[0].queuedAt + MAX_PENDING_DANMAKU_DELAY_MS;
+          oldestPending.queuedAt + MAX_PENDING_DANMAKU_DELAY_MS;
         this.schedulePendingFlush(
           Math.min(...endTimes, nextPendingExpiry) - now,
         );
         return;
       }
+      const oldestPending = this.pendingDanmaku[0];
+      if (!oldestPending) return;
       const nextPendingExpiry =
-        this.pendingDanmaku[0].queuedAt + MAX_PENDING_DANMAKU_DELAY_MS;
+        oldestPending.queuedAt + MAX_PENDING_DANMAKU_DELAY_MS;
       const nextFlushTime = Math.min(nextLaneTime, nextPendingExpiry);
       if (Number.isFinite(nextFlushTime) && nextFlushTime > now) {
         this.schedulePendingFlush(nextFlushTime - now);
@@ -608,16 +610,21 @@ interface DanmakuRendererOptions {
             ),
           );
           if (selectedLane < 0) return;
-          occupancy[selectedLane].push({ left, right });
+          const selectedOccupancy = occupancy[selectedLane];
+          if (!selectedOccupancy) return;
+          selectedOccupancy.push({ left, right });
         } else {
           let bestLane = 0;
           let minTime = lanes[0];
+          if (minTime === undefined) return;
           const freeLanes: number[] = [];
 
           for (let i = 0; i < numLanes; i++) {
-            if (lanes[i] <= now) freeLanes.push(i);
-            if (lanes[i] < minTime) {
-              minTime = lanes[i];
+            const availableAt = lanes[i];
+            if (availableAt === undefined) continue;
+            if (availableAt <= now) freeLanes.push(i);
+            if (availableAt < minTime) {
+              minTime = availableAt;
               bestLane = i;
             }
           }
@@ -625,13 +632,14 @@ interface DanmakuRendererOptions {
           if (restoring && freeLanes.length === 0) return;
           selectedLane =
             freeLanes.length > 0
-              ? freeLanes[Math.floor(Math.random() * freeLanes.length)]
+              ? (freeLanes[Math.floor(Math.random() * freeLanes.length)] ??
+                bestLane)
               : bestLane;
         }
 
-        const laneStartTime = restoring
-          ? now
-          : Math.max(now, lanes[selectedLane]);
+        const selectedLaneTime = lanes[selectedLane];
+        if (selectedLaneTime === undefined) return;
+        const laneStartTime = restoring ? now : Math.max(now, selectedLaneTime);
         const remainingLaneTime = occupancy
           ? isFixed
             ? Math.max(0, totalLifetime - elapsed * 1000)
@@ -646,7 +654,7 @@ interface DanmakuRendererOptions {
         )
           return;
         lanes[selectedLane] = Math.max(
-          lanes[selectedLane],
+          selectedLaneTime,
           laneStartTime + remainingLaneTime,
         );
       }

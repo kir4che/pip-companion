@@ -107,17 +107,23 @@ globalThis.PipCompanion.ContentYouTubeDanmakuSender = (() => {
   }
 
   function readText(element: HTMLElement): string {
-    return element.tagName === "INPUT" || element.tagName === "TEXTAREA"
-      ? (element as HTMLInputElement | HTMLTextAreaElement).value
+    return element instanceof HTMLInputElement ||
+      element instanceof HTMLTextAreaElement
+      ? element.value
       : element.innerText || element.textContent || "";
   }
 
   function setText(element: HTMLElement, text: string): void {
-    if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
-      const prototype = Object.getPrototypeOf(element) as object;
-      const setter = Object.getOwnPropertyDescriptor(prototype, "value")?.set;
+    if (
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLTextAreaElement
+    ) {
+      const setter = Object.getOwnPropertyDescriptor(
+        Object.getPrototypeOf(element),
+        "value",
+      )?.set;
       if (setter) setter.call(element, text);
-      else (element as HTMLInputElement | HTMLTextAreaElement).value = text;
+      else element.value = text;
     } else {
       element.textContent = text;
     }

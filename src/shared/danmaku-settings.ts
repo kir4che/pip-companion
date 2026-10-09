@@ -34,11 +34,12 @@ globalThis.PipCompanion.danmakuSettings = (() => {
     displayArea: 50,
   };
 
+  function isDanmakuFontFamily(value: unknown): value is DanmakuFontFamily {
+    return typeof value === "string" && Object.hasOwn(FONT_FAMILIES, value);
+  }
+
   function normalize(value: unknown): DanmakuStyleSettings {
-    const settings =
-      value && typeof value === "object"
-        ? (value as Partial<DanmakuStyleSettings>)
-        : {};
+    const settings = globalThis.PipCompanion.util.isRecord(value) ? value : {};
     const clamp = (
       input: unknown,
       min: number,
@@ -50,18 +51,16 @@ globalThis.PipCompanion.danmakuSettings = (() => {
       const bounded = Math.max(min, Math.min(max, input));
       return min + Math.round((bounded - min) / step) * step;
     };
-    const storedFontFamily = (settings as Record<string, unknown>).fontFamily;
+    const storedFontFamily = settings.fontFamily;
     const fontFamilyValue =
       storedFontFamily === "system"
         ? "default"
         : storedFontFamily === "newSong"
           ? "song"
           : storedFontFamily;
-    const fontFamily =
-      typeof fontFamilyValue === "string" &&
-      Object.hasOwn(FONT_FAMILIES, fontFamilyValue)
-        ? (fontFamilyValue as DanmakuFontFamily)
-        : DEFAULTS.fontFamily;
+    const fontFamily = isDanmakuFontFamily(fontFamilyValue)
+      ? fontFamilyValue
+      : DEFAULTS.fontFamily;
     const requestedSpeedScale = settings.speedScale;
     const speedScale =
       typeof requestedSpeedScale === "number" &&

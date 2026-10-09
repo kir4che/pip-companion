@@ -1,16 +1,50 @@
 "use strict";
 
 (() => {
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
+  function isStringArray(value: unknown): value is string[] {
+    return (
+      Array.isArray(value) && value.every((item) => typeof item === "string")
+    );
+  }
+
+  function positiveNumber(value: unknown, fallback: number): number {
+    return typeof value === "number" && Number.isFinite(value) && value > 0
+      ? value
+      : fallback;
+  }
+
+  interface BahaSpriteOptions {
+    width?: number;
+    height?: number;
+    columns?: number;
+    rows?: number;
+    interval?: number;
+    images?: string[];
+  }
+
+  function isBahaSpriteOptions(value: unknown): value is BahaSpriteOptions {
+    if (!isRecord(value)) return false;
+    for (const key of ["width", "height", "columns", "rows", "interval"])
+      if (
+        value[key] !== undefined &&
+        (typeof value[key] !== "number" || !Number.isFinite(value[key]))
+      )
+        return false;
+    return value.images === undefined || isStringArray(value.images);
+  }
+
   function getBahaSn(url = location.href): string {
     try {
       const fromUrl = new URL(url, location.href).searchParams.get("sn");
       if (fromUrl) return fromUrl;
     } catch {}
     try {
-      const win = window as unknown as {
-        animefun?: { videoSn?: string | number };
-      };
-      if (win.animefun?.videoSn) return String(win.animefun.videoSn);
+      const videoSn = window.animefun?.videoSn;
+      if (videoSn) return String(videoSn);
     } catch {}
     return "";
   }
@@ -44,17 +78,7 @@
     document.dispatchEvent(new CustomEvent("pip-companion-baha-reset"));
   }
 
-  async function emitBahaData(
-    opts: {
-      width?: number;
-      height?: number;
-      columns?: number;
-      rows?: number;
-      interval?: number;
-      images?: string[];
-    },
-    sn = getBahaSn(),
-  ) {
+  async function emitBahaData(opts: BahaSpriteOptions, sn = getBahaSn()) {
     if (!opts || !Array.isArray(opts.images) || opts.images.length === 0)
       return;
 
@@ -106,34 +130,34 @@
           const clone = res.clone();
           clone
             .json()
-            .then((json) => {
+            .then((json: unknown) => {
               if (
-                json &&
-                Array.isArray(json.images) &&
-                json.images.length > 0 &&
-                typeof json.interval === "number"
-              ) {
-                const search = new URL(url, location.href).search;
-                const resolvedImages = json.images.map((img: string) => {
-                  try {
-                    const full = new URL(img, url).href;
-                    return full.includes("?") || !search ? full : full + search;
-                  } catch {
-                    return img;
-                  }
-                });
-                emitBahaData(
-                  {
-                    width: 160,
-                    height: 90,
-                    columns: json.cols || 10,
-                    rows: json.rows || 10,
-                    interval: json.interval,
-                    images: resolvedImages,
-                  },
-                  requestSn,
-                );
-              }
+                !isRecord(json) ||
+                !isStringArray(json.images) ||
+                json.images.length === 0
+              )
+                return;
+
+              const search = new URL(url, location.href).search;
+              const resolvedImages = json.images.map((img) => {
+                try {
+                  const full = new URL(img, url).href;
+                  return full.includes("?") || !search ? full : full + search;
+                } catch {
+                  return img;
+                }
+              });
+              emitBahaData(
+                {
+                  width: 160,
+                  height: 90,
+                  columns: positiveNumber(json.cols, 10),
+                  rows: positiveNumber(json.rows, 10),
+                  interval: positiveNumber(json.interval, 10),
+                  images: resolvedImages,
+                },
+                requestSn,
+              );
             })
             .catch(() => {});
         } catch {}
@@ -144,13 +168,6 @@
 
   function getPlayer() {
     try {
-      const win = window as unknown as {
-        videojs?: {
-          getPlayer?: (id: string) => unknown;
-          players?: Record<string, unknown>;
-        };
-      };
-
       const selectors = [
         "#ani_video_html5_api",
         "#ani_video video",
@@ -162,14 +179,15 @@
       ];
 
       for (const sel of selectors) {
-        const el = document.querySelector(sel) as { player?: unknown } | null;
-        if (el?.player) return el.player as Record<string, unknown>;
+        const element = document.querySelector(sel);
+        if (element && "player" in element && isRecord(element.player))
+          return element.player;
       }
 
       const winPlayer =
-        win.videojs?.getPlayer?.("ani_video") ||
-        win.videojs?.players?.["ani_video"];
-      if (winPlayer) return winPlayer as Record<string, unknown>;
+        window.videojs?.getPlayer?.("ani_video") ||
+        window.videojs?.players?.["ani_video"];
+      if (isRecord(winPlayer)) return winPlayer;
     } catch {}
     return null;
   }
@@ -179,76 +197,46 @@
       const player = getPlayer();
       if (!player) return;
 
-      const animeSpriteThumbnails = player.animeSpriteThumbnails as
-        | (() => {
-            options?: {
-              width?: number;
-              height?: number;
-              columns?: number;
-              rows?: number;
-              interval?: number;
-              images?: string[];
-            };
-            setSrc?: (cfg: unknown) => unknown;
-            _pipHooked?: boolean;
-          })
-        | undefined;
+      const animeSpriteThumbnails = player.animeSpriteThumbnails;
+      if (typeof animeSpriteThumbnails !== "function") return;
 
-      if (typeof animeSpriteThumbnails === "function") {
-        const plugin = animeSpriteThumbnails.call(player);
-        if (plugin) {
-          const proto = Object.getPrototypeOf(plugin) as {
-            setSrc?: (cfg: unknown) => unknown;
-            _pipHooked?: boolean;
-          };
+      const plugin: unknown = animeSpriteThumbnails.call(player);
+      if (!isRecord(plugin)) return;
 
-          if (
-            proto &&
-            typeof proto.setSrc === "function" &&
-            !proto._pipHooked
-          ) {
-            proto._pipHooked = true;
-            const origSetSrc = proto.setSrc;
-            proto.setSrc = function (cfg: unknown) {
-              const res = origSetSrc.call(this, cfg);
-              try {
-                const conf = (cfg ||
-                  (
-                    this as {
-                      options?: {
-                        width?: number;
-                        height?: number;
-                        columns?: number;
-                        rows?: number;
-                        interval?: number;
-                        images?: string[];
-                      };
-                    }
-                  ).options) as {
-                  width?: number;
-                  height?: number;
-                  columns?: number;
-                  rows?: number;
-                  interval?: number;
-                  images?: string[];
-                };
-                if (conf?.images && conf.images.length > 0) emitBahaData(conf);
-              } catch {}
-              return res;
-            };
-          }
-
-          if (plugin.options?.images && plugin.options.images.length > 0)
-            emitBahaData(plugin.options);
-        }
+      const proto: unknown = Object.getPrototypeOf(plugin);
+      if (
+        isRecord(proto) &&
+        typeof proto.setSrc === "function" &&
+        !proto._pipHooked
+      ) {
+        const origSetSrc = proto.setSrc;
+        proto._pipHooked = true;
+        proto.setSrc = function (this: unknown, cfg: unknown) {
+          const result = origSetSrc.call(this, cfg);
+          try {
+            const options = cfg
+              ? isBahaSpriteOptions(cfg)
+                ? cfg
+                : null
+              : isRecord(this) && isBahaSpriteOptions(this.options)
+                ? this.options
+                : null;
+            if (options?.images?.length) void emitBahaData(options);
+          } catch {}
+          return result;
+        };
       }
+
+      if (isBahaSpriteOptions(plugin.options) && plugin.options.images?.length)
+        void emitBahaData(plugin.options);
     } catch {}
   }
 
   window.addEventListener(
     "message",
-    (e: MessageEvent<{ type?: string }>) => {
-      if (e.data?.type === "PIP_REQUEST_BAHA_DATA") syncBahaData();
+    (e: MessageEvent<unknown>) => {
+      if (isRecord(e.data) && e.data.type === "PIP_REQUEST_BAHA_DATA")
+        syncBahaData();
     },
     { passive: true },
   );

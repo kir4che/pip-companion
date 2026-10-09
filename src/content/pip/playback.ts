@@ -11,7 +11,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   ];
 
   function getYouTubePlayer(): YouTubePlayer | null {
-    return document.querySelector("#movie_player") as YouTubePlayer | null;
+    return document.querySelector<YouTubePlayer>("#movie_player");
   }
 
   function getSourceVolumePercent() {
@@ -98,19 +98,20 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   const NEXT_LABEL = /next|下一|下一个|下一個|다음/i;
 
   function findNextControl(): NextControl | null {
-    const known = (document.querySelector("#movie_player .ytp-next-button") ??
-      document.querySelector('[data-uia="control-next"]') ??
-      document.querySelector(
+    const known =
+      document.querySelector<NextControl>("#movie_player .ytp-next-button") ??
+      document.querySelector<NextControl>('[data-uia="control-next"]') ??
+      document.querySelector<NextControl>(
         '[data-uia="next-episode-seamless-button"]',
-      )) as NextControl | null;
+      );
     if (known) return known;
     for (const containerSelector of PLAYER_CONTAINERS) {
       const container = document.querySelector(containerSelector);
       if (!container) continue;
       const candidate = Array.from(
-        container.querySelectorAll(
+        container.querySelectorAll<NextControl>(
           "button, a, [role='button'], [aria-label], [title]",
-        ) as NodeListOf<NextControl>,
+        ),
       ).find((element) => {
         const label = `${element.getAttribute("aria-label") ?? ""} ${
           element.getAttribute("title") ?? ""
@@ -299,15 +300,17 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       );
     else {
       for (let index = PLAYBACK_RATES.length - 1; index >= 0; index--) {
-        if (PLAYBACK_RATES[index] < video.playbackRate - 0.001) {
-          nextRate = PLAYBACK_RATES[index];
+        const rate = PLAYBACK_RATES[index];
+        if (rate !== undefined && rate < video.playbackRate - 0.001) {
+          nextRate = rate;
           break;
         }
       }
     }
 
     if (nextRate === undefined)
-      nextRate = PLAYBACK_RATES[direction > 0 ? PLAYBACK_RATES.length - 1 : 0];
+      nextRate =
+        direction > 0 ? (PLAYBACK_RATES.at(-1) ?? 1) : (PLAYBACK_RATES[0] ?? 1);
     video.playbackRate = nextRate;
     updatePlaybackUi();
   }
@@ -359,7 +362,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       innerWidth,
       width,
       height,
-    });
+    } satisfies ExtensionMessage);
   }
 
   return {

@@ -15,18 +15,147 @@ interface BilibiliDanmakuMessage extends DanmakuData {
   text?: string;
 }
 
-interface BilibiliDanmakuResponse {
-  ok: boolean;
-  messages?: BilibiliDanmakuMessage[];
-  duration?: number;
-  segmentCount?: number;
+interface BilibiliDanmakuResponseSuccess {
+  ok: true;
+  messages: BilibiliDanmakuMessage[];
+  duration: number;
+  segmentCount: number;
   segmentStart: number;
   segmentEnd: number;
   recoveredSegments?: { segment: number; status: number; comments: number }[];
   unavailableSegments?: { segment: number; status: number }[];
   fallbackError?: string;
   legacyFallback?: boolean;
-  error?: string;
+}
+
+interface BilibiliDanmakuResponseError {
+  ok: false;
+  error: string;
+}
+
+type BilibiliDanmakuResponse =
+  BilibiliDanmakuResponseSuccess | BilibiliDanmakuResponseError;
+
+function isBilibiliDanmakuMessage(
+  value: unknown,
+): value is BilibiliDanmakuMessage {
+  const util = globalThis.PipCompanion.util;
+  if (!util.isRecord(value)) return false;
+  if (
+    typeof value.replayTime !== "number" ||
+    !Number.isFinite(value.replayTime) ||
+    (value.type !== "right" && value.type !== "top" && value.type !== "bottom")
+  )
+    return false;
+
+  for (const key of ["id", "color", "bgColor", "amount", "author", "messageId"])
+    if (value[key] !== undefined && typeof value[key] !== "string")
+      return false;
+  if (value.isSuperChat !== undefined && typeof value.isSuperChat !== "boolean")
+    return false;
+  if (value.text !== undefined && typeof value.text !== "string") return false;
+  if (
+    value.parts !== undefined &&
+    (!Array.isArray(value.parts) ||
+      !value.parts.every(
+        (part) =>
+          util.isRecord(part) &&
+          (part.type === "text"
+            ? typeof part.text === "string"
+            : part.type === "image" &&
+              typeof part.src === "string" &&
+              typeof part.alt === "string"),
+      ))
+  )
+    return false;
+
+  if (value.advanced !== undefined) {
+    const advanced = value.advanced;
+    if (!util.isRecord(advanced) || typeof advanced.text !== "string")
+      return false;
+    const advancedNumbers = [
+      "fromX",
+      "fromY",
+      "toX",
+      "toY",
+      "sourceWidth",
+      "sourceHeight",
+      "fontSize",
+      "durationMs",
+      "alphaStart",
+      "alphaEnd",
+      "rotateZ",
+      "rotateY",
+    ];
+    if (
+      advancedNumbers.some(
+        (key) =>
+          typeof advanced[key] !== "number" || !Number.isFinite(advanced[key]),
+      )
+    )
+      return false;
+  }
+  return true;
+}
+
+function isBilibiliDanmakuResponse(
+  value: unknown,
+): value is BilibiliDanmakuResponse {
+  const util = globalThis.PipCompanion.util;
+  if (!util.isRecord(value) || typeof value.ok !== "boolean") return false;
+  if (!value.ok) return typeof value.error === "string";
+  if (
+    !Array.isArray(value.messages) ||
+    !value.messages.every(isBilibiliDanmakuMessage) ||
+    typeof value.duration !== "number" ||
+    !Number.isFinite(value.duration) ||
+    value.duration <= 0 ||
+    typeof value.segmentCount !== "number" ||
+    !Number.isSafeInteger(value.segmentCount) ||
+    value.segmentCount < 1 ||
+    typeof value.segmentStart !== "number" ||
+    !Number.isSafeInteger(value.segmentStart) ||
+    value.segmentStart < 1 ||
+    typeof value.segmentEnd !== "number" ||
+    !Number.isSafeInteger(value.segmentEnd) ||
+    value.segmentEnd < value.segmentStart ||
+    value.segmentEnd > value.segmentCount
+  )
+    return false;
+  if (
+    value.unavailableSegments !== undefined &&
+    (!Array.isArray(value.unavailableSegments) ||
+      !value.unavailableSegments.every(
+        (entry) =>
+          util.isRecord(entry) &&
+          typeof entry.segment === "number" &&
+          typeof entry.status === "number",
+      ))
+  )
+    return false;
+  if (
+    value.recoveredSegments !== undefined &&
+    (!Array.isArray(value.recoveredSegments) ||
+      !value.recoveredSegments.every(
+        (entry) =>
+          util.isRecord(entry) &&
+          typeof entry.segment === "number" &&
+          typeof entry.status === "number" &&
+          typeof entry.comments === "number",
+      ))
+  )
+    return false;
+  if (
+    value.fallbackError !== undefined &&
+    typeof value.fallbackError !== "string"
+  )
+    return false;
+  if (
+    value.legacyFallback !== undefined &&
+    typeof value.legacyFallback !== "boolean"
+  )
+    return false;
+  return true;
 }
 
 globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
@@ -82,12 +211,12 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
         );
         if (!match) continue;
 
+        const episodeJson = match[1];
+        if (episodeJson === undefined) continue;
+
         try {
-          const episode = JSON.parse(match[1]) as {
-            aid?: unknown;
-            cid?: unknown;
-            ep_id?: unknown;
-          };
+          const episode: unknown = JSON.parse(episodeJson);
+          if (!globalThis.PipCompanion.util.isRecord(episode)) continue;
           const avid = String(episode.aid ?? "");
           const cid = String(episode.cid ?? "");
           if (!/^\d+$/.test(avid) || !/^\d+$/.test(cid)) continue;
@@ -123,7 +252,8 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       let high = bilibiliMessages.length;
       while (low < high) {
         const mid = (low + high) >>> 1;
-        if (bilibiliMessages[mid].replayTime < time) low = mid + 1;
+        const message = bilibiliMessages[mid];
+        if (message && message.replayTime < time) low = mid + 1;
         else high = mid;
       }
       return low;
@@ -132,8 +262,8 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
     function resetBilibiliPlaybackCursor(time: number): number {
       bilibiliMessageIndex = findBilibiliMessageIndex(time);
       bilibiliEmittedMessages = new WeakSet();
-      for (let index = 0; index < bilibiliMessageIndex; index++) {
-        bilibiliEmittedMessages.add(bilibiliMessages[index]);
+      for (const message of bilibiliMessages.slice(0, bilibiliMessageIndex)) {
+        bilibiliEmittedMessages.add(message);
       }
       return bilibiliMessageIndex;
     }
@@ -205,11 +335,10 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
         return;
       const currentTime = video.currentTime;
       if (!Number.isFinite(currentTime)) return;
-      while (
-        bilibiliMessageIndex < bilibiliMessages.length &&
-        bilibiliMessages[bilibiliMessageIndex].replayTime <= currentTime + 0.15
-      ) {
-        const message = bilibiliMessages[bilibiliMessageIndex++];
+      while (bilibiliMessageIndex < bilibiliMessages.length) {
+        const message = bilibiliMessages[bilibiliMessageIndex];
+        if (!message || message.replayTime > currentTime + 0.15) break;
+        bilibiliMessageIndex++;
         if (bilibiliEmittedMessages.has(message)) continue;
         bilibiliEmittedMessages.add(message);
         const elapsed = Math.max(0, currentTime - message.replayTime);
@@ -223,14 +352,14 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
     }
 
     async function sendBilibiliMessage(
-      payload: unknown,
+      payload: Extract<ExtensionMessage, { type: "GET_BILIBILI_DANMAKU" }>,
     ): Promise<BilibiliDanmakuResponse> {
       let lastError: unknown;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          return (await chrome.runtime.sendMessage(
-            payload,
-          )) as BilibiliDanmakuResponse;
+          const response: unknown = await chrome.runtime.sendMessage(payload);
+          if (isBilibiliDanmakuResponse(response)) return response;
+          throw new Error("Invalid Bilibili danmaku response");
         } catch (error) {
           lastError = error;
           if (attempt < 2) await waitForBilibiliRetry(attempt ? 900 : 300);
@@ -268,7 +397,7 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
     }
 
     function updateBilibiliSegmentAvailability(
-      response: BilibiliDanmakuResponse,
+      response: BilibiliDanmakuResponseSuccess,
     ): void {
       if (response.legacyFallback) {
         bilibiliLegacyFallback = true;
@@ -312,7 +441,9 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       return (bilibiliSegmentRetryAt.get(segment) || 0) > now;
     }
 
-    function logBilibiliResponse(response: BilibiliDanmakuResponse): void {
+    function logBilibiliResponse(
+      response: BilibiliDanmakuResponseSuccess,
+    ): void {
       if (response.legacyFallback)
         console.warn(
           "[Caption PiP] This long Bilibili video uses the legacy XML danmaku fallback; coverage may be incomplete.",
@@ -365,13 +496,12 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       if (!segments.length) return;
 
       const requestStart = segments[0];
+      if (requestStart === undefined) return;
       let requestEnd = requestStart;
-      for (
-        let index = 1;
-        index < segments.length && segments[index] === requestEnd + 1;
-        index++
-      ) {
-        requestEnd = segments[index];
+      for (let index = 1; index < segments.length; index++) {
+        const segment = segments[index];
+        if (segment === undefined || segment !== requestEnd + 1) break;
+        requestEnd = segment;
       }
 
       for (let segment = requestStart; segment <= requestEnd; segment++) {
@@ -399,13 +529,12 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
           )
             return;
 
-          if (!response?.ok || !Array.isArray(response.messages))
+          if (!response.ok)
             throw new Error(
-              response?.error || "Bilibili danmaku request failed",
+              response.error || "Bilibili danmaku request failed",
             );
 
-          bilibiliSegmentCount =
-            Number(response.segmentCount) || bilibiliSegmentCount;
+          bilibiliSegmentCount = response.segmentCount || bilibiliSegmentCount;
           updateBilibiliSegmentAvailability(response);
           if (initial) logBilibiliResponse(response);
           mergeBilibiliMessages(response.messages);

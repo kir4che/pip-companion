@@ -1,12 +1,13 @@
+import { isRecord } from "./type-guards.js";
+
 export function parseBilibiliAdvancedDanmaku(
   value: string,
 ): BilibiliAdvancedDanmaku | null {
   let data: Record<string, unknown>;
   try {
     const parsed: unknown = JSON.parse(value);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
-      return null;
-    data = parsed as Record<string, unknown>;
+    if (!isRecord(parsed)) return null;
+    data = parsed;
   } catch {
     return null;
   }
@@ -20,7 +21,7 @@ export function parseBilibiliAdvancedDanmaku(
   const sourceWidth = finiteNumber(data.width, 672, 1, 10000);
   const sourceHeight = finiteNumber(data.height, 438, 1, 10000);
   const duration = finiteNumber(data.dur ?? data.duration, 4, 0.1, 600);
-  const alpha = Array.isArray(data.alpha)
+  const alpha: [number, number] = Array.isArray(data.alpha)
     ? [
         finiteNumber(data.alpha[0], 1, 0, 1),
         finiteNumber(data.alpha[1], 1, 0, 1),
@@ -48,9 +49,8 @@ function parsePoint(value: unknown): { x: number; y: number } | null {
   let parts: unknown[];
   if (typeof value === "string") parts = value.split(",");
   else if (Array.isArray(value)) parts = value;
-  else if (value && typeof value === "object") {
-    const point = value as Record<string, unknown>;
-    parts = [point.x, point.y];
+  else if (isRecord(value)) {
+    parts = [value.x, value.y];
   } else return null;
 
   if (parts.length < 2) return null;

@@ -14,6 +14,12 @@ pipResizeShortcut.textContent = navigator.platform.includes("Mac")
 const seekSecondsSelect = document.querySelector(
   "#seek-seconds",
 ) as HTMLSelectElement;
+for (const seconds of util.SEEK_SECONDS_OPTIONS) {
+  const option = document.createElement("option");
+  option.value = String(seconds);
+  option.textContent = `${seconds} 秒`;
+  seekSecondsSelect.append(option);
+}
 const menuView = document.querySelector("#menu-view") as HTMLElement;
 const danmakuSettingsView = document.querySelector(
   "#danmaku-settings-view",
@@ -70,7 +76,7 @@ async function syncPipState() {
   try {
     const response = await chrome.runtime.sendMessage({
       type: "GET_PIP_STATE",
-    });
+    } satisfies ExtensionMessage);
     setPipOpen(response?.pipOpen === true);
   } catch {
     // 背景指令碼尚未回應時，維持目前狀態。
@@ -79,9 +85,12 @@ async function syncPipState() {
   }
 }
 
-chrome.runtime.onMessage.addListener((message) => {
-  if (message?.type === "PIP_GLOBAL_STATE")
-    setPipOpen(message.pipOpen === true);
+chrome.runtime.onMessage.addListener((message: unknown) => {
+  if (
+    globalThis.PipCompanion.util.isExtensionMessage(message) &&
+    message.type === "PIP_GLOBAL_STATE"
+  )
+    setPipOpen(message.pipOpen);
 });
 
 const danmakuToggle = document.querySelector(
@@ -671,13 +680,13 @@ openButton.addEventListener("click", async () => {
   try {
     const globalState = await chrome.runtime.sendMessage({
       type: "GET_PIP_STATE",
-    });
+    } satisfies ExtensionMessage);
     setPipOpen(globalState?.pipOpen === true);
     if (pipOpen) {
       showStatus("正在關閉子母畫面…");
       const result = await chrome.runtime.sendMessage({
         type: "CLOSE_ALL_PIP",
-      });
+      } satisfies ExtensionMessage);
       if (!result?.ok) {
         showStatus("無法關閉子母畫面。", true);
         return;
@@ -699,7 +708,9 @@ openButton.addEventListener("click", async () => {
     }
     let pipState;
     try {
-      pipState = await chrome.tabs.sendMessage(tab.id, { type: "PING" });
+      pipState = await chrome.tabs.sendMessage(tab.id, {
+        type: "PING",
+      } satisfies ExtensionMessage);
     } catch {
       const contentScripts = chrome.runtime
         .getManifest()
@@ -720,7 +731,7 @@ openButton.addEventListener("click", async () => {
     if (pipOpen) {
       const result = await chrome.runtime.sendMessage({
         type: "CLOSE_ALL_PIP",
-      });
+      } satisfies ExtensionMessage);
       if (!result?.ok) {
         showStatus("無法關閉子母畫面。", true);
         return;
@@ -733,14 +744,18 @@ openButton.addEventListener("click", async () => {
     showStatus("正在開啟…");
     let result;
     try {
-      result = await chrome.tabs.sendMessage(tab.id, { type: "OPEN_PIP" });
+      result = await chrome.tabs.sendMessage(tab.id, {
+        type: "OPEN_PIP",
+      } satisfies ExtensionMessage);
     } catch {
       result = null;
     }
 
     if (result && !result.ok && /請先開啟/.test(result.message ?? "")) {
       await new Promise((resolve) => setTimeout(resolve, 400));
-      result = await chrome.tabs.sendMessage(tab.id, { type: "OPEN_PIP" });
+      result = await chrome.tabs.sendMessage(tab.id, {
+        type: "OPEN_PIP",
+      } satisfies ExtensionMessage);
     }
 
     if (!result?.ok) {

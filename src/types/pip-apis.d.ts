@@ -176,6 +176,8 @@ interface PipCompanionUtil {
   DEFAULT_SEEK_SECONDS: SeekSeconds;
   SEEK_SECONDS_OPTIONS: readonly SeekSeconds[];
   normalizeSeekSeconds(value: unknown): SeekSeconds;
+  isRecord(value: unknown): value is Record<string, unknown>;
+  isExtensionMessage(value: unknown): value is ExtensionMessage;
   normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut;
   hasMetaModifier(e: KeyboardEvent): boolean;
   matchesShortcut(e: KeyboardEvent, shortcut: Shortcut): boolean;

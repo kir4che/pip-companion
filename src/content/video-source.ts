@@ -92,7 +92,7 @@ globalThis.PipCompanion.ContentVideo = (() => {
   function findVideo(includeDeep = true): HTMLVideoElement | null {
     for (const selector of PREFERRED_SELECTORS) {
       const preferred = pickBestVideo(
-        document.querySelectorAll(selector) as NodeListOf<HTMLVideoElement>,
+        document.querySelectorAll<HTMLVideoElement>(selector),
         true,
       );
       if (preferred) return preferred;

@@ -29,20 +29,22 @@ globalThis.PipCompanion.captionSettings = (() => {
 
   function colorChannels(hex: string): RGB {
     const match = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
-    return match
-      ? [parseInt(match[1], 16), parseInt(match[2], 16), parseInt(match[3], 16)]
-      : [0, 0, 0];
+    if (!match) return [0, 0, 0];
+    const [, red, green, blue] = match;
+    if (!red || !green || !blue) return [0, 0, 0];
+    return [parseInt(red, 16), parseInt(green, 16), parseInt(blue, 16)];
   }
 
   function rgba(color: RGB, alpha: number): string {
     return `rgba(${color.join(", ")}, ${alpha})`;
   }
 
+  function isCaptionFontFamily(value: unknown): value is CaptionFontFamily {
+    return typeof value === "string" && Object.hasOwn(FONT_FAMILIES, value);
+  }
+
   function normalize(value: unknown): CaptionStyleSettings {
-    const settings =
-      value && typeof value === "object"
-        ? (value as Partial<CaptionStyleSettings>)
-        : {};
+    const settings = globalThis.PipCompanion.util.isRecord(value) ? value : {};
     const clamp = (
       input: unknown,
       min: number,
@@ -54,26 +56,22 @@ globalThis.PipCompanion.captionSettings = (() => {
       const bounded = Math.max(min, Math.min(max, input));
       return min + Math.round((bounded - min) / step) * step;
     };
-    const storedFontFamily = (settings as Record<string, unknown>).fontFamily;
+    const storedFontFamily = settings.fontFamily;
     const fontFamilyValue =
       storedFontFamily === "system"
         ? "default"
         : storedFontFamily === "newSong"
           ? "song"
           : storedFontFamily;
-    const fontFamily =
-      typeof fontFamilyValue === "string" &&
-      Object.hasOwn(FONT_FAMILIES, fontFamilyValue)
-        ? (fontFamilyValue as DanmakuFontFamily)
-        : DEFAULTS.fontFamily;
-    const storedEdgeStyle = (settings as Record<string, unknown>).edgeStyle;
+    const fontFamily = isCaptionFontFamily(fontFamilyValue)
+      ? fontFamilyValue
+      : DEFAULTS.fontFamily;
+    const storedEdgeStyle = settings.edgeStyle;
     const edgeStyleValue =
       storedEdgeStyle === "outline-shadow" ? "outline" : storedEdgeStyle;
-    const edgeStyle = EDGE_STYLES.includes(
-      edgeStyleValue as (typeof EDGE_STYLES)[number],
-    )
-      ? (edgeStyleValue as CaptionStyleSettings["edgeStyle"])
-      : DEFAULTS.edgeStyle;
+    const edgeStyle =
+      EDGE_STYLES.find((style) => style === edgeStyleValue) ??
+      DEFAULTS.edgeStyle;
     const color = (input: unknown, fallback: string) =>
       typeof input === "string" && /^#[\da-f]{6}$/i.test(input)
         ? input.toLowerCase()
@@ -160,12 +158,17 @@ globalThis.PipCompanion.captionSettings = (() => {
       ),
     );
     const edgeRgb = colorChannels(settings.edgeColor);
-    const lightEdgeRgb = edgeRgb.map((channel) =>
-      Math.round(channel + (255 - channel) * 0.65),
-    ) as RGB;
-    const darkEdgeRgb = edgeRgb.map((channel) =>
-      Math.round(channel * 0.55),
-    ) as RGB;
+    const [red, green, blue] = edgeRgb;
+    const lightEdgeRgb: RGB = [
+      red + Math.round((255 - red) * 0.65),
+      green + Math.round((255 - green) * 0.65),
+      blue + Math.round((255 - blue) * 0.65),
+    ];
+    const darkEdgeRgb: RGB = [
+      Math.round(red * 0.55),
+      Math.round(green * 0.55),
+      Math.round(blue * 0.55),
+    ];
     let textShadow = "none";
     switch (settings.edgeStyle) {
       case "raised":

@@ -61,16 +61,15 @@
         text += value;
         return;
       }
-      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (!(node instanceof Element)) return;
 
-      const el = node as Element;
-      if (el.tagName.toLowerCase() === "img") {
+      const el = node;
+      if (el instanceof HTMLImageElement) {
         const alt =
           el.getAttribute("alt") || el.getAttribute("aria-label") || "";
         let src = "";
         try {
-          const source =
-            (el as HTMLImageElement).currentSrc || el.getAttribute("src");
+          const source = el.currentSrc || el.getAttribute("src");
           if (source) {
             const imageUrl = new URL(source, location.href);
             if (imageUrl.protocol === "https:") src = imageUrl.href;
@@ -91,9 +90,9 @@
   }
 
   function extractMessageFromNode(node: Node | null): DanmakuData | null {
-    if (!node || node.nodeType !== Node.ELEMENT_NODE) return null;
+    if (!(node instanceof HTMLElement)) return null;
 
-    const el = node as HTMLElement;
+    const el = node;
     const isPaid =
       el.tagName.toLowerCase() === "yt-live-chat-paid-message-renderer" ||
       Boolean(el.closest("yt-live-chat-paid-message-renderer"));
@@ -249,8 +248,8 @@
     function getSiteDanmakuCandidates(node: Node): Element[] {
       const selector = getSiteDanmakuSelector();
       const candidates: Element[] = [];
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as Element;
+      if (node instanceof Element) {
+        const element = node;
         if (element.matches(selector)) candidates.push(element);
         candidates.push(...element.querySelectorAll(selector));
       } else if (node.parentElement) {
@@ -269,19 +268,18 @@
       let messageNode = node;
       let author = "";
       if (SOURCE_IS_BILIBILI_LIVE) {
-        const liveMessage = node as HTMLElement & {
-          danmaku?: string;
-          uname?: string;
-        };
+        const liveUsername: unknown = Reflect.get(node, "uname");
+        const liveDanmaku: unknown = Reflect.get(node, "danmaku");
         author = (
-          liveMessage.uname ||
+          (typeof liveUsername === "string" ? liveUsername : "") ||
           node.getAttribute("data-uname") ||
           node.querySelector(".user-name")?.textContent ||
           ""
         ).trim();
         messageNode = node.querySelector(".danmaku-item-right") || node;
         const { parts, text } = extractMessageContent(messageNode);
-        const danmakuText = liveMessage.danmaku?.trim();
+        const danmakuText =
+          typeof liveDanmaku === "string" ? liveDanmaku.trim() : "";
         if (!text && danmakuText)
           return {
             text: danmakuText,

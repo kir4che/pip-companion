@@ -5,7 +5,10 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     try {
       if (!chrome.runtime?.id) return;
       void chrome.runtime
-        .sendMessage({ type: "PIP_STATE_CHANGED", pipOpen })
+        .sendMessage({
+          type: "PIP_STATE_CHANGED",
+          pipOpen,
+        } satisfies ExtensionMessage)
         .catch(() => {});
     } catch {
       // 擴充插件在重新載入或關閉期間可能失效
@@ -262,11 +265,11 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     document.addEventListener(
       "keydown",
       (e) => {
-        const target = e.target as Element;
+        const target = e.target;
         const activeElement = document.activeElement;
         if (
           !["ArrowUp", "ArrowDown", "m"].includes(e.key.toLowerCase()) ||
-          (!target?.closest?.("#movie_player") &&
+          (!(target instanceof Element && target.closest("#movie_player")) &&
             !activeElement?.closest?.("#movie_player"))
         )
           return;

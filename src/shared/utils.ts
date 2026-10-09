@@ -73,10 +73,67 @@ globalThis.PipCompanion.util = (() => {
     pin("音量 -10", "ArrowDown"),
   ];
 
-  function normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut {
-    if (!value || typeof value !== "object") return { ...fallback };
+  function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
 
-    const shortcut = value as Partial<Shortcut>;
+  function isExtensionMessage(value: unknown): value is ExtensionMessage {
+    if (!isRecord(value) || typeof value.type !== "string") return false;
+
+    switch (value.type) {
+      case "PING":
+      case "GET_PIP_STATE":
+      case "OPEN_PIP":
+      case "CLOSE_PIP":
+      case "CLOSE_ALL_PIP":
+        return true;
+      case "PIP_STATE_CHANGED":
+      case "PIP_GLOBAL_STATE":
+        return typeof value.pipOpen === "boolean";
+      case "RESIZE_PIP_WINDOW":
+        return (
+          typeof value.innerWidth === "number" &&
+          Number.isFinite(value.innerWidth) &&
+          value.innerWidth > 0 &&
+          typeof value.width === "number" &&
+          Number.isFinite(value.width) &&
+          value.width > 0 &&
+          typeof value.height === "number" &&
+          Number.isFinite(value.height) &&
+          value.height > 0
+        );
+      case "GET_BILIBILI_DANMAKU": {
+        const hasBvid = typeof value.bvid === "string";
+        const hasAvid = typeof value.avid === "string";
+        const onlyBvid = hasBvid && value.avid === undefined;
+        const onlyAvid = hasAvid && value.bvid === undefined;
+        const page = value.page;
+        const startSegment = value.startSegment;
+        const endSegment = value.endSegment;
+        return (
+          (onlyBvid || onlyAvid) &&
+          typeof page === "number" &&
+          Number.isSafeInteger(page) &&
+          page > 0 &&
+          (startSegment === undefined ||
+            (typeof startSegment === "number" &&
+              Number.isSafeInteger(startSegment) &&
+              startSegment > 0)) &&
+          (endSegment === undefined ||
+            (typeof endSegment === "number" &&
+              Number.isSafeInteger(endSegment) &&
+              endSegment > 0))
+        );
+      }
+      default:
+        return false;
+    }
+  }
+
+  function normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut {
+    if (!isRecord(value)) return { ...fallback };
+
+    const shortcut = value;
     return {
       code: typeof shortcut.code === "string" ? shortcut.code : fallback.code,
       ctrl: typeof shortcut.ctrl === "boolean" ? shortcut.ctrl : fallback.ctrl,
@@ -164,6 +221,8 @@ globalThis.PipCompanion.util = (() => {
     DEFAULT_SEEK_SECONDS,
     SEEK_SECONDS_OPTIONS,
     normalizeSeekSeconds,
+    isRecord,
+    isExtensionMessage,
     FIXED_SHORTCUTS,
     normalizeShortcut,
     hasMetaModifier,

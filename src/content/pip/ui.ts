@@ -1301,8 +1301,14 @@ globalThis.PipCompanion.PipUI = (() => {
       (e) => {
         screen.classList.add("controls-visible");
         win.clearTimeout(hideControlsTimer);
-        const target = e.target as Element | null;
-        if (target?.closest?.(".controls")) return;
+        const target = e.target;
+        const ElementCtor = win.document.defaultView?.Element;
+        if (
+          ElementCtor &&
+          target instanceof ElementCtor &&
+          target.closest(".controls")
+        )
+          return;
         hideControlsTimer = win.setTimeout(
           () => screen.classList.remove("controls-visible"),
           1000,

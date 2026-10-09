@@ -42,7 +42,8 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
 
   function decodeJsonString(str: string): string {
     try {
-      return JSON.parse(`"${str}"`);
+      const decoded: unknown = JSON.parse(`"${str}"`);
+      return typeof decoded === "string" ? decoded : str;
     } catch {
       return str
         .replace(/\\u0026/g, "&")
@@ -64,22 +65,35 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     if (!spec || !spec.includes("|")) return null;
     const parts = spec.trim().split("|");
     if (parts.length < 2) return null;
-    let baseUrl = parts[0].replace(/\\/g, "");
+    const rawBaseUrl = parts[0];
+    if (!rawBaseUrl) return null;
+    let baseUrl = rawBaseUrl.replace(/\\/g, "");
     if (baseUrl.startsWith("//")) baseUrl = "https:" + baseUrl;
 
     const levels: ParsedLevel[] = [];
 
     for (let idx = 0; idx < parts.length - 1; idx++) {
       const raw = parts[idx + 1];
+      if (raw === undefined) continue;
       const tokens = raw.split("#");
-      if (tokens.length < 7) continue;
+      const [rawWidth, rawHeight, rawCount, rawCols, rawRows, rawInterval] =
+        tokens;
+      if (
+        rawWidth === undefined ||
+        rawHeight === undefined ||
+        rawCount === undefined ||
+        rawCols === undefined ||
+        rawRows === undefined ||
+        rawInterval === undefined
+      )
+        continue;
 
-      const width = parseInt(tokens[0], 10);
-      const height = parseInt(tokens[1], 10);
-      const count = parseInt(tokens[2], 10);
-      const cols = parseInt(tokens[3], 10);
-      const rows = parseInt(tokens[4], 10);
-      const interval = parseInt(tokens[5], 10);
+      const width = parseInt(rawWidth, 10);
+      const height = parseInt(rawHeight, 10);
+      const count = parseInt(rawCount, 10);
+      const cols = parseInt(rawCols, 10);
+      const rows = parseInt(rawRows, 10);
+      const interval = parseInt(rawInterval, 10);
       const imgName = tokens[6] || "";
       const signature = tokens[7] || "";
 
@@ -108,7 +122,9 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
 
     if (levels.length === 0) return null;
 
-    let bestLevel = levels[0];
+    const firstLevel = levels[0];
+    if (!firstLevel) return null;
+    let bestLevel = firstLevel;
     for (const lvl of levels) {
       if (
         lvl.width <= 160 &&
@@ -129,7 +145,8 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
         /"playerStoryboardSpecRenderer":\s*\{\s*"spec":\s*"([^"]+)"/,
       ) ||
       text.match(/"storyboard_spec":\s*"([^"]+)"/);
-    return match ? decodeJsonString(match[1]) : null;
+    const spec = match?.[1];
+    return spec ? decodeJsonString(spec) : null;
   }
 
   function extractSpecFromScripts(): string | null {
@@ -335,7 +352,9 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
       let high = data.index.length - 1;
       while (low <= high) {
         const mid = (low + high) >>> 1;
-        if (data.index[mid] <= seconds) {
+        const indexTime = data.index[mid];
+        if (indexTime === undefined) break;
+        if (indexTime <= seconds) {
           frameIndex = mid;
           low = mid + 1;
         } else high = mid - 1;
@@ -352,6 +371,7 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     const row = Math.floor(indexInSheet / cols);
 
     let rawUrl = images[sheetIndex] || images[0];
+    if (!rawUrl) return null;
     if (rawUrl.startsWith("//")) rawUrl = "https:" + rawUrl;
 
     return {
@@ -372,12 +392,40 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
       if (sn) return sn;
     } catch {}
     try {
-      const win = window as unknown as {
-        animefun?: { videoSn?: string | number };
-      };
-      if (win.animefun?.videoSn) return String(win.animefun.videoSn);
+      const videoSn = window.animefun?.videoSn;
+      if (videoSn) return String(videoSn);
     } catch {}
     return null;
+  }
+
+  function parseBahaStoryboardData(value: unknown): BahaStoryboardData | null {
+    if (!globalThis.PipCompanion.util.isRecord(value)) return null;
+    const images = value.images;
+    if (!Array.isArray(images)) return null;
+    const validImages = images.filter(
+      (image): image is string => typeof image === "string" && image.length > 0,
+    );
+    if (validImages.length === 0) return null;
+
+    const positiveNumber = (input: unknown, fallback: number) =>
+      typeof input === "number" && Number.isFinite(input) && input > 0
+        ? input
+        : fallback;
+    const positiveInteger = (input: unknown, fallback: number) =>
+      typeof input === "number" && Number.isSafeInteger(input) && input > 0
+        ? input
+        : fallback;
+    const sn = typeof value.sn === "string" ? value.sn : undefined;
+
+    return {
+      ...(sn ? { sn } : {}),
+      width: positiveNumber(value.width, 160),
+      height: positiveNumber(value.height, 90),
+      cols: positiveInteger(value.cols, 10),
+      rows: positiveInteger(value.rows, 10),
+      interval: positiveNumber(value.interval, 10),
+      images: validImages,
+    };
   }
 
   function getBahaStoryboard(sn: string | null): BahaStoryboardData | null {
@@ -390,13 +438,8 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     const raw = document.documentElement?.dataset.pipBahaStoryboard;
     if (raw) {
       try {
-        const parsed = JSON.parse(raw) as BahaStoryboardData;
-        if (
-          parsed &&
-          Array.isArray(parsed.images) &&
-          parsed.images.length > 0 &&
-          (!sn || !parsed.sn || parsed.sn === sn)
-        ) {
+        const parsed = parseBahaStoryboardData(JSON.parse(raw));
+        if (parsed && (!sn || !parsed.sn || parsed.sn === sn)) {
           cachedBahaData = parsed;
           return parsed;
         }
@@ -472,60 +515,62 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
 
   window.addEventListener(
     "message",
-    (
-      e: MessageEvent<{
-        type?: string;
-        spec?: string;
-        videoId?: string;
-        data?: BahaStoryboardData;
-      }>,
-    ) => {
-      if (e.data?.type === "PIP_YT_STORYBOARD_DATA" && e.data?.spec) {
-        const parsed = parseYouTubeSpec(e.data.spec);
+    (e: MessageEvent<unknown>) => {
+      if (!globalThis.PipCompanion.util.isRecord(e.data)) return;
+      const data = e.data;
+      if (data.type === "PIP_YT_STORYBOARD_DATA") {
+        const spec = typeof data.spec === "string" ? data.spec : "";
+        const parsed = parseYouTubeSpec(spec);
         if (parsed) {
           cachedYtStoryboard = parsed;
-          cachedYtVideoId = e.data.videoId || getYouTubeVideoId() || "";
+          cachedYtVideoId =
+            (typeof data.videoId === "string" ? data.videoId : "") ||
+            getYouTubeVideoId() ||
+            "";
         }
-      } else if (e.data?.type === "PIP_YT_RESET") {
+      } else if (data.type === "PIP_YT_RESET") {
         cachedYtVideoId = "";
         cachedYtStoryboard = null;
-      } else if (e.data?.type === "PIP_BAHA_STORYBOARD_DATA" && e.data?.data) {
+      } else if (data.type === "PIP_BAHA_STORYBOARD_DATA") {
+        const bahaData = parseBahaStoryboardData(data.data);
         const currentSn = getBahaSn();
-        if (!currentSn || !e.data.data.sn || e.data.data.sn === currentSn)
-          cachedBahaData = e.data.data;
-      } else if (e.data?.type === "PIP_BAHA_RESET") cachedBahaData = null;
+        if (
+          bahaData &&
+          (!currentSn || !bahaData.sn || bahaData.sn === currentSn)
+        )
+          cachedBahaData = bahaData;
+      } else if (data.type === "PIP_BAHA_RESET") cachedBahaData = null;
     },
     { passive: true },
   );
 
-  document.addEventListener("pip-companion-yt-storyboard", ((
-    e: CustomEvent<{ spec?: string; videoId?: string }>,
-  ) => {
-    const detail = e.detail;
-    if (detail?.spec) {
-      const parsed = parseYouTubeSpec(detail.spec);
-      if (parsed) {
-        cachedYtStoryboard = parsed;
-        cachedYtVideoId = detail.videoId || getYouTubeVideoId() || "";
-      }
+  document.addEventListener("pip-companion-yt-storyboard", (event) => {
+    if (!(event instanceof CustomEvent)) return;
+    const detail: unknown = event.detail;
+    if (!globalThis.PipCompanion.util.isRecord(detail)) return;
+    const spec = typeof detail.spec === "string" ? detail.spec : "";
+    const parsed = parseYouTubeSpec(spec);
+    if (parsed) {
+      cachedYtStoryboard = parsed;
+      cachedYtVideoId =
+        (typeof detail.videoId === "string" ? detail.videoId : "") ||
+        getYouTubeVideoId() ||
+        "";
     }
-  }) as EventListener);
+  });
 
   document.addEventListener("pip-companion-yt-reset", () => {
     cachedYtVideoId = "";
     cachedYtStoryboard = null;
   });
 
-  document.addEventListener("pip-companion-baha-storyboard", ((
-    e: CustomEvent<BahaStoryboardData>,
-  ) => {
-    if (e.detail && Array.isArray(e.detail.images)) {
-      const currentSn = getBahaSn();
-      if (!currentSn || !e.detail.sn || e.detail.sn === currentSn) {
-        cachedBahaData = e.detail;
-      }
-    }
-  }) as EventListener);
+  document.addEventListener("pip-companion-baha-storyboard", (event) => {
+    if (!(event instanceof CustomEvent)) return;
+    const bahaData = parseBahaStoryboardData(event.detail);
+    const currentSn = getBahaSn();
+    if (bahaData && (!currentSn || !bahaData.sn || bahaData.sn === currentSn))
+      cachedBahaData = bahaData;
+  });
 
   document.addEventListener("pip-companion-baha-reset", () => {
     cachedBahaData = null;
