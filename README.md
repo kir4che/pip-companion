@@ -26,31 +26,32 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 
 ## Controls and Shortcuts
 
-- Toggle PiP: on a page with a playable video, click the PiP button in the extension popup or press `Alt+Shift+P` on the video page.
+- Toggle PiP: on a page with a playable video, click the PiP button in the extension popup or press `Alt/Opt + Shift + P` on the video page.
 - Customize shortcuts: click a shortcut button in the popup, then press a new combination when it shows "Press shortcut…"; press `Esc` to cancel.
 
 Default shortcuts:
 
 These shortcuts work on supported video pages; PiP does not need to be open.
 
-| Action                       | Shortcut      | Disable in popup? |
-| ---------------------------- | ------------- | ----------------- |
-| Open/close PiP               | `Alt+Shift+P` | —                 |
-| Turn danmaku on/off          | `D`           | ✅                |
-| Screenshot                   | `Alt+P`       | ✅                |
-| Open/close floating comments | `Alt+C`       | ✅                |
+| Action                       | Shortcut              | Disable in popup? |
+| ---------------------------- | --------------------- | ----------------- |
+| Open/close PiP               | `Alt/Opt + Shift + P` | —                 |
+| Turn danmaku on/off          | `D`                   | ✅                |
+| Screenshot                   | `Alt/Opt + P`         | ✅                |
+| Open/close floating comments | `Alt/Opt + C`         | ✅                |
 
 Shortcuts inside the PiP window:
 
-| Action                | Shortcut              |
-| --------------------- | --------------------- |
-| Play or pause         | `Space`               |
-| Seek                  | `←` / `→`             |
-| Adjust volume         | `↑` / `↓`             |
-| Toggle captions       | `C`                   |
-| Toggle mute           | `M`                   |
-| Step one frame        | `,` / `.`             |
-| Adjust playback speed | `Shift+,` / `Shift+.` |
+| Action                | Shortcut                  |
+| --------------------- | ------------------------- |
+| Play or pause         | `Space`                   |
+| Seek                  | `←` / `→`                 |
+| Adjust volume         | `↑` / `↓`                 |
+| Toggle captions       | `C`                       |
+| Toggle mute           | `M`                       |
+| Step one frame        | `,` / `.`                 |
+| Adjust playback speed | `Shift + ,` / `Shift + .` |
+| Resize PiP            | `Ctrl/Cmd + scroll wheel` |
 
 ## Installation
 
