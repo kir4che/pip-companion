@@ -71,12 +71,13 @@ interface BilibiliAdvancedDanmaku {
 
 type DanmakuFontFamily =
   | "default"
-  | "system"
+  | "sansSerif"
+  | "serif"
+  | "monospace"
   | "arial"
   | "notoSansTC"
   | "microsoftJhengHei"
   | "song"
-  | "newSong"
   | "fangSong"
   | "kai";
 

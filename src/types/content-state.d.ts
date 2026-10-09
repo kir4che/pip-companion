@@ -36,6 +36,7 @@ interface State {
   captionExtract: CaptionExtract | null;
   captionObserver: MutationObserver | null;
   captionLines: CaptionLine[];
+  captionStyle: CaptionStyleSettings;
   captionsOn: boolean;
   lastCaptionScan: number;
   captionEmptyCount: number;

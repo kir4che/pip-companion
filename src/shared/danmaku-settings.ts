@@ -4,14 +4,15 @@ globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.danmakuSettings = (() => {
   const STORAGE_KEY = "danmakuStyle";
   const FONT_FAMILIES: Record<DanmakuFontFamily, string> = {
-    default: '"YouTube Noto", Roboto, "Segoe UI", Arial, sans-serif',
-    system: "system-ui, sans-serif",
+    default: "system-ui, sans-serif",
+    sansSerif: "sans-serif",
+    serif: "serif",
+    monospace: 'ui-monospace, "SFMono-Regular", Consolas, monospace',
     arial: "Arial, sans-serif",
     notoSansTC: '"Noto Sans TC", "Noto Sans CJK TC", sans-serif',
     microsoftJhengHei:
       '"Microsoft JhengHei", "PingFang TC", "Noto Sans TC", sans-serif',
     song: '"Songti TC", "Songti SC", PMingLiU, MingLiU, SimSun, "Noto Serif CJK TC", serif',
-    newSong: 'NSimSun, SimSun, "Songti SC", "Noto Serif CJK TC", serif',
     fangSong:
       'FangSong, "FangSong_GB2312", STFangsong, "Noto Serif CJK TC", serif',
     kai: '"DFKai-SB", BiauKai, KaiTi, "Noto Serif CJK TC", serif',
@@ -49,10 +50,17 @@ globalThis.PipCompanion.danmakuSettings = (() => {
       const bounded = Math.max(min, Math.min(max, input));
       return min + Math.round((bounded - min) / step) * step;
     };
+    const storedFontFamily = (settings as Record<string, unknown>).fontFamily;
+    const fontFamilyValue =
+      storedFontFamily === "system"
+        ? "default"
+        : storedFontFamily === "newSong"
+          ? "song"
+          : storedFontFamily;
     const fontFamily =
-      typeof settings.fontFamily === "string" &&
-      Object.hasOwn(FONT_FAMILIES, settings.fontFamily)
-        ? (settings.fontFamily as DanmakuFontFamily)
+      typeof fontFamilyValue === "string" &&
+      Object.hasOwn(FONT_FAMILIES, fontFamilyValue)
+        ? (fontFamilyValue as DanmakuFontFamily)
         : DEFAULTS.fontFamily;
     const requestedSpeedScale = settings.speedScale;
     const speedScale =

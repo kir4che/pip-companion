@@ -122,6 +122,32 @@
                 checked
               />
             </div>
+            <div class="toggle-row">
+              <span>字幕樣式</span>
+              <button
+                class="settings-open"
+                id="caption-settings-open"
+                type="button"
+                aria-label="字幕樣式設定"
+                title="字幕樣式設定"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  width="17"
+                  height="17"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.6"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.61-.22l-2.39.96a7.16 7.16 0 0 0-1.63-.94L14.37 2.8a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42L9.17 5.32c-.59.23-1.13.54-1.63.94l-2.39-.96a.5.5 0 0 0-.61.22L2.62 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.07.62-.07.94s.02.63.07.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.21.37.3.61.22l2.39-.96c.5.4 1.04.71 1.63.94l.36 2.52c.05.24.25.42.5.42h3.84c.25 0 .45-.18.5-.42l.36-2.52c.59-.23 1.13-.54 1.63-.94l2.39.96c.24.08.49-.01.61-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"
+                  />
+                </svg>
+              </button>
+            </div>
             <label class="toggle-row">
               <span>截圖</span>
               <input type="checkbox" id="screenshot-toggle" checked />
@@ -203,15 +229,20 @@
           <label class="range-row" for="danmaku-font-family">
             <span>字體</span>
             <select id="danmaku-font-family">
-              <option value="default">預設</option>
-              <option value="system">系統字體</option>
-              <option value="arial">Arial</option>
-              <option value="notoSansTC">Noto Sans TC</option>
-              <option value="microsoftJhengHei">黑體</option>
-              <option value="song">宋體／明體</option>
-              <option value="newSong">新宋體</option>
-              <option value="fangSong">仿宋</option>
-              <option value="kai">標楷體</option>
+              <optgroup label="通用">
+                <option value="default">系統預設</option>
+                <option value="sansSerif">無襯線</option>
+                <option value="serif">襯線</option>
+                <option value="monospace">等寬</option>
+              </optgroup>
+              <optgroup label="進階字體（依裝置支援）">
+                <option value="arial">Arial（拉丁字母）</option>
+                <option value="notoSansTC">Noto Sans TC</option>
+                <option value="microsoftJhengHei">黑體</option>
+                <option value="song">宋體／明體</option>
+                <option value="fangSong">仿宋</option>
+                <option value="kai">標楷體</option>
+              </optgroup>
             </select>
           </label>
           <label class="range-row" for="danmaku-weight">
@@ -241,11 +272,166 @@
             重設彈幕樣式
           </button>
         </section>
+        <section
+          id="caption-settings-view"
+          class="popup-view subtitle-settings-view"
+          aria-labelledby="caption-settings-title"
+          hidden
+        >
+          <header class="settings-page-header">
+            <button
+              class="back-button"
+              id="caption-settings-back"
+              type="button"
+              aria-label="返回主選單"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <h1 id="caption-settings-title">字幕樣式</h1>
+          </header>
+          <div class="subtitle-preview" aria-label="字幕樣式預覽">
+            <div class="subtitle-preview-caption" id="caption-preview">
+              <span class="subtitle-preview-segment">字幕預覽 Sample</span>
+              <span class="subtitle-preview-segment">第二行字幕</span>
+            </div>
+          </div>
+          <label class="range-row" for="caption-size">
+            <span>字體大小 <output id="caption-size-value">100%</output></span>
+            <input id="caption-size" type="range" min="50" max="200" step="5" />
+          </label>
+          <label class="color-row" for="caption-text-color">
+            <span>文字顏色</span>
+            <input id="caption-text-color" type="color" aria-label="文字顏色" />
+          </label>
+          <label class="color-row" for="caption-background-color">
+            <span>背景顏色</span>
+            <input
+              id="caption-background-color"
+              type="color"
+              aria-label="背景顏色"
+            />
+          </label>
+          <label class="range-row" for="caption-background-opacity">
+            <span
+              >背景不透明度
+              <output id="caption-background-opacity-value">75%</output></span
+            >
+            <input
+              id="caption-background-opacity"
+              type="range"
+              min="0"
+              max="100"
+              step="5"
+            />
+          </label>
+          <label class="range-row" for="caption-position">
+            <span
+              >上下位置 <output id="caption-position-value">10%</output></span
+            >
+            <input
+              id="caption-position"
+              type="range"
+              min="0"
+              max="100"
+              step="1"
+            />
+          </label>
+          <label class="range-row" for="caption-font-family">
+            <span>字體</span>
+            <select id="caption-font-family">
+              <optgroup label="通用">
+                <option value="default">系統預設</option>
+                <option value="sansSerif">無襯線</option>
+                <option value="serif">襯線</option>
+                <option value="monospace">等寬</option>
+              </optgroup>
+              <optgroup label="進階字體（依裝置支援）">
+                <option value="arial">Arial（拉丁字母）</option>
+                <option value="notoSansTC">Noto Sans TC</option>
+                <option value="microsoftJhengHei">黑體</option>
+                <option value="song">宋體／明體</option>
+                <option value="fangSong">仿宋</option>
+                <option value="kai">標楷體</option>
+              </optgroup>
+            </select>
+          </label>
+          <label class="range-row" for="caption-edge-style">
+            <span>文字邊緣</span>
+            <select id="caption-edge-style">
+              <option value="none">無</option>
+              <option value="shadow">陰影</option>
+              <option value="raised">浮凸</option>
+              <option value="depressed">內凹</option>
+              <option value="outline">描邊</option>
+            </select>
+          </label>
+          <label class="color-row" for="caption-edge-color">
+            <span>邊緣顏色</span>
+            <input id="caption-edge-color" type="color" aria-label="邊緣顏色" />
+          </label>
+          <label
+            id="caption-outline-width-row"
+            class="range-row"
+            for="caption-outline-width"
+          >
+            <span
+              >描邊粗細
+              <output id="caption-outline-width-value">1px</output></span
+            >
+            <input
+              id="caption-outline-width"
+              type="range"
+              min="0.5"
+              max="3"
+              step="0.5"
+            />
+          </label>
+          <label class="range-row" for="caption-font-weight">
+            <span
+              >字重 <output id="caption-font-weight-value">400</output></span
+            >
+            <input
+              id="caption-font-weight"
+              type="range"
+              min="100"
+              max="900"
+              step="100"
+            />
+          </label>
+          <label class="range-row" for="caption-line-height">
+            <span
+              >行高 <output id="caption-line-height-value">100%</output></span
+            >
+            <input
+              id="caption-line-height"
+              type="range"
+              min="100"
+              max="200"
+              step="5"
+            />
+          </label>
+          <button id="caption-style-reset" class="secondary" type="button">
+            重設字幕樣式
+          </button>
+        </section>
       </div>
       <p id="status" role="status"></p>
     </main>
     <script src="shared/utils.js"></script>
     <script src="shared/danmaku-settings.js"></script>
+    <script src="shared/caption-settings.js"></script>
     <script src="popup/index.js"></script>
   </body>
 </html>

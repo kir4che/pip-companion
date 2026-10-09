@@ -38,6 +38,7 @@
         "shared/utils.js",
         "shared/site-utils.js",
         "shared/danmaku-settings.js",
+        "shared/caption-settings.js",
         "shared/bilibili-danmaku-config.js",
         "content/pip/storyboard.js",
         "content/pip/audio.js",

@@ -110,6 +110,14 @@ interface DanmakuSettingsApi {
   normalize(value: unknown): DanmakuStyleSettings;
 }
 
+interface CaptionSettingsApi {
+  STORAGE_KEY: string;
+  FONT_FAMILIES: Record<CaptionFontFamily, string>;
+  DEFAULTS: CaptionStyleSettings;
+  normalize(value: unknown): CaptionStyleSettings;
+  apply(element: HTMLElement, settings: CaptionStyleSettings): void;
+}
+
 interface BilibiliDanmakuRenderer {
   duration: number;
   clear(): void;
@@ -254,6 +262,7 @@ interface PipCompanionGlobal {
   ContentYouTubeDanmaku: ContentYouTubeDanmakuApi;
   bilibiliDanmakuConfig: BilibiliDanmakuConfigApi;
   danmakuSettings: DanmakuSettingsApi;
+  captionSettings: CaptionSettingsApi;
   site: PipCompanionSiteUtils;
   util: PipCompanionUtil;
 }

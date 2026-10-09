@@ -14,7 +14,7 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
   - **Playback speed:** adjust from 0.25× to 5×; automatically hidden during live streams to preserve sync, and some websites may impose limits.
   - **Progress bar & previews:** keeps the mini progress bar visible at the bottom when controls fade out, and hover over the seek bar to preview thumbnails (supported on YouTube, Bilibili, and Bahamut Anime Crazy).
   - **Jump to a timestamp:** enter a video time to jump directly to that point.
-- **Captions:** display captions readable from the video in the PiP window.
+  - **Captions:** display captions that can be read from the video in PiP, with adjustable font, size, color, and other style options. These settings apply only in PiP and do not affect the website's original player.
 - **Danmaku:**
   - Native danmaku from Bilibili and Bahamut Anime Crazy can be shown in PiP.
   - YouTube Live and Twitch chat messages are rendered as danmaku and shown in the native player and PiP.

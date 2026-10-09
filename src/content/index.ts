@@ -12,6 +12,7 @@ function isBilibiliLivePage() {
 
 const { SHORTCUT_DEFAULTS, SHORTCUT_KEYS, normalizeShortcut, matchesShortcut } =
   globalThis.PipCompanion.util;
+const captionSettings = globalThis.PipCompanion.captionSettings;
 const state: State = {
   launchShortcut: { ...SHORTCUT_DEFAULTS.launchShortcut },
   commentsShortcut: { ...SHORTCUT_DEFAULTS.commentsShortcut },
@@ -33,6 +34,7 @@ const state: State = {
   captionExtract: null,
   captionObserver: null,
   captionLines: [],
+  captionStyle: { ...captionSettings.DEFAULTS },
   captionsOn: true,
   opening: false,
   feedbackTimer: 0,
@@ -48,6 +50,7 @@ const state: State = {
   nextClickPending: false,
   scanTimer: 0,
 };
+let captionStyleRevision = 0;
 
 void loadSettings();
 chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -68,17 +71,26 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.screenshotEnabled = changes.screenshotEnabled.newValue !== false;
   if (changes.danmakuEnabled)
     state.danmakuEnabled = changes.danmakuEnabled.newValue !== false;
+  if (changes[captionSettings.STORAGE_KEY]) {
+    captionStyleRevision++;
+    state.captionStyle = captionSettings.normalize(
+      changes[captionSettings.STORAGE_KEY].newValue,
+    );
+    globalThis.PipCompanion.ContentCaptions.renderSubtitle();
+  }
   if (shortcutChanged || changes.commentsEnabled || changes.screenshotEnabled)
     nudgeScan();
 });
 
 async function loadSettings() {
+  const styleRevision = captionStyleRevision;
   try {
     const stored = await chrome.storage.local.get({
       ...SHORTCUT_DEFAULTS,
       commentsEnabled: true,
       screenshotEnabled: true,
       danmakuEnabled: true,
+      [captionSettings.STORAGE_KEY]: captionSettings.DEFAULTS,
     });
     for (const key of SHORTCUT_KEYS) {
       state[key] = normalizeShortcut(stored[key], SHORTCUT_DEFAULTS[key]);
@@ -86,6 +98,10 @@ async function loadSettings() {
     state.commentsEnabled = stored.commentsEnabled !== false;
     state.screenshotEnabled = stored.screenshotEnabled !== false;
     state.danmakuEnabled = stored.danmakuEnabled !== false;
+    if (styleRevision === captionStyleRevision)
+      state.captionStyle = captionSettings.normalize(
+        stored[captionSettings.STORAGE_KEY],
+      );
   } catch {
     for (const key of SHORTCUT_KEYS) {
       state[key] = { ...SHORTCUT_DEFAULTS[key] };
@@ -93,8 +109,11 @@ async function loadSettings() {
     state.commentsEnabled = true;
     state.screenshotEnabled = true;
     state.danmakuEnabled = true;
+    if (styleRevision === captionStyleRevision)
+      state.captionStyle = { ...captionSettings.DEFAULTS };
   }
 
+  globalThis.PipCompanion.ContentCaptions.renderSubtitle();
   nudgeScan();
 }
 

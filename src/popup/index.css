@@ -266,10 +266,105 @@ button {
   font-weight: 600;
 }
 
-.back-button {
-  display: inline-flex;
+.subtitle-settings-view {
+  max-height: 480px;
+  margin-right: -10px;
+  overflow-y: auto;
+  padding-right: 3px;
+  scrollbar-color: #52525b transparent;
+  scrollbar-width: thin;
+}
+
+.subtitle-settings-view::-webkit-scrollbar {
+  width: 5px;
+}
+
+.subtitle-settings-view::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.subtitle-settings-view::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #52525b;
+  background-clip: padding-box;
+}
+
+.subtitle-settings-view::-webkit-scrollbar-thumb:hover {
+  background: #71717a;
+  background-clip: padding-box;
+}
+
+.subtitle-preview {
+  position: relative;
+  height: 96px;
+  margin-top: 9px;
+  overflow: hidden;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  background: linear-gradient(145deg, #34343a, #111114 58%, #505058);
+  container-type: size;
+}
+
+.subtitle-preview-caption {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 0.35em;
+  right: 4%;
+  bottom: var(--subtitle-bottom-offset, 10%);
+  transform: translateY(var(--subtitle-bottom-offset, 10%));
+  left: 4%;
+  text-align: center;
+}
+
+.subtitle-preview-segment {
+  display: inline-block;
+  padding: 0.12em 0.35em;
+  border-radius: 2px;
+  background: var(--subtitle-background, rgba(0, 0, 0, 0.75));
+  color: var(--subtitle-text-color, #fff);
+  font-family: var(--subtitle-font-family, system-ui, sans-serif);
+  font-size: clamp(12px, var(--subtitle-font-size, 4.8cqh), 64px);
+  font-weight: var(--subtitle-font-weight, 400);
+  line-height: var(--subtitle-line-height, 1.35);
+  -webkit-text-stroke: min(var(--subtitle-outline-width, 0px), 0.06em)
+    var(--subtitle-outline-color, #000);
+  text-shadow: var(--subtitle-text-shadow, none);
+}
+
+.color-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  color: #d4d4d8;
+  font-size: 12px;
+}
+
+.color-row input[type="color"] {
+  width: 38px;
+  height: 26px;
+  padding: 2px;
+  border: 1px solid #3f3f46;
+  border-radius: 5px;
+  background: #27272a;
+}
+
+.back-button {
+  display: flex;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: flex-start;
+  width: 24px;
+  height: 24px;
+  padding: 0;
   font-size: 11px;
+}
+
+.range-row[hidden] {
+  display: none;
 }
 
 .range-row {

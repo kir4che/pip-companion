@@ -69,7 +69,8 @@ globalThis.PipCompanion.PipUI = (() => {
         position: absolute;
         left: 4%;
         right: 4%;
-        bottom: 12%;
+        bottom: var(--subtitle-bottom-offset, 10%);
+        transform: translateY(var(--subtitle-bottom-offset, 10%));
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -83,16 +84,22 @@ globalThis.PipCompanion.PipUI = (() => {
         max-width: 94%;
         white-space: pre-wrap;
         overflow-wrap: break-word;
-        line-height: 1.35;
+        line-height: var(--subtitle-line-height, 1.35);
       }
       .subtitle-segment {
         display: inline-block;
         padding: 0.12em 0.35em;
-        background: rgba(8, 8, 8, 0.75);
-        color: #fff;
-        font-family: "YouTube Noto", Roboto, Arial, sans-serif;
-        font-size: clamp(12px, 4.8cqh, 36px);
-        font-weight: 400;
+        background: var(--subtitle-background, rgba(8, 8, 8, 0.75));
+        color: var(--subtitle-text-color, #fff);
+        font-family: var(
+          --subtitle-font-family,
+          "YouTube Noto", Roboto, Arial, sans-serif
+        );
+        font-size: clamp(12px, var(--subtitle-font-size, 4.8cqh), 64px);
+        font-weight: var(--subtitle-font-weight, 400);
+        -webkit-text-stroke: min(var(--subtitle-outline-width, 0px), 0.06em)
+          var(--subtitle-outline-color, #000);
+        text-shadow: var(--subtitle-text-shadow, none);
         border-radius: 2px;
         box-decoration-break: clone;
         -webkit-box-decoration-break: clone;

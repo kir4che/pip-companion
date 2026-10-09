@@ -231,6 +231,10 @@ globalThis.PipCompanion.ContentCaptions = (() => {
   function renderSubtitle() {
     if (!state.pipUi) return;
     state.pipUi.subtitle.replaceChildren();
+    globalThis.PipCompanion.captionSettings.apply(
+      state.pipUi.subtitle,
+      state.captionStyle,
+    );
 
     const seen = new Set<string>();
     const lines = state.captionLines.filter((line) => {
@@ -260,10 +264,6 @@ globalThis.PipCompanion.ContentCaptions = (() => {
         const segEl = doc.createElement("span");
         segEl.className = "subtitle-segment";
         segEl.textContent = seg.text;
-        if (seg.color) segEl.style.color = seg.color;
-        if (seg.bg) segEl.style.background = seg.bg;
-        if (seg.fontFamily) segEl.style.fontFamily = seg.fontFamily;
-        if (seg.textShadow) segEl.style.textShadow = seg.textShadow;
         lineEl.appendChild(segEl);
       }
       state.pipUi.subtitle.appendChild(lineEl);

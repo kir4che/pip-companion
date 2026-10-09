@@ -2,6 +2,7 @@
 
 const util = globalThis.PipCompanion.util;
 const popupDanmakuSettings = globalThis.PipCompanion.danmakuSettings;
+const popupCaptionSettings = globalThis.PipCompanion.captionSettings;
 const openButton = document.querySelector("#open-pip") as HTMLButtonElement;
 const statusEl = document.querySelector("#status") as HTMLElement;
 const menuView = document.querySelector("#menu-view") as HTMLElement;
@@ -14,19 +15,37 @@ const danmakuSettingsOpen = document.querySelector(
 const danmakuSettingsBack = document.querySelector(
   "#danmaku-settings-back",
 ) as HTMLButtonElement;
+const captionSettingsView = document.querySelector(
+  "#caption-settings-view",
+) as HTMLElement;
+const captionSettingsOpen = document.querySelector(
+  "#caption-settings-open",
+) as HTMLButtonElement;
+const captionSettingsBack = document.querySelector(
+  "#caption-settings-back",
+) as HTMLButtonElement;
+let activeSettingsView: "danmaku" | "caption" = "danmaku";
 
-function setDanmakuSettingsView(open: boolean) {
-  menuView.hidden = open;
-  danmakuSettingsView.hidden = !open;
-  (open ? danmakuSettingsBack : danmakuSettingsOpen).focus();
+function setSettingsView(view: "menu" | "danmaku" | "caption") {
+  menuView.hidden = view !== "menu";
+  danmakuSettingsView.hidden = view !== "danmaku";
+  captionSettingsView.hidden = view !== "caption";
+  if (view !== "menu") activeSettingsView = view;
+  const focusTarget =
+    view === "menu"
+      ? activeSettingsView === "danmaku"
+        ? danmakuSettingsOpen
+        : captionSettingsOpen
+      : view === "danmaku"
+        ? danmakuSettingsBack
+        : captionSettingsBack;
+  focusTarget.focus();
 }
 
-danmakuSettingsOpen.addEventListener("click", () =>
-  setDanmakuSettingsView(true),
-);
-danmakuSettingsBack.addEventListener("click", () =>
-  setDanmakuSettingsView(false),
-);
+danmakuSettingsOpen.addEventListener("click", () => setSettingsView("danmaku"));
+danmakuSettingsBack.addEventListener("click", () => setSettingsView("menu"));
+captionSettingsOpen.addEventListener("click", () => setSettingsView("caption"));
+captionSettingsBack.addEventListener("click", () => setSettingsView("menu"));
 
 let pipOpen = false;
 let pipStateSyncPending = false;
@@ -216,6 +235,222 @@ async function loadDanmakuStyle() {
   setDanmakuStyleControlsDisabled(false);
 }
 
+const captionFontFamily = document.querySelector(
+  "#caption-font-family",
+) as HTMLSelectElement;
+const captionTextColor = document.querySelector(
+  "#caption-text-color",
+) as HTMLInputElement;
+const captionBackgroundColor = document.querySelector(
+  "#caption-background-color",
+) as HTMLInputElement;
+const captionBackgroundOpacity = document.querySelector(
+  "#caption-background-opacity",
+) as HTMLInputElement;
+const captionEdgeStyle = document.querySelector(
+  "#caption-edge-style",
+) as HTMLSelectElement;
+const captionEdgeColor = document.querySelector(
+  "#caption-edge-color",
+) as HTMLInputElement;
+const captionOutlineWidthRow = document.querySelector(
+  "#caption-outline-width-row",
+) as HTMLElement;
+const captionPreview = document.querySelector(
+  "#caption-preview",
+) as HTMLElement;
+const captionStyleControls = [
+  {
+    key: "fontWeight",
+    input: document.querySelector("#caption-font-weight") as HTMLInputElement,
+    output: document.querySelector(
+      "#caption-font-weight-value",
+    ) as HTMLOutputElement,
+  },
+  {
+    key: "lineHeightScale",
+    input: document.querySelector("#caption-line-height") as HTMLInputElement,
+    output: document.querySelector(
+      "#caption-line-height-value",
+    ) as HTMLOutputElement,
+  },
+  {
+    key: "fontSizeScale",
+    input: document.querySelector("#caption-size") as HTMLInputElement,
+    output: document.querySelector("#caption-size-value") as HTMLOutputElement,
+  },
+  {
+    key: "backgroundOpacity",
+    input: captionBackgroundOpacity,
+    output: document.querySelector(
+      "#caption-background-opacity-value",
+    ) as HTMLOutputElement,
+  },
+  {
+    key: "outlineWidth",
+    input: document.querySelector("#caption-outline-width") as HTMLInputElement,
+    output: document.querySelector(
+      "#caption-outline-width-value",
+    ) as HTMLOutputElement,
+  },
+  {
+    key: "bottomOffset",
+    input: document.querySelector("#caption-position") as HTMLInputElement,
+    output: document.querySelector(
+      "#caption-position-value",
+    ) as HTMLOutputElement,
+  },
+] as const;
+const captionStyleReset = document.querySelector(
+  "#caption-style-reset",
+) as HTMLButtonElement;
+let popupCaptionStyle = { ...popupCaptionSettings.DEFAULTS };
+let popupCaptionStyleRevision = 0;
+let popupCaptionStyleDirty = false;
+let captionStyleSaveQueue: Promise<void> = Promise.resolve();
+let captionStyleSaveTimer: ReturnType<typeof setTimeout> | undefined;
+
+function setCaptionStyleControlsDisabled(disabled: boolean) {
+  captionFontFamily.disabled = disabled;
+  captionTextColor.disabled = disabled;
+  captionBackgroundColor.disabled = disabled;
+  captionBackgroundOpacity.disabled = disabled;
+  captionEdgeStyle.disabled = disabled;
+  captionEdgeColor.disabled = disabled;
+  for (const control of captionStyleControls) control.input.disabled = disabled;
+  captionStyleReset.disabled = disabled;
+}
+
+function renderCaptionStyle() {
+  for (const control of captionStyleControls) {
+    const value = popupCaptionStyle[control.key];
+    control.input.value = String(value);
+    control.output.value =
+      control.key === "outlineWidth"
+        ? `${value}px`
+        : control.key === "fontWeight"
+          ? String(value)
+          : `${value}%`;
+  }
+  captionFontFamily.value = popupCaptionStyle.fontFamily;
+  captionTextColor.value = popupCaptionStyle.textColor;
+  captionBackgroundColor.value = popupCaptionStyle.backgroundColor;
+  captionEdgeStyle.value = popupCaptionStyle.edgeStyle;
+  captionEdgeColor.value = popupCaptionStyle.edgeColor;
+  const edgeEnabled = popupCaptionStyle.edgeStyle !== "none";
+  captionEdgeColor.disabled = !edgeEnabled;
+  const outlineEnabled = popupCaptionStyle.edgeStyle === "outline";
+  const outlineControl = captionStyleControls.find(
+    (control) => control.key === "outlineWidth",
+  );
+  if (outlineControl) outlineControl.input.disabled = !outlineEnabled;
+  captionOutlineWidthRow.hidden = !outlineEnabled;
+  popupCaptionSettings.apply(captionPreview, popupCaptionStyle);
+}
+
+function updatePopupCaptionStyle(value: unknown) {
+  popupCaptionStyle = popupCaptionSettings.normalize(value);
+  popupCaptionStyleRevision++;
+  popupCaptionStyleDirty = true;
+  renderCaptionStyle();
+}
+
+async function saveCaptionStyle() {
+  const style = { ...popupCaptionStyle };
+  const revision = popupCaptionStyleRevision;
+  const save = captionStyleSaveQueue.then(() =>
+    chrome.storage.local.set({
+      [popupCaptionSettings.STORAGE_KEY]: style,
+    }),
+  );
+  captionStyleSaveQueue = save.catch(() => {});
+  try {
+    await save;
+    if (revision === popupCaptionStyleRevision) popupCaptionStyleDirty = false;
+    showStatus("");
+  } catch {
+    showStatus("無法儲存字幕設定，請重新嘗試。", true);
+  }
+}
+
+function scheduleCaptionStyleSave() {
+  if (captionStyleSaveTimer) clearTimeout(captionStyleSaveTimer);
+  captionStyleSaveTimer = setTimeout(() => {
+    captionStyleSaveTimer = undefined;
+    void saveCaptionStyle();
+  }, 120);
+}
+
+async function loadCaptionStyle() {
+  const revision = popupCaptionStyleRevision;
+  let style: typeof popupCaptionStyle;
+  try {
+    const stored = await chrome.storage.local.get(
+      popupCaptionSettings.STORAGE_KEY,
+    );
+    style = popupCaptionSettings.normalize(
+      stored[popupCaptionSettings.STORAGE_KEY],
+    );
+  } catch {
+    style = { ...popupCaptionSettings.DEFAULTS };
+  }
+  if (revision === popupCaptionStyleRevision) popupCaptionStyle = style;
+  setCaptionStyleControlsDisabled(false);
+  renderCaptionStyle();
+}
+
+for (const control of captionStyleControls) {
+  control.input.addEventListener("input", () => {
+    updatePopupCaptionStyle({
+      ...popupCaptionStyle,
+      [control.key]: Number(control.input.value),
+    });
+    scheduleCaptionStyleSave();
+  });
+  control.input.addEventListener("change", () => {
+    if (captionStyleSaveTimer) clearTimeout(captionStyleSaveTimer);
+    captionStyleSaveTimer = undefined;
+    void saveCaptionStyle();
+  });
+}
+
+captionFontFamily.addEventListener("change", () => {
+  updatePopupCaptionStyle({
+    ...popupCaptionStyle,
+    fontFamily: captionFontFamily.value,
+  });
+  void saveCaptionStyle();
+});
+captionEdgeStyle.addEventListener("change", () => {
+  updatePopupCaptionStyle({
+    ...popupCaptionStyle,
+    edgeStyle: captionEdgeStyle.value,
+  });
+  void saveCaptionStyle();
+});
+for (const [input, key] of [
+  [captionTextColor, "textColor"],
+  [captionBackgroundColor, "backgroundColor"],
+  [captionEdgeColor, "edgeColor"],
+] as const) {
+  input.addEventListener("input", () => {
+    updatePopupCaptionStyle({
+      ...popupCaptionStyle,
+      [key]: input.value,
+    });
+    scheduleCaptionStyleSave();
+  });
+  input.addEventListener("change", () => {
+    if (captionStyleSaveTimer) clearTimeout(captionStyleSaveTimer);
+    captionStyleSaveTimer = undefined;
+    void saveCaptionStyle();
+  });
+}
+captionStyleReset.addEventListener("click", () => {
+  updatePopupCaptionStyle(popupCaptionSettings.DEFAULTS);
+  void saveCaptionStyle();
+});
+
 function setShortcutVisibility(
   key: "commentsShortcut" | "screenshotShortcut" | "danmakuShortcut",
   enabled: boolean,
@@ -330,11 +565,19 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
   }
 
-  const change = changes[popupDanmakuSettings.STORAGE_KEY];
-  if (!change || popupDanmakuStyleDirty) return;
-  popupDanmakuStyle = popupDanmakuSettings.normalize(change.newValue);
-  popupDanmakuStyleRevision++;
-  renderDanmakuStyle();
+  const danmakuChange = changes[popupDanmakuSettings.STORAGE_KEY];
+  if (danmakuChange && !popupDanmakuStyleDirty) {
+    popupDanmakuStyle = popupDanmakuSettings.normalize(danmakuChange.newValue);
+    popupDanmakuStyleRevision++;
+    renderDanmakuStyle();
+  }
+
+  const captionChange = changes[popupCaptionSettings.STORAGE_KEY];
+  if (captionChange && !popupCaptionStyleDirty) {
+    popupCaptionStyle = popupCaptionSettings.normalize(captionChange.newValue);
+    popupCaptionStyleRevision++;
+    renderCaptionStyle();
+  }
 });
 
 commentsToggle.addEventListener("change", () => {
@@ -551,8 +794,11 @@ document.addEventListener(
 );
 
 setDanmakuStyleControlsDisabled(true);
+setCaptionStyleControlsDisabled(true);
 renderDanmakuStyle();
+renderCaptionStyle();
 void loadShortcuts();
 void loadToggles();
 void loadDanmakuStyle();
+void loadCaptionStyle();
 void syncPipState();
