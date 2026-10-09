@@ -1087,6 +1087,31 @@ globalThis.PipCompanion.PipUI = (() => {
         adjustPlaybackRate(decreaseRate ? -1 : 1);
         return;
       }
+      if (plain && !e.repeat && videoSource && e.key.toLowerCase() === "r") {
+        e.preventDefault();
+        e.stopPropagation();
+        const aspectRatio = videoSource.videoWidth / videoSource.videoHeight;
+        if (
+          videoSource.videoWidth <= 0 ||
+          videoSource.videoHeight <= 0 ||
+          !Number.isFinite(aspectRatio)
+        )
+          return;
+
+        let width = win.outerWidth;
+        let height = win.outerHeight;
+        if (win.innerWidth / win.innerHeight < aspectRatio)
+          height = Math.round(
+            win.outerHeight - win.innerHeight + win.innerWidth / aspectRatio,
+          );
+        else
+          width = Math.round(
+            win.outerWidth - win.innerWidth + win.innerHeight * aspectRatio,
+          );
+
+        void actions.resize(win.innerWidth, width, height).catch(() => {});
+        return;
+      }
       if (
         plain &&
         videoSource &&

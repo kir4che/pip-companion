@@ -63,6 +63,7 @@ Shortcuts inside the PiP window:
 | Step one frame        | `,` / `.`                 |
 | Adjust playback speed | `Shift + ,` / `Shift + .` |
 | Danmaku input         | `Enter`                   |
+| Auto-adjust aspect    | `R`                       |
 | Resize PiP            | `Ctrl/Cmd + scroll wheel` |
 
 ## Installation
