@@ -326,8 +326,10 @@ globalThis.PipCompanion.PipUI = (() => {
         accent-color: #f33;
         transform: scaleY(0.85);
       }
-      .progress:focus-visible {
+      input.progress:focus,
+      input.progress:focus-visible {
         outline: none;
+        outline-offset: 0;
       }
       button svg {
         width: 16px;
