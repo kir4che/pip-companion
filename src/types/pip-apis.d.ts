@@ -58,6 +58,12 @@ interface PipUiActions {
   toggleCaptions(): void;
   toggleComments(): void;
   toggleDanmaku(): void;
+  canSendDanmaku: boolean;
+  getDanmakuCharacterLimit(): number | null;
+  sendDanmaku(text: string): Promise<{
+    ok: boolean;
+    nativeInputCleared: boolean;
+  }>;
   matchesCommentsShortcut(e: KeyboardEvent): boolean;
   matchesDanmakuShortcut(e: KeyboardEvent): boolean;
   matchesScreenshotShortcut(e: KeyboardEvent): boolean;
@@ -91,6 +97,7 @@ interface PipUiHandle {
   timeTooltip: HTMLElement;
   timeTooltipThumb: HTMLElement;
   timeTooltipText: HTMLElement;
+  setDanmakuEnabled(enabled: boolean): void;
 }
 
 interface PipUiApi {
@@ -226,6 +233,21 @@ interface ContentPipLifecycleApi {
   openPiP(): Promise<{ ok: boolean; message?: string }>;
 }
 
+interface ContentDanmakuSenderPlatformApi {
+  isSupportedPage(): boolean;
+  getCharacterLimit(): number | null;
+  send(text: string): Promise<{
+    ok: boolean;
+    nativeInputCleared: boolean;
+  }>;
+}
+
+type ContentBahamutDanmakuSenderApi = ContentDanmakuSenderPlatformApi;
+type ContentBilibiliDanmakuSenderApi = ContentDanmakuSenderPlatformApi;
+type ContentYouTubeDanmakuSenderApi = ContentDanmakuSenderPlatformApi;
+
+type ContentDanmakuSenderApi = ContentDanmakuSenderPlatformApi;
+
 interface BilibiliDanmakuConfigApi {
   segmentSeconds: number;
 }
@@ -258,6 +280,10 @@ interface PipCompanionGlobal {
   ContentScreenshot: ContentScreenshotApi;
   ContentPipLifecycle: ContentPipLifecycleApi;
   ContentBilibiliDanmaku: ContentBilibiliDanmakuApi;
+  ContentBahamutDanmakuSender: ContentBahamutDanmakuSenderApi;
+  ContentBilibiliDanmakuSender: ContentBilibiliDanmakuSenderApi;
+  ContentYouTubeDanmakuSender: ContentYouTubeDanmakuSenderApi;
+  ContentDanmakuSender: ContentDanmakuSenderApi;
   ContentDanmakuRenderer: ContentDanmakuRendererApi;
   ContentDanmakuSources: ContentDanmakuSourcesApi;
   ContentYouTubeDanmaku: ContentYouTubeDanmakuApi;

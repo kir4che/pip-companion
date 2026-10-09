@@ -108,11 +108,12 @@ globalThis.PipCompanion.PipUI = (() => {
     const controlsCss = `
       .controls {
         position: absolute;
+        z-index: 60;
         inset: auto 0 0;
         display: flex;
         align-items: center;
-        gap: 9px;
-        padding: 26px 10px 8px;
+        gap: 6px;
+        padding: 24px 8px 6px;
         background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
         opacity: 0;
         transform: translateY(4px);
@@ -181,10 +182,83 @@ globalThis.PipCompanion.PipUI = (() => {
         line-height: 1;
         white-space: nowrap;
       }
+      .danmaku-send-panel {
+        position: absolute;
+        z-index: 60;
+        right: 10px;
+        bottom: 40px;
+        left: 10px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 19px;
+        background: rgba(12, 12, 12, 0.84);
+      }
+      .danmaku-send-field {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .danmaku-send-input {
+        width: 100%;
+        height: 30px;
+        padding: 0 52px 0 10px;
+        border: 0;
+        border-radius: 18px;
+        outline: none;
+        background: transparent;
+        color: #fff;
+        font: 14px system-ui, sans-serif;
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      .danmaku-send-count {
+        display: none;
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        color: #aaa;
+        font-size: 10px;
+        line-height: 1;
+        pointer-events: none;
+      }
+      .danmaku-send-field:focus-within .danmaku-send-count:not([hidden]) {
+        display: block;
+      }
+      .danmaku-send-count.is-over-limit {
+        color: #ff7777;
+      }
+      .danmaku-send-submit {
+        width: auto;
+        min-width: 48px;
+        height: 28px;
+        padding: 0 10px;
+        border-radius: 16px;
+        background: #00a1d6;
+        font-size: 12px;
+      }
+      .danmaku-send-submit:hover {
+        background: #12b4e8;
+      }
+      .danmaku-send-status {
+        position: absolute;
+        z-index: 60;
+        right: 14px;
+        bottom: 85px;
+        max-width: calc(100% - 28px);
+        padding: 4px 8px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.72);
+        font-size: 11px;
+        pointer-events: none;
+      }
       button {
         flex: 0 0 auto;
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
         display: grid;
         place-items: center;
         padding: 0;
@@ -205,7 +279,7 @@ globalThis.PipCompanion.PipUI = (() => {
         cursor: default;
       }
       .speed-button {
-        width: 38px;
+        width: 36px;
         font-size: 12px;
         font-weight: 600;
       }
@@ -213,7 +287,7 @@ globalThis.PipCompanion.PipUI = (() => {
         outline: none;
         background: #444d;
       }
-      input:focus-visible {
+      input:not(.danmaku-send-input):focus-visible {
         outline: 2px solid #3ea6ff;
         outline-offset: 2px;
       }
@@ -256,8 +330,8 @@ globalThis.PipCompanion.PipUI = (() => {
         outline: none;
       }
       button svg {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
         fill: currentColor;
       }
     `;
@@ -266,7 +340,7 @@ globalThis.PipCompanion.PipUI = (() => {
       .speed-control {
         position: relative;
         flex: 0 0 auto;
-        height: 32px;
+        height: 30px;
       }
       .volume-control::after,
       .speed-control::after {
@@ -467,6 +541,64 @@ globalThis.PipCompanion.PipUI = (() => {
       return button;
     };
 
+    const danmakuSendToggle = makeButton(
+      "danmaku-send-toggle",
+      "",
+      "開啟聊天室輸入",
+    );
+    danmakuSendToggle.title = "開啟聊天室輸入";
+    const danmakuSendIcon = doc.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "svg",
+    );
+    danmakuSendIcon.setAttribute("viewBox", "0 0 24 24");
+    danmakuSendIcon.setAttribute("aria-hidden", "true");
+    const danmakuSendBubble = doc.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
+    danmakuSendBubble.setAttribute(
+      "d",
+      "M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm0 14H5.17L4 17.17V4h16z",
+    );
+    danmakuSendBubble.setAttribute("fill-rule", "evenodd");
+    danmakuSendIcon.append(danmakuSendBubble);
+    for (const x of [8, 12, 16]) {
+      const dot = doc.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", String(x));
+      dot.setAttribute("cy", "10");
+      dot.setAttribute("r", "1");
+      danmakuSendIcon.append(dot);
+    }
+    danmakuSendToggle.append(danmakuSendIcon);
+    danmakuSendToggle.hidden = !actions.canSendDanmaku;
+    danmakuSendToggle.setAttribute("aria-expanded", "false");
+    const danmakuSendPanel = doc.createElement("form");
+    danmakuSendPanel.className = "danmaku-send-panel";
+    danmakuSendPanel.hidden = true;
+    const danmakuSendField = doc.createElement("div");
+    danmakuSendField.className = "danmaku-send-field";
+    const danmakuSendInput = doc.createElement("input");
+    danmakuSendInput.className = "danmaku-send-input";
+    danmakuSendInput.type = "text";
+    danmakuSendInput.autocomplete = "off";
+    danmakuSendInput.setAttribute("aria-label", "聊天室訊息內容");
+    const danmakuSendCount = doc.createElement("span");
+    danmakuSendCount.className = "danmaku-send-count";
+    danmakuSendCount.id = "danmaku-send-count";
+    danmakuSendInput.setAttribute("aria-describedby", danmakuSendCount.id);
+    danmakuSendField.append(danmakuSendInput, danmakuSendCount);
+    const danmakuSendSubmit = doc.createElement("button");
+    danmakuSendSubmit.className = "danmaku-send-submit";
+    danmakuSendSubmit.type = "submit";
+    danmakuSendSubmit.textContent = "送出";
+    danmakuSendPanel.append(danmakuSendField, danmakuSendSubmit);
+    const danmakuSendStatus = doc.createElement("div");
+    danmakuSendStatus.className = "danmaku-send-status";
+    danmakuSendStatus.setAttribute("role", "status");
+    danmakuSendStatus.setAttribute("aria-live", "polite");
+    danmakuSendStatus.hidden = true;
+
     const playButton = makeButton("play", "▶", "播放影片");
     const nextButton = makeButton("next", "", "下一部影片");
     nextButton.hidden = true;
@@ -555,8 +687,16 @@ globalThis.PipCompanion.PipUI = (() => {
       progress,
       volumeControl,
       speedControl,
+      danmakuSendToggle,
     );
-    screen.append(subtitle, feedback, miniProgress, controls);
+    screen.append(
+      subtitle,
+      feedback,
+      danmakuSendStatus,
+      danmakuSendPanel,
+      miniProgress,
+      controls,
+    );
     app.append(screen);
     doc.head.replaceChildren(style);
     doc.body.replaceChildren(app);
@@ -584,10 +724,166 @@ globalThis.PipCompanion.PipUI = (() => {
       timeTooltip,
       timeTooltipThumb,
       timeTooltipText,
+      setDanmakuEnabled: (enabled: boolean) => setDanmakuEnabled(enabled),
     };
 
     const update = () => actions.updatePlaybackUi();
     const togglePlayback = () => actions.togglePlayback();
+    let danmakuSendStatusTimer: number | undefined;
+    const setDanmakuSendStatus = (message: string | null) => {
+      if (danmakuSendStatusTimer !== undefined) {
+        win.clearTimeout(danmakuSendStatusTimer);
+        danmakuSendStatusTimer = undefined;
+      }
+      if (message === null || danmakuSendPanel.hidden) {
+        danmakuSendStatus.textContent = "";
+        danmakuSendStatus.hidden = true;
+        return;
+      }
+      danmakuSendStatus.textContent = message;
+      danmakuSendStatus.hidden = false;
+      danmakuSendStatusTimer = win.setTimeout(() => {
+        danmakuSendStatusTimer = undefined;
+        if (danmakuSendStatus.textContent === message)
+          setDanmakuSendStatus(null);
+      }, 3000);
+    };
+    const setDanmakuSendPanelOpen = (open: boolean) => {
+      danmakuSendPanel.hidden = !open;
+      danmakuSendToggle.setAttribute("aria-expanded", String(open));
+      const label = open ? "關閉聊天室輸入" : "開啟聊天室輸入";
+      danmakuSendToggle.setAttribute("aria-label", label);
+      danmakuSendToggle.title = label;
+    };
+    const openDanmakuSendPanel = () => {
+      if (!danmakuEnabled || !actions.canSendDanmaku) return;
+      setDanmakuSendPanelOpen(true);
+      refreshDanmakuCharacterLimit();
+      danmakuSendInput.focus();
+    };
+    const closeDanmakuSendPanel = () => {
+      setDanmakuSendPanelOpen(false);
+      setDanmakuSendStatus(null);
+    };
+    let danmakuEnabled = true;
+    let sendingDanmaku = false;
+    let danmakuCharacterLimit: number | null = null;
+    let danmakuCooldownUntil = 0;
+    let danmakuCooldownTimer: number | undefined;
+    const setDanmakuEnabled = (enabled: boolean) => {
+      danmakuEnabled = enabled;
+      danmakuSendToggle.hidden = !enabled || !actions.canSendDanmaku;
+      danmakuSendInput.disabled = !enabled || !actions.canSendDanmaku;
+      danmakuSendSubmit.disabled =
+        !enabled ||
+        !actions.canSendDanmaku ||
+        sendingDanmaku ||
+        danmakuCooldownUntil > Date.now();
+      if (!enabled) {
+        closeDanmakuSendPanel();
+        danmakuSendInput.blur();
+      }
+    };
+    const updateDanmakuCharacterCount = () => {
+      const length = danmakuSendInput.value.length;
+      danmakuSendCount.textContent =
+        danmakuCharacterLimit === null
+          ? ""
+          : `${length} / ${danmakuCharacterLimit}`;
+      danmakuSendCount.hidden = danmakuCharacterLimit === null;
+      danmakuSendCount.classList.toggle(
+        "is-over-limit",
+        danmakuCharacterLimit !== null && length > danmakuCharacterLimit,
+      );
+    };
+    const refreshDanmakuCharacterLimit = () => {
+      danmakuCharacterLimit = actions.getDanmakuCharacterLimit();
+      if (danmakuCharacterLimit === null)
+        danmakuSendInput.removeAttribute("maxlength");
+      else danmakuSendInput.maxLength = danmakuCharacterLimit;
+      updateDanmakuCharacterCount();
+    };
+    const updateDanmakuCooldown = () => {
+      const remaining = danmakuCooldownUntil - Date.now();
+      if (remaining <= 0) {
+        danmakuCooldownUntil = 0;
+        danmakuCooldownTimer = undefined;
+        danmakuSendSubmit.textContent = "送出";
+        danmakuSendSubmit.disabled =
+          !danmakuEnabled || !actions.canSendDanmaku || sendingDanmaku;
+        return;
+      }
+      danmakuSendSubmit.disabled = true;
+      danmakuSendSubmit.textContent = `${Math.ceil(remaining / 1000)} 秒`;
+      danmakuCooldownTimer = win.setTimeout(
+        updateDanmakuCooldown,
+        Math.min(1000, remaining),
+      );
+    };
+    const sendDanmaku = async () => {
+      if (!danmakuEnabled || !actions.canSendDanmaku || sendingDanmaku) return;
+      if (danmakuCooldownUntil > Date.now()) {
+        const seconds = Math.ceil((danmakuCooldownUntil - Date.now()) / 1000);
+        setDanmakuSendStatus(`請稍候 ${seconds} 秒再發送。`);
+        return;
+      }
+      if (danmakuCooldownTimer !== undefined)
+        win.clearTimeout(danmakuCooldownTimer);
+      danmakuCooldownTimer = undefined;
+      danmakuCooldownUntil = 0;
+      danmakuSendSubmit.textContent = "送出";
+      danmakuSendSubmit.disabled = false;
+
+      refreshDanmakuCharacterLimit();
+      if (!danmakuSendInput.value.trim()) {
+        setDanmakuSendStatus("請先輸入彈幕內容。");
+        return;
+      }
+      if (
+        danmakuCharacterLimit !== null &&
+        danmakuSendInput.value.length > danmakuCharacterLimit
+      ) {
+        setDanmakuSendStatus(
+          `彈幕超過平台字數限制（${danmakuCharacterLimit} 字）。`,
+        );
+        return;
+      }
+
+      setDanmakuSendStatus(null);
+      sendingDanmaku = true;
+      const sendStartedAt = Date.now();
+      const submittedText = danmakuSendInput.value;
+      danmakuSendSubmit.disabled = true;
+      try {
+        const result = await actions.sendDanmaku(submittedText);
+        if (result.ok) {
+          setDanmakuSendStatus(
+            result.nativeInputCleared
+              ? "已嘗試送出，請確認聊天室回顯。"
+              : "請確認聊天室是否收到，再決定是否重送。",
+          );
+          danmakuCooldownUntil = sendStartedAt + 5000;
+          if (
+            result.nativeInputCleared &&
+            danmakuSendInput.value === submittedText
+          ) {
+            danmakuSendInput.value = "";
+            updateDanmakuCharacterCount();
+          }
+          updateDanmakuCooldown();
+        } else setDanmakuSendStatus("無法發送，請確認聊天室狀態。");
+      } catch {
+        setDanmakuSendStatus("發送失敗，請稍後再試。");
+      } finally {
+        sendingDanmaku = false;
+        if (danmakuCooldownUntil === 0) {
+          danmakuSendSubmit.disabled =
+            !danmakuEnabled || !actions.canSendDanmaku;
+          danmakuSendSubmit.textContent = "送出";
+        }
+      }
+    };
+    refreshDanmakuCharacterLimit();
     const showSpeedFeedback = () => {
       const rate = actions.getVideo()?.playbackRate;
       if (rate) actions.showFeedback(`${Math.round(rate * 100) / 100}×`);
@@ -604,6 +900,27 @@ globalThis.PipCompanion.PipUI = (() => {
 
     volumeButton.addEventListener("click", toggleMute);
     speedButton.addEventListener("click", togglePlaybackRate);
+    danmakuSendToggle.addEventListener("click", () => {
+      if (!danmakuEnabled || !actions.canSendDanmaku) return;
+      if (danmakuSendPanel.hidden) openDanmakuSendPanel();
+      else closeDanmakuSendPanel();
+    });
+    danmakuSendPanel.addEventListener("submit", (e) => {
+      e.preventDefault();
+      void sendDanmaku();
+    });
+    danmakuSendInput.addEventListener("input", updateDanmakuCharacterCount);
+    danmakuSendInput.addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter" && (e.isComposing || e.keyCode === 229)) {
+        e.preventDefault();
+        return;
+      }
+      if (e.key === "Escape") {
+        closeDanmakuSendPanel();
+        danmakuSendToggle.focus();
+      }
+    });
     playButton.addEventListener("click", togglePlayback);
     screen.addEventListener(
       "click",
@@ -706,7 +1023,27 @@ globalThis.PipCompanion.PipUI = (() => {
     });
 
     win.addEventListener("keydown", (e) => {
-      if (e.target === volumeValue || e.target === timeCurrent) return;
+      if (
+        e.key === "Enter" &&
+        danmakuEnabled &&
+        actions.canSendDanmaku &&
+        danmakuSendPanel.hidden &&
+        (e.target === video ||
+          e.target === screen ||
+          e.target === doc.body ||
+          e.target === doc.documentElement)
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        openDanmakuSendPanel();
+        return;
+      }
+      if (
+        e.target === volumeValue ||
+        e.target === timeCurrent ||
+        e.target === danmakuSendInput
+      )
+        return;
       const target = e.target instanceof Element ? e.target : null;
       const videoSource = actions.getVideo();
       const plain = !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey;

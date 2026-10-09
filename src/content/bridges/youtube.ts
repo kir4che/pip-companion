@@ -152,6 +152,7 @@
     if (document.documentElement) {
       delete document.documentElement.dataset.pipYtStoryboard;
       delete document.documentElement.dataset.pipYtVideoId;
+      delete document.documentElement.dataset.pipYtIsLive;
     }
     window.postMessage({ type: "PIP_YT_RESET" }, "*");
     document.dispatchEvent(new CustomEvent("pip-companion-yt-reset"));

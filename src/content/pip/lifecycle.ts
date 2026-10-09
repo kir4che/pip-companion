@@ -8,7 +8,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   }
 
   function createPipUi(win: Window, video: HTMLVideoElement) {
-    return globalThis.PipCompanion.PipUI.create(
+    const ui = globalThis.PipCompanion.PipUI.create(
       win,
       {
         volumeIconPath:
@@ -38,6 +38,11 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         toggleComments: toggleFloatingComments,
         toggleDanmaku:
           globalThis.PipCompanion.ContentPlayback.toggleDanmakuFromShortcut,
+        canSendDanmaku:
+          globalThis.PipCompanion.ContentDanmakuSender.isSupportedPage(),
+        getDanmakuCharacterLimit:
+          globalThis.PipCompanion.ContentDanmakuSender.getCharacterLimit,
+        sendDanmaku: globalThis.PipCompanion.ContentDanmakuSender.send,
         matchesCommentsShortcut: (e) =>
           state.commentsEnabled && matchesShortcut(e, state.commentsShortcut),
         matchesDanmakuShortcut: (e) =>
@@ -64,6 +69,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       },
       video,
     );
+    ui.setDanmakuEnabled(state.danmakuEnabled);
+    return ui;
   }
 
   function stashSourceVideo() {

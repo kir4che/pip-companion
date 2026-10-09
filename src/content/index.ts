@@ -69,8 +69,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.commentsEnabled = changes.commentsEnabled.newValue !== false;
   if (changes.screenshotEnabled)
     state.screenshotEnabled = changes.screenshotEnabled.newValue !== false;
-  if (changes.danmakuEnabled)
+  if (changes.danmakuEnabled) {
     state.danmakuEnabled = changes.danmakuEnabled.newValue !== false;
+    state.pipUi?.setDanmakuEnabled(state.danmakuEnabled);
+  }
   if (changes[captionSettings.STORAGE_KEY]) {
     captionStyleRevision++;
     state.captionStyle = captionSettings.normalize(

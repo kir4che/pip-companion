@@ -8,7 +8,7 @@ The extension has no accounts, advertising, analytics, or tracking, and the deve
 Shortcuts, feature toggles, caption and danmaku appearance settings are stored in the browser's local extension storage. The source-tab identifier is kept temporarily in session storage while PiP is in use. Screenshots are downloaded to the user's device when requested.
 
 2. Third-party services
-For Bilibili danmaku, the extension sends video identifiers and requested danmaku-segment information to the Bilibili API. Bilibili thumbnail previews also request thumbnail data from its API. YouTube thumbnail previews may request the video page using its video identifier and load YouTube thumbnails. Bahamut Anime Crazy previews read thumbnail information provided by the page and load the images. These requests go directly to the services or their image hosts and may include cookies or other request information, depending on the request and browser settings. Each service's privacy policy governs its handling and retention of request data.
+When danmaku or thumbnail preview features are used, the extension requests the necessary data directly from relevant platform APIs or image hosts. Requests may include video identifiers, danmaku-segment information, and cookies, depending on the request and browser settings. When sending danmaku from PiP, the message is sent to Bahamut Anime Crazy, Bilibili, or YouTube through the site's native composer and the user's signed-in session; it is not sent to the developer. Each service handles and retains data under its own privacy policy.
 
 The extension does not send data to the developer and contains no analytics or tracking.
 
