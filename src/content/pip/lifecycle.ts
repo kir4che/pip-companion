@@ -2,9 +2,14 @@
 
 globalThis.PipCompanion.ContentPipLifecycle = (() => {
   function notifyPipState(pipOpen: boolean) {
-    void chrome.runtime
-      .sendMessage({ type: "PIP_STATE_CHANGED", pipOpen })
-      .catch(() => {});
+    try {
+      if (!chrome.runtime?.id) return;
+      void chrome.runtime
+        .sendMessage({ type: "PIP_STATE_CHANGED", pipOpen })
+        .catch(() => {});
+    } catch {
+      // 擴充插件在重新載入或關閉期間可能失效
+    }
   }
 
   function createPipUi(win: Window, video: HTMLVideoElement) {
@@ -104,17 +109,35 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
   function restoreSourceVideo() {
     const stash = state.videoStash;
-    state.videoStash = null;
-    if (!stash || !state.sourceVideo) return;
+    const video = state.sourceVideo;
+    if (!stash) return true;
+    if (!video) return false;
     stash.placeholder?.remove();
-    state.sourceVideo.controls = stash.controls;
-    state.sourceVideo.style.cssText = stash.inlineStyle;
+    video.controls = stash.controls;
+    video.style.cssText = stash.inlineStyle;
     if (stash.parent?.isConnected) {
-      stash.parent.insertBefore(
-        state.sourceVideo,
-        stash.next?.isConnected ? stash.next : null,
-      );
-    } else state.sourceVideo.remove();
+      const next = stash.next?.parentNode === stash.parent ? stash.next : null;
+      try {
+        stash.parent.insertBefore(video, next);
+      } catch (error) {
+        const fallback = document.body ?? document.documentElement;
+        if (!fallback) {
+          console.warn("[Caption PiP] Could not restore source video:", error);
+          return false;
+        }
+        try {
+          fallback.append(video);
+        } catch (fallbackError) {
+          console.warn(
+            "[Caption PiP] Could not restore source video:",
+            fallbackError,
+          );
+          return false;
+        }
+      }
+    } else video.remove();
+    state.videoStash = null;
+    return true;
   }
 
   function remountSourceVideo() {
@@ -130,9 +153,23 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   }
 
   function releasePipVideo() {
-    globalThis.PipCompanion.PipAudio.stop();
-    restoreSourceVideo();
-    globalThis.PipCompanion.ContentCaptions.restoreNativeCaptionModes();
+    try {
+      globalThis.PipCompanion.PipAudio.stop();
+    } catch (error) {
+      console.warn("[Caption PiP] Could not stop PiP audio:", error);
+    }
+    let videoRestored = false;
+    try {
+      videoRestored = restoreSourceVideo();
+    } catch (error) {
+      console.warn("[Caption PiP] Could not restore source video:", error);
+    }
+    try {
+      globalThis.PipCompanion.ContentCaptions.restoreNativeCaptionModes();
+    } catch (error) {
+      console.warn("[Caption PiP] Could not restore native captions:", error);
+    }
+    return videoRestored;
   }
 
   function resumePlayback() {
@@ -264,6 +301,14 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     window.clearTimeout(state.nextClickTimer);
     state.nextClickTimer = 0;
     state.nextClickPending = false;
+    try {
+      destroyDanmakuInPip();
+    } catch (error) {
+      console.warn("[Caption PiP] Could not destroy PiP danmaku:", error);
+    }
+    const videoRestored = releasePipVideo();
+    if (!videoRestored && closeWindow && oldWindow && !oldWindow.closed) return;
+
     state.pipWindow = null;
     state.pipUi = null;
     state.captionObserver?.disconnect();
@@ -271,12 +316,19 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     state.captionNode = null;
     state.captionExtract = null;
     state.captionLines = [];
-
-    destroyDanmakuInPip();
-    releasePipVideo();
-    globalThis.PipCompanion.ContentStoryboard.reset();
+    try {
+      globalThis.PipCompanion.ContentStoryboard.reset();
+    } catch (error) {
+      console.warn("[Caption PiP] Could not reset storyboard:", error);
+    }
     if (oldWindow) notifyPipState(false);
-    if (closeWindow && oldWindow && !oldWindow.closed) oldWindow.close();
+    if (closeWindow && oldWindow) {
+      try {
+        if (!oldWindow.closed) oldWindow.close();
+      } catch (error) {
+        console.warn("[Caption PiP] Could not close PiP window:", error);
+      }
+    }
   }
 
   async function openPiP() {
@@ -284,8 +336,15 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     if (!state.sourceVideo)
       return { ok: false, message: "請先開啟有影片的頁面" };
     if (state.pipWindow && !state.pipWindow.closed) {
-      state.pipWindow.focus();
-      return { ok: true };
+      try {
+        state.pipWindow.focus();
+        return { ok: true };
+      } catch {
+        return {
+          ok: false,
+          message: "無法切換至子母畫面，請稍後再試。",
+        };
+      }
     }
     state.opening = true;
     const openingVideo = state.sourceVideo;
@@ -325,9 +384,12 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       return { ok: true };
     } catch (error) {
       if (state.pipWindow) closePiP(true);
-      console.warn("[Caption PiP] Could not open PiP:", error);
       const gestureRequired =
         error instanceof DOMException && error.name === "NotAllowedError";
+      const sourceChanged =
+        error instanceof Error && error.message === "source changed";
+      if (!gestureRequired && !sourceChanged)
+        console.warn("[Caption PiP] Could not open PiP:", error);
       return {
         ok: false,
         message: gestureRequired
