@@ -27,8 +27,17 @@ const state: State = {
   videoStash: null,
   nativeCaptionTracks: null,
   youtubeCaptionsInitiallyEnabled: null,
-  pipWindow: null,
-  pipUi: null,
+  pipSession: { phase: "closed" },
+  get pipWindow() {
+    const session = this.pipSession;
+    return session.phase === "waiting" || session.phase === "active"
+      ? session.window
+      : null;
+  },
+  get pipUi() {
+    const session = this.pipSession;
+    return session.phase === "active" ? session.ui : null;
+  },
   globalPipOpen: false,
   captionNode: null,
   captionExtract: null,
@@ -36,7 +45,6 @@ const state: State = {
   captionLines: [],
   captionStyle: { ...captionSettings.DEFAULTS },
   captionsOn: true,
-  opening: false,
   feedbackTimer: 0,
   lastDeepScan: 0,
   deepVideoCache: null,
@@ -129,7 +137,11 @@ function onPageKeyDown(e: KeyboardEvent) {
       target.closest("input, textarea, select, [contenteditable='true']"));
 
   if (matchesShortcut(e, state.launchShortcut)) {
-    if (state.pipWindow && !state.pipWindow.closed) {
+    if (
+      state.pipSession.phase !== "closed" &&
+      state.pipWindow &&
+      !state.pipWindow.closed
+    ) {
       e.preventDefault();
       e.stopPropagation();
       globalThis.PipCompanion.ContentPipLifecycle.closePiP(true);
@@ -137,9 +149,13 @@ function onPageKeyDown(e: KeyboardEvent) {
       e.preventDefault();
       e.stopPropagation();
       void chrome.runtime.sendMessage({ type: "CLOSE_ALL_PIP" });
-    } else if (!state.sourceVideo || isEditableTarget)
-      void chrome.runtime.sendMessage({ type: "CLOSE_ALL_PIP" });
+    } else if (isEditableTarget) return;
     else {
+      const video =
+        state.sourceVideo ??
+        globalThis.PipCompanion.ContentVideo.findVideo(false);
+      if (video && video !== state.sourceVideo)
+        globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
       e.preventDefault();
       e.stopPropagation();
       void globalThis.PipCompanion.ContentPipLifecycle.openPiP().then(
@@ -276,7 +292,7 @@ function scheduleScan() {
         scheduleScan();
       }
     },
-    state.pipWindow ? SCAN_PIP_MS : SCAN_IDLE_MS,
+    state.pipSession.phase === "active" ? SCAN_PIP_MS : SCAN_IDLE_MS,
   );
 }
 

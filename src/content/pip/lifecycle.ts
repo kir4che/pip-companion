@@ -152,6 +152,42 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     if (wasPlaying) void state.sourceVideo.play().catch(() => {});
   }
 
+  function showPipWaiting(win: Window) {
+    const doc = win.document;
+    doc.title = "正在尋找影片 · 幕伴 PiP";
+    const style = doc.createElement("style");
+    style.textContent =
+      "html,body{width:100%;height:100%;margin:0;background:#111;color:#fff;font:16px system-ui,sans-serif}body{display:grid;place-items:center}";
+    doc.head.replaceChildren(style);
+    const root = doc.body ?? doc.documentElement;
+    const message = doc.createElement("div");
+    message.setAttribute("role", "status");
+    message.textContent = "正在尋找影片，請稍候…";
+    root.append(message);
+  }
+
+  function mountPipVideo(win: Window, video: HTMLVideoElement) {
+    const session = state.pipSession;
+    if (
+      session.phase !== "waiting" ||
+      session.window !== win ||
+      state.sourceVideo !== video
+    )
+      return;
+    if (session.waitTimer !== null) window.clearTimeout(session.waitTimer);
+    state.pipSession = {
+      phase: "active",
+      window: win,
+      ui: createPipUi(win, video),
+    };
+    globalThis.PipCompanion.ContentCaptions.initializeCaptionsOn();
+    remountSourceVideo();
+    initDanmakuInPip(win, video);
+    globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
+    globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
+    if (!video.paused) resumePlayback();
+  }
+
   function releasePipVideo() {
     try {
       globalThis.PipCompanion.PipAudio.stop();
@@ -291,11 +327,20 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
     globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
     globalThis.PipCompanion.ContentStoryboard.preload(video);
-    if (state.pipWindow) remountSourceVideo();
+    if (state.pipWindow) {
+      if (state.pipUi) remountSourceVideo();
+      else mountPipVideo(state.pipWindow, video);
+    }
   }
 
   function closePiP(closeWindow: boolean) {
-    const oldWindow = state.pipWindow;
+    const session = state.pipSession;
+    const oldWindow =
+      session.phase === "waiting" || session.phase === "active"
+        ? session.window
+        : null;
+    if (session.phase === "waiting" && session.waitTimer !== null)
+      window.clearTimeout(session.waitTimer);
     window.clearTimeout(state.feedbackTimer);
     state.feedbackTimer = 0;
     window.clearTimeout(state.nextClickTimer);
@@ -309,8 +354,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     const videoRestored = releasePipVideo();
     if (!videoRestored && closeWindow && oldWindow && !oldWindow.closed) return;
 
-    state.pipWindow = null;
-    state.pipUi = null;
+    state.pipSession = { phase: "closed" };
     state.captionObserver?.disconnect();
     state.captionObserver = null;
     state.captionNode = null;
@@ -332,9 +376,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   }
 
   async function openPiP() {
-    if (state.opening) return { ok: false, message: "子母畫面正在開啟" };
-    if (!state.sourceVideo)
-      return { ok: false, message: "請先開啟有影片的頁面" };
+    if (state.pipSession.phase === "opening")
+      return { ok: false, message: "子母畫面正在開啟" };
     if (state.pipWindow && !state.pipWindow.closed) {
       try {
         state.pipWindow.focus();
@@ -346,7 +389,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         };
       }
     }
-    state.opening = true;
+    state.pipSession = { phase: "opening" };
     const openingVideo = state.sourceVideo;
 
     try {
@@ -358,11 +401,15 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         height: 360,
       });
       const nextWindow = await windowPromise;
-      if (state.sourceVideo !== openingVideo) {
+      if (openingVideo && state.sourceVideo !== openingVideo) {
         nextWindow.close();
         throw new Error("source changed");
       }
-      state.pipWindow = nextWindow;
+      state.pipSession = {
+        phase: "waiting",
+        window: nextWindow,
+        waitTimer: null,
+      };
       nextWindow.addEventListener(
         "pagehide",
         () => {
@@ -371,19 +418,33 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         { once: true },
       );
 
-      state.pipUi = createPipUi(nextWindow, openingVideo);
-      if (state.sourceVideo !== openingVideo) throw new Error("source changed");
-      globalThis.PipCompanion.ContentCaptions.initializeCaptionsOn();
-      globalThis.PipCompanion.ContentStoryboard.preload(openingVideo);
-      remountSourceVideo();
-      initDanmakuInPip(nextWindow, openingVideo);
-      globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
-      globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
-      if (!state.sourceVideo.paused) resumePlayback();
+      if (state.sourceVideo) mountPipVideo(nextWindow, state.sourceVideo);
+      else {
+        showPipWaiting(nextWindow);
+        const waitTimer = window.setTimeout(() => {
+          const session = state.pipSession;
+          if (
+            session.phase !== "waiting" ||
+            session.window !== nextWindow ||
+            session.waitTimer !== waitTimer
+          )
+            return;
+          closePiP(true);
+          globalThis.PipCompanion.ContentFeedback.showPageToast(
+            "尚未找到影片，請確認播放器載入後再試一次。",
+          );
+        }, 10000);
+        state.pipSession = {
+          phase: "waiting",
+          window: nextWindow,
+          waitTimer,
+        };
+      }
       notifyPipState(true);
       return { ok: true };
     } catch (error) {
       if (state.pipWindow) closePiP(true);
+      else state.pipSession = { phase: "closed" };
       const gestureRequired =
         error instanceof DOMException && error.name === "NotAllowedError";
       const sourceChanged =
@@ -397,7 +458,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           : "此影片目前無法開啟子母畫面，請稍後再試。",
       };
     } finally {
-      state.opening = false;
+      if (state.pipSession.phase === "opening")
+        state.pipSession = { phase: "closed" };
     }
   }
 

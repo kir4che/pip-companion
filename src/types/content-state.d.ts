@@ -9,6 +9,12 @@ interface VideoStash {
   placeholder: HTMLElement | null;
 }
 
+type PipSession =
+  | { phase: "closed" } // 沒有 PiP 視窗
+  | { phase: "opening" } // 等待瀏覽器建立視窗
+  | { phase: "waiting"; window: Window; waitTimer: number | null } // 等待影片
+  | { phase: "active"; window: Window; ui: PipUiHandle }; // 影片已掛載
+
 interface State {
   // 快捷鍵與功能開關
   launchShortcut: Shortcut;
@@ -24,10 +30,10 @@ interface State {
   sourceVideo: HTMLVideoElement | null;
   sourceAbort: AbortController | null;
   videoStash: VideoStash | null;
-  pipWindow: Window | null;
-  pipUi: PipUiHandle | null;
+  pipSession: PipSession;
+  readonly pipWindow: Window | null;
+  readonly pipUi: PipUiHandle | null;
   globalPipOpen: boolean;
-  opening: boolean;
 
   // 字幕來源與顯示狀態
   nativeCaptionTracks: Map<TextTrack, TextTrackMode> | null;

@@ -17,12 +17,25 @@ globalThis.PipCompanion.ContentVideo = (() => {
     return window.documentPictureInPicture ?? null;
   }
 
-  function scoreVideo(video: HTMLVideoElement): number {
+  function scoreVideo(video: HTMLVideoElement, allowUnloaded = false): number {
     if (!video || !video.isConnected) return -1;
     const width = video.videoWidth || 0;
     const height = video.videoHeight || 0;
-    const area = width * height;
-    if (area === 0) return -1;
+    let area = width * height;
+    if (area === 0) {
+      if (allowUnloaded) area = 1;
+      else {
+        const hasSource = Boolean(
+          video.currentSrc ||
+          video.src ||
+          video.srcObject ||
+          video.querySelector("source[src]"),
+        );
+        const rect = video.getBoundingClientRect();
+        if (!hasSource || rect.width <= 0 || rect.height <= 0) return -1;
+        area = 1;
+      }
+    }
 
     let score = area;
     // 正在播放中（未暫停且未結束）優先權最高，避免抓到靜態或暫停的殘留節點。
@@ -39,11 +52,12 @@ globalThis.PipCompanion.ContentVideo = (() => {
 
   function pickBestVideo(
     videos: Iterable<HTMLVideoElement>,
+    allowUnloaded = false,
   ): HTMLVideoElement | null {
     let best: HTMLVideoElement | null = null;
     let bestScore = -1;
     for (const video of videos) {
-      const score = scoreVideo(video);
+      const score = scoreVideo(video, allowUnloaded);
       if (score > bestScore) {
         bestScore = score;
         best = video;
@@ -75,10 +89,11 @@ globalThis.PipCompanion.ContentVideo = (() => {
 
   const DEEP_SCAN_MS = 5000;
 
-  function findVideo(): HTMLVideoElement | null {
+  function findVideo(includeDeep = true): HTMLVideoElement | null {
     for (const selector of PREFERRED_SELECTORS) {
       const preferred = pickBestVideo(
         document.querySelectorAll(selector) as NodeListOf<HTMLVideoElement>,
+        true,
       );
       if (preferred) return preferred;
     }
@@ -91,6 +106,7 @@ globalThis.PipCompanion.ContentVideo = (() => {
       scoreVideo(state.deepVideoCache) > 0
     )
       return state.deepVideoCache;
+    if (!includeDeep) return null;
     if (Date.now() - state.lastDeepScan < DEEP_SCAN_MS)
       return state.deepVideoCache;
     state.lastDeepScan = Date.now();

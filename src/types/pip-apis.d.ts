@@ -172,7 +172,7 @@ interface PipCompanionUtil {
 
 interface ContentVideoApi {
   getDocumentPip(): Window["documentPictureInPicture"];
-  findVideo(): HTMLVideoElement | null;
+  findVideo(includeDeep?: boolean): HTMLVideoElement | null;
 }
 
 interface ContentCaptionsApi {
