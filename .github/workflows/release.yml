@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checks
+        run: |
+          npm run lint
+          npm run format:check
+          npm run typecheck
+          npm run build
+
+      - name: Validate version and package extension
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          node - "$VERSION" <<'NODE'
+          const fs = require("node:fs");
+          const version = process.argv[2];
+          const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
+          if (manifest.version !== version) {
+            console.error(`Tag version ${version} does not match manifest version ${manifest.version}`);
+            process.exit(1);
+          }
+          NODE
+          cd dist
+          zip -qr "../pip-companion-${VERSION}.zip" .
+          cd ..
+          unzip -Z1 "pip-companion-${VERSION}.zip" | grep -qx 'manifest.json'
+
+      - name: Create release notes
+        run: |
+          PREVIOUS_TAG="$(git tag --merged "$GITHUB_REF_NAME" --list 'v*' --sort=-version:refname | grep -Fxv "$GITHUB_REF_NAME" | head -n 1 || true)"
+          if [ -z "$PREVIOUS_TAG" ]; then
+            PREVIOUS_TAG="$(git rev-list --max-parents=0 "$GITHUB_REF_NAME" | head -n 1)"
+          fi
+          PREVIOUS_TAG="$PREVIOUS_TAG" node <<'NODE'
+          const fs = require("node:fs");
+          const version = process.env.GITHUB_REF_NAME.replace(/^v/, "");
+          const tag = process.env.GITHUB_REF_NAME;
+          const base = process.env.PREVIOUS_TAG;
+
+          function changelogSection(path) {
+            const lines = fs.readFileSync(path, "utf8").split(/\r?\n/);
+            const start = lines.findIndex((line) => {
+              const match = line.match(/^##\s+v?(\d+\.\d+\.\d+)(?:\s|$|\])/);
+              return match?.[1] === version;
+            });
+            if (start === -1) throw new Error(`${path} is missing a section for ${version}`);
+
+            let end = start + 1;
+            while (end < lines.length && !/^##\s+/.test(lines[end])) end++;
+            const section = lines.slice(start + 1, end).join("\n").trim();
+            if (!section) throw new Error(`${path} has no entries for ${version}`);
+            return section;
+          }
+
+          const english = changelogSection("docs/CHANGELOG.md");
+          const chinese = changelogSection("docs/CHANGELOG.zh-TW.md");
+          const compareUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/compare/${base}...${tag}`;
+          const compareLabel = `${/^[0-9a-f]{40}$/i.test(base) ? base.slice(0, 7) : base}...${tag}`;
+          fs.writeFileSync(
+            "release-notes.md",
+            `${english}\n\n---\n\n${chinese}\n\n**Full Changelog:** [${compareLabel}](${compareUrl})\n`,
+          );
+          NODE
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file release-notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" "pip-companion-${VERSION}.zip" \
+              --verify-tag \
+              --title "$GITHUB_REF_NAME" \
+              --notes-file release-notes.md
+          fi
