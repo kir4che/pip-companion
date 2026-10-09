@@ -5,6 +5,7 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "build": "node scripts/build.mjs && tsc -p tsconfig.json",
+    "render:social-preview": "node scripts/render-social-preview.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

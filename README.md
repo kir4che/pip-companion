@@ -4,6 +4,10 @@ English | [繁體中文](README.zh-TW.md)
 
 A browser extension that brings web videos into Picture-in-Picture, with captions, danmaku, screenshots, and floating comments panels.
 
+<p align="center">
+  <img src="docs/images/pip-companion-social-preview.png" alt="PiP Companion social preview" width="960" />
+</p>
+
 > For problems or feature requests, please report them in [Issues](https://github.com/kir4che/pip-companion/issues).
 
 ## Features
@@ -25,9 +29,15 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 - **Feature toggles and keyboard shortcuts:** toggle danmaku, screenshots, and floating comments individually; customize shortcuts for PiP, comments, screenshots, and danmaku.
 - **Embedded videos:** detect videos in matching iframes. Cross-origin compatibility depends on the website and browser permissions, so not every player is guaranteed to work.
 
+## Screenshots
+
+| YouTube                                                              | Bilibili                                                               |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| ![YouTube Picture-in-Picture demo](docs/images/youtube-pip-demo.png) | ![Bilibili Picture-in-Picture demo](docs/images/bilibili-pip-demo.png) |
+
 ## Controls and Shortcuts
 
-- Toggle PiP: on a page with a playable video, click the PiP button in the extension popup or press `Alt/Opt + Shift + P` on the video page.
+- Toggle PiP: on a page with a playable video, click the PiP button in the extension popup or press `Shift + Alt/Opt + P` on the video page.
 - Customize shortcuts: click a shortcut button in the popup, then press a new combination when it shows "Press shortcut…"; press `Esc` to cancel.
 
 Default shortcuts:
@@ -36,7 +46,7 @@ These shortcuts work on supported video pages; PiP does not need to be open.
 
 | Action                       | Shortcut              | Disable in popup? |
 | ---------------------------- | --------------------- | ----------------- |
-| Open/close PiP               | `Alt/Opt + Shift + P` | —                 |
+| Open/close PiP               | `Shift + Alt/Opt + P` | —                 |
 | Turn danmaku on/off          | `D`                   | ✅                |
 | Screenshot                   | `Alt/Opt + P`         | ✅                |
 | Open/close floating comments | `Alt/Opt + C`         | ✅                |
