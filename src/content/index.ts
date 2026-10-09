@@ -160,9 +160,9 @@ function onPageKeyDown(e: KeyboardEvent) {
       e.stopPropagation();
       void globalThis.PipCompanion.ContentPipLifecycle.openPiP().then(
         (result) => {
-          if (!result?.ok)
+          if (!result.ok)
             globalThis.PipCompanion.ContentFeedback.showPageToast(
-              result?.message ?? "無法開啟子母畫面",
+              result.message,
             );
         },
       );

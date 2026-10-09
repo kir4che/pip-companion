@@ -375,7 +375,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     }
   }
 
-  async function openPiP() {
+  async function openPiP(): Promise<PipOperationResult> {
     if (state.pipSession.phase === "opening")
       return { ok: false, message: "子母畫面正在開啟" };
     if (state.pipWindow && !state.pipWindow.closed) {

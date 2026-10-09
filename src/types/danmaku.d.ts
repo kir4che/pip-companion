@@ -13,7 +13,7 @@ type DanmakuPart = DanmakuPartText | DanmakuPartImage;
 type DanmakuType = "right" | "top" | "bottom";
 
 interface DanmakuData {
-  type?: DanmakuType | string;
+  type?: DanmakuType;
   text?: string;
   parts?: DanmakuPart[];
   color?: string;

@@ -349,7 +349,11 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     toggleDanmaku();
   }
 
-  function resizePipWindow(innerWidth: number, width: number, height: number) {
+  function resizePipWindow(
+    innerWidth: number,
+    width: number,
+    height: number,
+  ): Promise<ResizePipResult> {
     return chrome.runtime.sendMessage({
       type: "RESIZE_PIP_WINDOW",
       innerWidth,

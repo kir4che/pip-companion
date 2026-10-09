@@ -1,3 +1,7 @@
+type PipOperationResult = { ok: true } | { ok: false; message: string };
+
+type ResizePipResult = { ok: true } | { ok: false };
+
 // PiP 音訊控制功能
 interface PipAudioApi {
   getVolumePercent(video: HTMLVideoElement | null): number;
@@ -30,7 +34,7 @@ interface StoryboardFrame {
 
 // 巴哈動畫瘋縮圖資料格式
 interface BahaStoryboardData {
-  sn: string;
+  sn?: string;
   width: number;
   height: number;
   cols: number;
@@ -72,31 +76,35 @@ interface PipUiActions {
   screenshot(): void;
   formatTime(seconds: number): string;
   getStoryboardFrame?(seconds: number): StoryboardFrame | null;
-  resize(innerWidth: number, width: number, height: number): Promise<unknown>;
+  resize(
+    innerWidth: number,
+    width: number,
+    height: number,
+  ): Promise<ResizePipResult>;
 }
 
 interface PipUiHandle {
-  video: HTMLVideoElement;
-  screen: HTMLElement;
-  subtitle: HTMLElement;
-  feedback: HTMLElement;
-  volumeValue: HTMLInputElement;
-  volumeButton: HTMLButtonElement;
-  volumePath: Element;
-  playButton: HTMLButtonElement;
-  nextButton: HTMLButtonElement;
-  speedControl: HTMLElement;
-  speedButton: HTMLButtonElement;
-  speedSlider: HTMLInputElement;
-  volumeSlider: HTMLInputElement;
-  progress: HTMLInputElement;
-  timeCurrent: HTMLInputElement;
-  timeDuration: HTMLElement;
-  miniProgress: HTMLElement;
-  miniProgressFill: HTMLElement;
-  timeTooltip: HTMLElement;
-  timeTooltipThumb: HTMLElement;
-  timeTooltipText: HTMLElement;
+  readonly video: HTMLVideoElement;
+  readonly screen: HTMLElement;
+  readonly subtitle: HTMLElement;
+  readonly feedback: HTMLElement;
+  readonly volumeValue: HTMLInputElement;
+  readonly volumeButton: HTMLButtonElement;
+  readonly volumePath: Element;
+  readonly playButton: HTMLButtonElement;
+  readonly nextButton: HTMLButtonElement;
+  readonly speedControl: HTMLElement;
+  readonly speedButton: HTMLButtonElement;
+  readonly speedSlider: HTMLInputElement;
+  readonly volumeSlider: HTMLInputElement;
+  readonly progress: HTMLInputElement;
+  readonly timeCurrent: HTMLInputElement;
+  readonly timeDuration: HTMLElement;
+  readonly miniProgress: HTMLElement;
+  readonly miniProgressFill: HTMLElement;
+  readonly timeTooltip: HTMLElement;
+  readonly timeTooltipThumb: HTMLElement;
+  readonly timeTooltipText: HTMLElement;
   setDanmakuEnabled(enabled: boolean): void;
 }
 
@@ -210,7 +218,7 @@ interface ContentPlaybackApi {
     innerWidth: number,
     width: number,
     height: number,
-  ): Promise<unknown>;
+  ): Promise<ResizePipResult>;
 }
 
 interface ContentStoryboardApi {
@@ -230,7 +238,7 @@ interface ContentScreenshotApi {
 interface ContentPipLifecycleApi {
   bindSourceVideo(video: HTMLVideoElement): void;
   closePiP(closeWindow: boolean): void;
-  openPiP(): Promise<{ ok: boolean; message?: string }>;
+  openPiP(): Promise<PipOperationResult>;
 }
 
 interface ContentDanmakuSenderPlatformApi {
