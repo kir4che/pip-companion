@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "幕伴 PiP · PiP Companion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minimum_chrome_version": "116",
   "description": "讓網頁影片在子母畫面中播放，支援字幕、彈幕、截圖與浮動留言區。",
   "icons": {
