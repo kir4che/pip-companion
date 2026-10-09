@@ -38,6 +38,21 @@ globalThis.PipCompanion.util = (() => {
     "screenshotShortcut",
     "danmakuShortcut",
   ];
+  const DEFAULT_SEEK_SECONDS: SeekSeconds = 5;
+  const SEEK_SECONDS_OPTIONS = [
+    1, 3, 5, 10, 15, 30,
+  ] as const satisfies readonly SeekSeconds[];
+
+  function isSeekSeconds(value: unknown): value is SeekSeconds {
+    return (
+      typeof value === "number" &&
+      SEEK_SECONDS_OPTIONS.some((seconds) => seconds === value)
+    );
+  }
+
+  function normalizeSeekSeconds(value: unknown): SeekSeconds {
+    return isSeekSeconds(value) ? value : DEFAULT_SEEK_SECONDS;
+  }
 
   const pin = (label: string, code: string, shift = false) => ({
     label,
@@ -52,8 +67,8 @@ globalThis.PipCompanion.util = (() => {
     pin("逐格前進", "Period"),
     pin("降低倍速", "Comma", true),
     pin("提高倍速", "Period", true),
-    pin("快退 5 秒", "ArrowLeft"),
-    pin("快進 5 秒", "ArrowRight"),
+    pin("快退", "ArrowLeft"),
+    pin("快轉", "ArrowRight"),
     pin("音量 +10", "ArrowUp"),
     pin("音量 -10", "ArrowDown"),
   ];
@@ -146,6 +161,9 @@ globalThis.PipCompanion.util = (() => {
   return {
     SHORTCUT_DEFAULTS,
     SHORTCUT_KEYS,
+    DEFAULT_SEEK_SECONDS,
+    SEEK_SECONDS_OPTIONS,
+    normalizeSeekSeconds,
     FIXED_SHORTCUTS,
     normalizeShortcut,
     hasMetaModifier,

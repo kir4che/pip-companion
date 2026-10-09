@@ -11,6 +11,9 @@ const pipResizeShortcut = document.querySelector(
 pipResizeShortcut.textContent = navigator.platform.includes("Mac")
   ? "⌘ + 滾輪"
   : "Ctrl + 滾輪";
+const seekSecondsSelect = document.querySelector(
+  "#seek-seconds",
+) as HTMLSelectElement;
 const menuView = document.querySelector("#menu-view") as HTMLElement;
 const danmakuSettingsView = document.querySelector(
   "#danmaku-settings-view",
@@ -519,6 +522,41 @@ async function loadShortcuts() {
   renderShortcuts();
 }
 
+function setSeekSeconds(value: unknown) {
+  seekSecondsSelect.value = String(util.normalizeSeekSeconds(value));
+}
+
+async function loadSeekSeconds() {
+  seekSecondsSelect.disabled = true;
+  try {
+    const stored = await chrome.storage.local.get({
+      seekSeconds: util.DEFAULT_SEEK_SECONDS,
+    });
+    setSeekSeconds(stored.seekSeconds);
+  } catch {
+    setSeekSeconds(util.DEFAULT_SEEK_SECONDS);
+  } finally {
+    seekSecondsSelect.disabled = false;
+  }
+}
+
+async function saveSeekSeconds() {
+  const seekSeconds = util.normalizeSeekSeconds(
+    Number(seekSecondsSelect.value),
+  );
+  try {
+    await chrome.storage.local.set({ seekSeconds });
+    showStatus("");
+  } catch {
+    showStatus("無法儲存跳轉秒數，請重新嘗試。", true);
+    await loadSeekSeconds();
+  }
+}
+
+seekSecondsSelect.addEventListener("change", () => {
+  void saveSeekSeconds();
+});
+
 async function loadToggles() {
   try {
     const stored = await chrome.storage.local.get({
@@ -587,6 +625,7 @@ danmakuStyleReset.addEventListener("click", () => {
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== "local") return;
 
+  if (changes.seekSeconds) setSeekSeconds(changes.seekSeconds.newValue);
   if (changes.danmakuEnabled) {
     danmakuToggle.checked = changes.danmakuEnabled.newValue !== false;
     setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
@@ -853,6 +892,7 @@ renderDanmakuStyle();
 renderCaptionStyle();
 void loadShortcuts();
 void loadToggles();
+void loadSeekSeconds();
 void loadDanmakuStyle();
 void loadCaptionStyle();
 void syncPipState();

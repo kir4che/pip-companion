@@ -19,6 +19,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         volumeIconPath:
           globalThis.PipCompanion.ContentPlayback.VOLUME_ICON_PATH,
         getVideo: () => state.sourceVideo,
+        getSeekSeconds: () => state.seekSeconds,
         updatePlaybackUi:
           globalThis.PipCompanion.ContentPlayback.updatePlaybackUi,
         togglePlayback: globalThis.PipCompanion.ContentPlayback.togglePlayback,

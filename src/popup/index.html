@@ -30,7 +30,7 @@
                     ><span>字幕開關</span><kbd>C</kbd></span
                   >
                   <span class="help-row"
-                    ><span>快退快進</span><kbd>← / →</kbd></span
+                    ><span>左右跳轉（秒數可調）</span><kbd>← / →</kbd></span
                   >
                   <span class="help-row"
                     ><span>逐格後退 / 前進</span><kbd>, / .</kbd></span
@@ -89,6 +89,17 @@
                 Alt+C
               </button>
             </div>
+            <label class="shortcut-row seek-seconds-row" for="seek-seconds">
+              <span>跳轉秒數</span>
+              <select id="seek-seconds" disabled>
+                <option value="1">1 秒</option>
+                <option value="3">3 秒</option>
+                <option value="5" selected>5 秒</option>
+                <option value="10">10 秒</option>
+                <option value="15">15 秒</option>
+                <option value="30">30 秒</option>
+              </select>
+            </label>
           </div>
           <div class="toggle-list">
             <p class="list-title">功能開關</p>

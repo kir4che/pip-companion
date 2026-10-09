@@ -32,6 +32,8 @@ interface StoryboardFrame {
   sheetHeight?: number;
 }
 
+type SeekSeconds = 1 | 3 | 5 | 10 | 15 | 30;
+
 // 巴哈動畫瘋縮圖資料格式
 interface BahaStoryboardData {
   sn?: string;
@@ -47,6 +49,7 @@ interface BahaStoryboardData {
 interface PipUiActions {
   volumeIconPath: string;
   getVideo(): HTMLVideoElement | null;
+  getSeekSeconds(): SeekSeconds;
   updatePlaybackUi(): void;
   togglePlayback(): void;
   adjustPlaybackRate(direction: number): void;
@@ -170,6 +173,9 @@ interface PipCompanionUtil {
   SHORTCUT_DEFAULTS: Record<ShortcutKey, Shortcut>;
   SHORTCUT_KEYS: ShortcutKey[];
   FIXED_SHORTCUTS: { label: string; shortcut: Shortcut }[];
+  DEFAULT_SEEK_SECONDS: SeekSeconds;
+  SEEK_SECONDS_OPTIONS: readonly SeekSeconds[];
+  normalizeSeekSeconds(value: unknown): SeekSeconds;
   normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut;
   hasMetaModifier(e: KeyboardEvent): boolean;
   matchesShortcut(e: KeyboardEvent, shortcut: Shortcut): boolean;

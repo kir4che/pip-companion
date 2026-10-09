@@ -56,7 +56,7 @@ Shortcuts inside the PiP window:
 | Action                | Shortcut                  |
 | --------------------- | ------------------------- |
 | Play or pause         | `Space`                   |
-| Seek                  | `←` / `→`                 |
+| Seek (5s by default)  | `←` / `→`                 |
 | Adjust volume         | `↑` / `↓`                 |
 | Toggle captions       | `C`                       |
 | Toggle mute           | `M`                       |

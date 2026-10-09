@@ -1174,7 +1174,10 @@ globalThis.PipCompanion.PipUI = (() => {
             videoSource.duration <= 0
           )
             return;
-          const delta = key === "arrowleft" ? -5 : 5;
+          const delta =
+            key === "arrowleft"
+              ? -actions.getSeekSeconds()
+              : actions.getSeekSeconds();
           videoSource.currentTime = Math.max(
             0,
             Math.min(videoSource.duration, videoSource.currentTime + delta),

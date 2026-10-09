@@ -24,6 +24,7 @@ interface State {
   commentsEnabled: boolean;
   screenshotEnabled: boolean;
   danmakuEnabled: boolean;
+  seekSeconds: SeekSeconds;
 
   // 目前播放的影片與浮動視窗狀態
   lastNonOneRate: number;

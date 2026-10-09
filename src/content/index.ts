@@ -10,8 +10,14 @@ function isBilibiliLivePage() {
   return contentSiteUtils.isBilibiliLiveHost(location.hostname);
 }
 
-const { SHORTCUT_DEFAULTS, SHORTCUT_KEYS, normalizeShortcut, matchesShortcut } =
-  globalThis.PipCompanion.util;
+const {
+  SHORTCUT_DEFAULTS,
+  SHORTCUT_KEYS,
+  DEFAULT_SEEK_SECONDS,
+  normalizeSeekSeconds,
+  normalizeShortcut,
+  matchesShortcut,
+} = globalThis.PipCompanion.util;
 const captionSettings = globalThis.PipCompanion.captionSettings;
 const state: State = {
   launchShortcut: { ...SHORTCUT_DEFAULTS.launchShortcut },
@@ -21,6 +27,7 @@ const state: State = {
   commentsEnabled: true,
   screenshotEnabled: true,
   danmakuEnabled: true,
+  seekSeconds: DEFAULT_SEEK_SECONDS,
   lastNonOneRate: 1.25,
   sourceVideo: null,
   sourceAbort: null,
@@ -81,6 +88,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.danmakuEnabled = changes.danmakuEnabled.newValue !== false;
     state.pipUi?.setDanmakuEnabled(state.danmakuEnabled);
   }
+  if (changes.seekSeconds)
+    state.seekSeconds = normalizeSeekSeconds(changes.seekSeconds.newValue);
   if (changes[captionSettings.STORAGE_KEY]) {
     captionStyleRevision++;
     state.captionStyle = captionSettings.normalize(
@@ -100,6 +109,7 @@ async function loadSettings() {
       commentsEnabled: true,
       screenshotEnabled: true,
       danmakuEnabled: true,
+      seekSeconds: DEFAULT_SEEK_SECONDS,
       [captionSettings.STORAGE_KEY]: captionSettings.DEFAULTS,
     });
     for (const key of SHORTCUT_KEYS) {
@@ -108,6 +118,7 @@ async function loadSettings() {
     state.commentsEnabled = stored.commentsEnabled !== false;
     state.screenshotEnabled = stored.screenshotEnabled !== false;
     state.danmakuEnabled = stored.danmakuEnabled !== false;
+    state.seekSeconds = normalizeSeekSeconds(stored.seekSeconds);
     if (styleRevision === captionStyleRevision)
       state.captionStyle = captionSettings.normalize(
         stored[captionSettings.STORAGE_KEY],
@@ -119,6 +130,7 @@ async function loadSettings() {
     state.commentsEnabled = true;
     state.screenshotEnabled = true;
     state.danmakuEnabled = true;
+    state.seekSeconds = DEFAULT_SEEK_SECONDS;
     if (styleRevision === captionStyleRevision)
       state.captionStyle = { ...captionSettings.DEFAULTS };
   }

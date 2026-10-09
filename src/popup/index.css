@@ -158,6 +158,16 @@ button {
   background: #3f3f46;
 }
 
+.seek-seconds-row select {
+  width: 70px;
+  padding: 4px 6px;
+  border: 1px solid #52525b;
+  border-radius: 5px;
+  background: #27272a;
+  color: inherit;
+  font: inherit;
+}
+
 .toggle-list {
   display: flex;
   flex-direction: column;
