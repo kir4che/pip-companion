@@ -72,23 +72,34 @@ globalThis.PipCompanion.util = (() => {
     };
   }
 
+  function hasMetaModifier(event: KeyboardEvent) {
+    return event.metaKey || event.getModifierState("Meta");
+  }
+
   function matchesShortcut(event: KeyboardEvent, shortcut: Shortcut) {
     return (
       event.code === shortcut.code &&
       event.ctrlKey === shortcut.ctrl &&
       event.altKey === shortcut.alt &&
       event.shiftKey === shortcut.shift &&
-      event.metaKey === shortcut.meta
+      hasMetaModifier(event) === shortcut.meta
     );
   }
 
   function formatShortcut(value: Shortcut, forAria = false) {
-    const mac = !forAria && navigator.platform.includes("Mac");
+    const platform = navigator.platform;
+    const isMac = platform.includes("Mac");
+    const useMacSymbols = isMac && !forAria;
+    const isWindows = platform.includes("Win");
     const parts: string[] = [];
-    if (value.ctrl) parts.push(mac ? "⌃" : "Ctrl");
-    if (value.alt) parts.push(mac ? "⌥" : "Alt");
-    if (value.shift) parts.push(mac ? "⇧" : "Shift");
-    if (value.meta) parts.push(mac ? "⌘" : "Meta");
+    if (value.ctrl) parts.push(useMacSymbols ? "⌃" : "Ctrl");
+    if (value.alt) parts.push(useMacSymbols ? "⌥" : "Alt");
+    if (value.shift) parts.push(useMacSymbols ? "⇧" : "Shift");
+    if (value.meta) {
+      if (isMac) parts.push(forAria ? "Command" : "⌘");
+      else if (isWindows) parts.push(forAria ? "Windows" : "Win");
+      else parts.push("Meta");
+    }
 
     const key = value.code.startsWith("Key")
       ? value.code.slice(3)
@@ -98,7 +109,7 @@ globalThis.PipCompanion.util = (() => {
           ? "Space"
           : value.code;
     parts.push(key);
-    return parts.join(mac ? "" : "+");
+    return parts.join(useMacSymbols ? "" : "+");
   }
 
   function formatTime(seconds: number) {
@@ -137,6 +148,7 @@ globalThis.PipCompanion.util = (() => {
     SHORTCUT_KEYS,
     FIXED_SHORTCUTS,
     normalizeShortcut,
+    hasMetaModifier,
     matchesShortcut,
     formatShortcut,
     formatTime,

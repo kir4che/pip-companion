@@ -5,6 +5,7 @@ const FLOATING_COMMENTS_BOTTOM_SHEET_CLASS =
   "yt-floating-comments-bottom-sheet";
 const FLOATING_COMMENTS_PANEL_CLASS = "pc-floating-comments-panel";
 const BILIBILI_FLOATING_COMMENTS_BODY_CLASS = "bili-floating-comments-open";
+const MIN_YOUTUBE_SIDE_COMMENTS_WIDTH = 300;
 
 function getFloatingCommentsRoot(): Element | null {
   if (globalThis.PipCompanion.site.isYouTubeHost(location.hostname))
@@ -51,27 +52,32 @@ function updateFloatingCommentsDimensions() {
   const secWidth = secondary?.offsetWidth || 0;
   const player = document.querySelector("#movie_player");
   const playerRect = player?.getBoundingClientRect();
+  const availableSideWidth = Math.floor(
+    Math.min(
+      390,
+      secWidth,
+      window.innerWidth - (playerRect?.right ?? window.innerWidth) - 12,
+    ),
+  );
 
-  const useBottomSheet = isNarrow || isTheater || secWidth < 200;
+  const useBottomSheet =
+    isNarrow ||
+    isTheater ||
+    availableSideWidth < MIN_YOUTUBE_SIDE_COMMENTS_WIDTH;
 
   if (useBottomSheet) {
     document.body.classList.add(FLOATING_COMMENTS_BOTTOM_SHEET_CLASS);
     const pBottom = playerRect ? Math.ceil(playerRect.bottom) : 500;
-    const topY = Math.max(100, Math.min(window.innerHeight - 220, pBottom));
+    const topY = Math.min(window.innerHeight, Math.max(100, pBottom));
     document.documentElement.style.setProperty(
       "--yt-floating-comments-top",
       `${topY}px`,
     );
   } else {
     document.body.classList.remove(FLOATING_COMMENTS_BOTTOM_SHEET_CLASS);
-    let targetWidth = 390;
-    if (secWidth > 200 && playerRect?.right) {
-      const availableWidth = window.innerWidth - playerRect.right - 12;
-      targetWidth = Math.max(300, Math.min(secWidth, availableWidth));
-    }
     document.documentElement.style.setProperty(
       "--yt-floating-comments-width",
-      `${Math.floor(targetWidth)}px`,
+      `${availableSideWidth}px`,
     );
   }
 }

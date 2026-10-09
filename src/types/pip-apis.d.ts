@@ -156,6 +156,7 @@ interface PipCompanionUtil {
   SHORTCUT_KEYS: ShortcutKey[];
   FIXED_SHORTCUTS: { label: string; shortcut: Shortcut }[];
   normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut;
+  hasMetaModifier(e: KeyboardEvent): boolean;
   matchesShortcut(e: KeyboardEvent, shortcut: Shortcut): boolean;
   formatShortcut(value: Shortcut, forAria?: boolean): string;
   formatTime(seconds: number): string;

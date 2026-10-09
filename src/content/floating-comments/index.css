@@ -15,9 +15,8 @@ body.yt-floating-comments-open:not(.yt-floating-comments-bottom-sheet)
   width: var(--yt-floating-comments-width, 390px) !important;
   max-width: 85vw !important;
   height: calc(100vh - 56px) !important;
-  background: var(--yt-spec-base-background, #0f0f0f) !important;
   z-index: 2022 !important;
-  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.55) !important;
+  box-shadow: none !important;
   border-left: 1px solid
     var(--yt-spec-10-percent-layer, rgba(255, 255, 255, 0.12)) !important;
   overflow-y: auto !important;
@@ -38,9 +37,8 @@ body.yt-floating-comments-open.yt-floating-comments-bottom-sheet
   max-width: 100vw !important;
   height: auto !important;
   max-height: calc(100vh - var(--yt-floating-comments-top, 50%)) !important;
-  background: var(--yt-spec-base-background, #0f0f0f) !important;
   z-index: 2022 !important;
-  box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.65) !important;
+  box-shadow: none !important;
   border-top: 1px solid
     var(--yt-spec-10-percent-layer, rgba(255, 255, 255, 0.15)) !important;
   border-left: none !important;
@@ -60,9 +58,9 @@ body.bili-floating-comments-open .pc-floating-comments-panel {
   box-sizing: border-box !important;
   padding: 20px !important;
   border-radius: 16px 16px 0 0 !important;
-  background: #18191c !important;
-  color: #e3e5e7 !important;
-  box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.55) !important;
+  background: var(--bg1, #fff) !important;
+  color: var(--text1, #18191c) !important;
+  box-shadow: none !important;
   z-index: 2022 !important;
 }
 
@@ -74,6 +72,8 @@ body.bili-floating-comments-open
   top: 0 !important;
   margin: 0 0 8px 8px !important;
   z-index: 2025 !important;
+  background: var(--bg2, #f6f7f8) !important;
+  color: var(--text1, #18191c) !important;
 }
 
 @keyframes yt-bottom-sheet-slide-up {
@@ -105,8 +105,8 @@ body.yt-floating-comments-open .yt-floating-comments-close-btn {
   padding: 0 !important;
   border: 0 !important;
   border-radius: 50% !important;
-  background: rgba(255, 255, 255, 0.12) !important;
-  color: var(--yt-spec-text-primary, #fff) !important;
+  background: var(--pc-floating-comments-close-background) !important;
+  color: var(--pc-floating-comments-text) !important;
   font-size: 16px !important;
   cursor: pointer !important;
   line-height: 1 !important;
@@ -123,9 +123,30 @@ body.yt-floating-comments-open #comments > .yt-floating-comments-close-btn {
   z-index: 2025 !important;
 }
 
+body.yt-floating-comments-open {
+  --pc-floating-comments-background: #fff;
+  --pc-floating-comments-text: #0f0f0f;
+  --pc-floating-comments-close-background: rgba(0, 0, 0, 0.08);
+  --pc-floating-comments-close-hover-background: rgba(0, 0, 0, 0.14);
+}
+
+html[dark] body.yt-floating-comments-open,
+body.yt-floating-comments-open:has(ytd-app[dark]) {
+  --pc-floating-comments-background: #0f0f0f;
+  --pc-floating-comments-text: #f1f1f1;
+  --pc-floating-comments-close-background: rgba(255, 255, 255, 0.12);
+  --pc-floating-comments-close-hover-background: rgba(255, 255, 255, 0.22);
+}
+
 body.yt-floating-comments-open .yt-floating-comments-close-btn:hover {
-  background: rgba(255, 255, 255, 0.22) !important;
+  background: var(--pc-floating-comments-close-hover-background) !important;
   transform: scale(1.08) !important;
+}
+
+body.yt-floating-comments-open #comments,
+body.yt-floating-comments-open ytd-comments#comments {
+  background-color: var(--pc-floating-comments-background) !important;
+  color: var(--pc-floating-comments-text) !important;
 }
 
 .bili-floating-comments-btn,

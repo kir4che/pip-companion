@@ -5,6 +5,12 @@ const popupDanmakuSettings = globalThis.PipCompanion.danmakuSettings;
 const popupCaptionSettings = globalThis.PipCompanion.captionSettings;
 const openButton = document.querySelector("#open-pip") as HTMLButtonElement;
 const statusEl = document.querySelector("#status") as HTMLElement;
+const pipResizeShortcut = document.querySelector(
+  "#pip-resize-shortcut",
+) as HTMLElement;
+pipResizeShortcut.textContent = navigator.platform.includes("Mac")
+  ? "⌘ + 滾輪"
+  : "Ctrl + 滾輪";
 const menuView = document.querySelector("#menu-view") as HTMLElement;
 const danmakuSettingsView = document.querySelector(
   "#danmaku-settings-view",
@@ -151,6 +157,25 @@ let recordingKey: ShortcutKey | null = null;
 function showStatus(message: string, error = false) {
   statusEl.textContent = message;
   statusEl.dataset.error = String(error);
+}
+
+async function saveToggle(
+  toggle: HTMLInputElement,
+  key: "danmakuEnabled" | "commentsEnabled" | "screenshotEnabled",
+  onRestore?: () => void,
+) {
+  try {
+    await chrome.storage.local.set({ [key]: toggle.checked });
+  } catch {
+    showStatus("無法儲存功能開關，請重新嘗試。", true);
+    try {
+      const stored = await chrome.storage.local.get(key);
+      toggle.checked = stored[key] !== false;
+      onRestore?.();
+    } catch {
+      // 無法讀取已儲存狀態時，保留目前值並顯示錯誤。
+    }
+  }
 }
 
 function setDanmakuStyleControlsDisabled(disabled: boolean) {
@@ -517,7 +542,9 @@ async function loadToggles() {
 
 danmakuToggle.addEventListener("change", () => {
   setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
-  void chrome.storage.local.set({ danmakuEnabled: danmakuToggle.checked });
+  void saveToggle(danmakuToggle, "danmakuEnabled", () =>
+    setShortcutVisibility("danmakuShortcut", danmakuToggle.checked),
+  );
 });
 
 danmakuFontFamily.addEventListener("change", () => {
@@ -564,6 +591,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     danmakuToggle.checked = changes.danmakuEnabled.newValue !== false;
     setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
   }
+  if (changes.commentsEnabled)
+    commentsToggle.checked = changes.commentsEnabled.newValue !== false;
+  if (changes.screenshotEnabled)
+    screenshotToggle.checked = changes.screenshotEnabled.newValue !== false;
 
   const danmakuChange = changes[popupDanmakuSettings.STORAGE_KEY];
   if (danmakuChange && !popupDanmakuStyleDirty) {
@@ -582,14 +613,16 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 
 commentsToggle.addEventListener("change", () => {
   setShortcutVisibility("commentsShortcut", commentsToggle.checked);
-  void chrome.storage.local.set({ commentsEnabled: commentsToggle.checked });
+  void saveToggle(commentsToggle, "commentsEnabled", () =>
+    setShortcutVisibility("commentsShortcut", commentsToggle.checked),
+  );
 });
 
 screenshotToggle.addEventListener("change", () => {
   setShortcutVisibility("screenshotShortcut", screenshotToggle.checked);
-  void chrome.storage.local.set({
-    screenshotEnabled: screenshotToggle.checked,
-  });
+  void saveToggle(screenshotToggle, "screenshotEnabled", () =>
+    setShortcutVisibility("screenshotShortcut", screenshotToggle.checked),
+  );
 });
 
 openButton.addEventListener("click", async () => {
@@ -740,7 +773,27 @@ document.addEventListener(
       return;
     }
 
-    if (["Control", "Alt", "Shift", "Meta"].includes(e.key)) return;
+    const isMetaKey =
+      e.key === "Meta" ||
+      e.key === "OS" ||
+      e.code === "MetaLeft" ||
+      e.code === "MetaRight";
+    if (
+      navigator.platform.includes("Win") &&
+      (util.hasMetaModifier(e) || isMetaKey)
+    ) {
+      showStatus("不支援使用 Win 鍵設定快捷鍵", true);
+      return;
+    }
+
+    if (["Control", "Alt", "Shift"].includes(e.key)) return;
+    if (isMetaKey) {
+      const modifierName = navigator.platform.includes("Mac")
+        ? "Command"
+        : "Meta";
+      showStatus(`${modifierName} 是修飾鍵，請按住後再按另一個按鍵。`);
+      return;
+    }
 
     if (e.code === "Unidentified") {
       showStatus("無法辨識此按鍵，請換一組！", true);
@@ -771,7 +824,7 @@ document.addEventListener(
       ctrl: e.ctrlKey,
       alt: e.altKey,
       shift: e.shiftKey,
-      meta: e.metaKey,
+      meta: util.hasMetaModifier(e),
     };
     const conflict = findConflict(shortcut, key);
     if (conflict) {
@@ -780,11 +833,12 @@ document.addEventListener(
     }
 
     recordingKey = null;
-    shortcuts.set(key, shortcut);
-    renderShortcuts();
+    renderShortcut(key);
 
     try {
       await chrome.storage.local.set({ [key]: shortcut });
+      shortcuts.set(key, shortcut);
+      renderShortcut(key);
       showStatus("");
     } catch {
       showStatus("無法儲存快捷鍵，請重新嘗試。", true);

@@ -494,19 +494,93 @@ interface DanmakuRendererOptions {
         : data.text?.length || 0;
       const textLen =
         (data.amount ? data.amount.length + 3 : 0) + messageLength;
-      const estimatedWidth = Math.max(
+      const fallbackWidth = Math.max(
         50,
         textLen * charWidth + (data.isSuperChat ? 30 : 10),
       );
 
+      const item: DanmakuItemElement = this.doc.createElement("span");
+      item.className = "yt-danmaku-item";
+      if (isFixed && !isAdvanced) item.classList.add("is-fixed");
+      if (isAdvanced) item.classList.add("is-advanced");
+      item.classList.add(`is-${danmakuType}`);
+      if (/^#[\da-f]{6}$/i.test(data.color || "")) {
+        item.dataset.danmakuColor = data.color!;
+        if (!data.isSuperChat) item.style.color = data.color!;
+      }
+      if (data.isSuperChat) {
+        item.classList.add("is-superchat");
+        if (data.bgColor) item.style.setProperty("--sc-bg", data.bgColor);
+        if (data.amount) {
+          const amountSpan = this.doc.createElement("span");
+          amountSpan.className = "sc-amount";
+          amountSpan.textContent = data.amount;
+          item.appendChild(amountSpan);
+        }
+      }
+
+      let animatedContent: HTMLElement | null = null;
+      if (isAdvanced) {
+        animatedContent = this.doc.createElement("span");
+        animatedContent.className = "yt-danmaku-advanced-content";
+        item.appendChild(animatedContent);
+      }
+      const content = animatedContent || item;
+      const parts = data.parts || [{ type: "text", text: data.text || "" }];
+      for (const part of parts) {
+        if (part.type !== "image") {
+          content.appendChild(this.doc.createTextNode(part.text));
+          continue;
+        }
+
+        const image = this.doc.createElement("img");
+        image.className = "yt-danmaku-emoji";
+        image.alt = "";
+        image.setAttribute("aria-hidden", "true");
+        image.draggable = false;
+        image.src = part.src;
+        image.addEventListener(
+          "error",
+          () => {
+            if (part.alt) image.replaceWith(this.doc.createTextNode(part.alt));
+            else image.remove();
+          },
+          { once: true },
+        );
+        content.appendChild(image);
+      }
+
+      if (!isAdvanced || !advanced) item.style.fontSize = `${this.fontSize}px`;
+      item.style.fontFamily =
+        globalThis.PipCompanion.danmakuSettings.FONT_FAMILIES[
+          this.dependencies.getStyle().fontFamily
+        ];
+      item.style.fontWeight = String(this.dependencies.getStyle().fontWeight);
+      item.style.opacity = String(this.dependencies.getStyle().opacity / 100);
+
+      let estimatedWidth = fallbackWidth;
+      if (!isAdvanced) {
+        item.style.animation = "none";
+        item.style.visibility = "hidden";
+        this.overlay.appendChild(item);
+        const measuredWidth = item.getBoundingClientRect().width;
+        estimatedWidth = Math.max(
+          50,
+          measuredWidth > 0 ? measuredWidth : fallbackWidth,
+        );
+        item.remove();
+        item.style.animation = "";
+        item.style.visibility = "";
+      }
+
       const gap = this.isPip ? 20 : 35;
       const scrollDistance = overlayWidth + estimatedWidth + 10;
-      const speed = scrollDistance / (this.duration * 1000);
+      const speed = overlayWidth / (this.duration * 1000);
       const totalLifetime = advanced
         ? advanced.durationMs / (this.dependencies.getStyle().speedScale / 100)
         : isFixed
           ? 4000
-          : this.duration * 1000;
+          : scrollDistance / speed;
       const clearTailDuration = isFixed
         ? totalLifetime
         : (estimatedWidth + gap) / speed;
@@ -523,7 +597,7 @@ interface DanmakuRendererOptions {
         if (occupancy) {
           const left = isFixed
             ? (overlayWidth - estimatedWidth) / 2
-            : overlayWidth - (scrollDistance * elapsed) / this.duration;
+            : overlayWidth - speed * elapsed * 1000;
           const right = left + estimatedWidth;
           if (!isFixed && (right <= 0 || left >= overlayWidth)) return;
           restoredRight = right;
@@ -577,73 +651,15 @@ interface DanmakuRendererOptions {
         );
       }
 
-      const item: DanmakuItemElement = this.doc.createElement("span");
-      item.className = "yt-danmaku-item";
-      if (isFixed && !isAdvanced) item.classList.add("is-fixed");
-      if (isAdvanced) item.classList.add("is-advanced");
-      item.classList.add(`is-${danmakuType}`);
-      if (/^#[\da-f]{6}$/i.test(data.color || "")) {
-        item.dataset.danmakuColor = data.color!;
-        if (!data.isSuperChat) item.style.color = data.color!;
-      }
-      if (data.isSuperChat) {
-        item.classList.add("is-superchat");
-        if (data.bgColor) item.style.setProperty("--sc-bg", data.bgColor);
-        if (data.amount) {
-          const amountSpan = this.doc.createElement("span");
-          amountSpan.className = "sc-amount";
-          amountSpan.textContent = data.amount;
-          item.appendChild(amountSpan);
-        }
-      }
-
-      let animatedContent: HTMLElement | null = null;
-      if (isAdvanced) {
-        animatedContent = this.doc.createElement("span");
-        animatedContent.className = "yt-danmaku-advanced-content";
-        item.appendChild(animatedContent);
-      }
-      const content = animatedContent || item;
-      const parts = data.parts || [{ type: "text", text: data.text || "" }];
-      for (const part of parts) {
-        if (part.type !== "image") {
-          content.appendChild(this.doc.createTextNode(part.text));
-          continue;
-        }
-
-        const image = this.doc.createElement("img");
-        image.className = "yt-danmaku-emoji";
-        image.alt = "";
-        image.setAttribute("aria-hidden", "true");
-        image.draggable = false;
-        image.src = part.src;
-        image.addEventListener(
-          "error",
-          () => {
-            if (part.alt) image.replaceWith(this.doc.createTextNode(part.alt));
-            else image.remove();
-          },
-          { once: true },
-        );
-        content.appendChild(image);
-      }
-
       if (!isAdvanced || !advanced) {
-        item.style.fontSize = `${this.fontSize}px`;
         const top = this.topPadding + selectedLane * this.laneHeight;
         if (data.type === "bottom")
           item.style.bottom = `${this.topPadding + selectedLane * this.laneHeight}px`;
         else item.style.top = `${top}px`;
       }
 
-      item.style.fontFamily =
-        globalThis.PipCompanion.danmakuSettings.FONT_FAMILIES[
-          this.dependencies.getStyle().fontFamily
-        ];
-      item.style.fontWeight = String(this.dependencies.getStyle().fontWeight);
-      item.style.opacity = String(this.dependencies.getStyle().opacity / 100);
       item.style.setProperty("--dm-start-x", `${overlayWidth}px`);
-      item.style.animationDuration = `${this.duration}s`;
+      item.style.animationDuration = `${totalLifetime / 1000}s`;
       item.style.animationDelay = `${restoring ? 0 : animationDelay / 1000}s`;
 
       item.danmakuEndTime =
