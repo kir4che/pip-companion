@@ -21,6 +21,8 @@ const {
 const captionSettings = globalThis.PipCompanion.captionSettings;
 let pipHandoffRetryAfter = 0;
 const PIP_HANDOFF_RETRY_DELAY_MS = 1500;
+let pipSourceRecoveryStartedAt = 0;
+const PIP_SOURCE_RECOVERY_WAIT_MS = 5000;
 
 const state: State = {
   launchShortcut: { ...SHORTCUT_DEFAULTS.launchShortcut },
@@ -293,34 +295,58 @@ function scanPage() {
   const found = globalThis.PipCompanion.ContentVideo.findVideo();
   const current = state.sourceVideo;
   let video = state.pipWindow && state.videoStash ? current : found;
-  if (
-    state.nextVideoRequested &&
-    state.pipWindow &&
-    state.videoStash &&
-    found &&
-    found !== current &&
-    found.videoWidth > 0 &&
-    !found.ended
-  )
-    video = found; // 下一集換片才跟著切，避免誤綁廣告或預覽。
-  else if (
-    state.followPlaybackPip &&
-    state.pipWindow &&
-    state.videoStash &&
-    found &&
-    found !== current
-  ) {
-    const stashParent = state.videoStash.parent;
-    const sameContainer = Boolean(
-      stashParent?.isConnected && stashParent.contains(found),
-    );
-    if (
-      found.videoWidth > 0 &&
-      !found.paused &&
-      !found.ended &&
-      (sameContainer || current?.paused === true)
+  if (state.pipWindow && state.videoStash && current && !current.isConnected) {
+    pipSourceRecoveryStartedAt ||= Date.now();
+    const container = state.videoStash.parent;
+    // 來源失效只找原容器，不能改接頁面上其他影片。
+    const replacement =
+      container?.isConnected && "querySelectorAll" in container
+        ? Array.from(
+            (container as ParentNode).querySelectorAll<HTMLVideoElement>(
+              "video",
+            ),
+          ).find((candidate) => candidate.videoWidth > 0 && !candidate.ended)
+        : null;
+    if (replacement) {
+      video = replacement;
+      pipSourceRecoveryStartedAt = 0;
+    } else if (
+      Date.now() - pipSourceRecoveryStartedAt <
+      PIP_SOURCE_RECOVERY_WAIT_MS
     )
-      video = found;
+      return;
+    else video = null;
+  } else {
+    pipSourceRecoveryStartedAt = 0;
+    if (
+      state.nextVideoRequested &&
+      state.pipWindow &&
+      state.videoStash &&
+      found &&
+      found !== current &&
+      found.videoWidth > 0 &&
+      !found.ended
+    )
+      video = found; // 下一集換片才跟著切，避免誤綁廣告或預覽。
+    else if (
+      state.followPlaybackPip &&
+      state.pipWindow &&
+      state.videoStash &&
+      found &&
+      found !== current
+    ) {
+      const stashParent = state.videoStash.parent;
+      const sameContainer = Boolean(
+        stashParent?.isConnected && stashParent.contains(found),
+      );
+      if (
+        found.videoWidth > 0 &&
+        !found.paused &&
+        !found.ended &&
+        (sameContainer || current?.paused === true)
+      )
+        video = found;
+    }
   }
   if (IS_YOUTUBE) checkAndBindDanmakuChat();
   if (IS_TWITCH || IS_BAHAMUT || isBilibiliLivePage())

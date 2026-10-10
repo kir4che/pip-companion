@@ -280,7 +280,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     stash.placeholder?.remove();
     video.controls = stash.controls;
     video.style.cssText = stash.inlineStyle;
-    if (stash.parent?.isConnected) {
+    // 網站已移除的來源不要放回播放器，避免復活失效元素。
+    if (stash.parent?.isConnected && video.isConnected) {
       const next = stash.next?.parentNode === stash.parent ? stash.next : null;
       try {
         stash.parent.insertBefore(video, next);
