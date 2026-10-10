@@ -27,6 +27,8 @@ interface YouTubePlayer extends HTMLElement {
   getStoryboardFormat?: () => string;
   getPlayerResponse?: () => unknown;
   nextVideo?: () => void;
+  playVideoAt?: (index: number) => void;
+  loadVideoById?: (videoId: string) => void;
   getPlaylist?: () => string[] | null;
   getPlaylistIndex?: () => number;
   isMuted?: () => boolean;

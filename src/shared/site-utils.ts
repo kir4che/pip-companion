@@ -22,6 +22,10 @@ globalThis.PipCompanion.site = (() => {
     return hostname === "ani.gamer.com.tw";
   }
 
+  function isNetflixHost(hostname: string): boolean {
+    return /(^|\.)netflix\.com$/.test(hostname);
+  }
+
   function isGamerHost(hostname: string): boolean {
     return /(^|\.)gamer\.com\.tw$/.test(hostname);
   }
@@ -60,6 +64,7 @@ globalThis.PipCompanion.site = (() => {
     isBilibiliLiveHost,
     isTwitchHost,
     isBahamutHost,
+    isNetflixHost,
     isGamerHost,
     parseYouTubeVideoId,
     parseBilibiliVideoPath,

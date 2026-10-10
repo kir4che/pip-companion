@@ -37,6 +37,26 @@ interface StoryboardFrame {
 
 type SeekSeconds = 1 | 3 | 5 | 10 | 15 | 30;
 
+interface PlaylistItem {
+  index: number;
+  title: string;
+  videoId?: string;
+}
+
+interface PlaylistInfo {
+  items: PlaylistItem[];
+  currentIndex: number;
+}
+
+type PlaylistNextItemState = "available" | "unavailable" | "unknown";
+
+interface ContentPlaylistApi {
+  getPlaylist(): PlaylistInfo | null;
+  hasPlaylist(): boolean;
+  selectPlaylistItem(index: number, preparePlaybackState: () => void): void;
+  getNextItemState(): PlaylistNextItemState;
+}
+
 // 巴哈動畫瘋縮圖資料格式
 interface BahaStoryboardData {
   sn?: string;
@@ -60,6 +80,8 @@ interface PipUiActions {
   togglePlaybackRate(): void;
   toggleMute(): void;
   playNext(): void;
+  getPlaylist(): PlaylistInfo | null;
+  selectPlaylistItem(index: number): void;
   setVolume(percent: number, unmute: boolean): void;
   getMaxVolume(): number;
   showFeedback(text: string): void;
@@ -100,6 +122,8 @@ interface PipUiHandle {
   readonly volumePath: Element;
   readonly playButton: HTMLButtonElement;
   readonly nextButton: HTMLButtonElement;
+  readonly playlistButton: HTMLButtonElement;
+  readonly playlistPanel: HTMLElement;
   readonly speedControl: HTMLElement;
   readonly speedButton: HTMLButtonElement;
   readonly speedSlider: HTMLInputElement;
@@ -230,6 +254,8 @@ interface ContentPlaybackApi {
   getSourceVolumePercent(): number;
   setSourceVolumePercent(percent: number, unmute: boolean): void;
   playNextVideo(): void;
+  getPlaylist(): PlaylistInfo | null;
+  selectPlaylistItem(index: number): void;
   applyPendingNextPlaybackState(video: HTMLVideoElement): void;
   cancelNextVideoRequest(): void;
   cancelNextPlaybackRestore(): void;
@@ -300,6 +326,7 @@ interface PipCompanionSiteUtils {
   isBilibiliLiveHost(hostname: string): boolean;
   isTwitchHost(hostname: string): boolean;
   isBahamutHost(hostname: string): boolean;
+  isNetflixHost(hostname: string): boolean;
   isGamerHost(hostname: string): boolean;
   parseYouTubeVideoId(href: string): string | null;
   parseBilibiliVideoPath(pathname: string): BilibiliVideoPath | null;
@@ -313,6 +340,7 @@ interface PipCompanionGlobal {
   ContentCaptions: ContentCaptionsApi;
   ContentFeedback: ContentFeedbackApi;
   ContentPlayback: ContentPlaybackApi;
+  ContentPlaylist: ContentPlaylistApi;
   ContentStoryboard: ContentStoryboardApi;
   ContentScreenshot: ContentScreenshotApi;
   ContentPipLifecycle: ContentPipLifecycleApi;

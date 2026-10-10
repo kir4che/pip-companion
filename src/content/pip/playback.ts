@@ -105,54 +105,12 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     "[class*='next-episode']",
     "[class*='episode-next']",
   ];
-  const BILIBILI_EPISODE_LIST_SELECTORS = [
-    ".video-pod__list",
-    ".video-pod__item",
-    ".cur-list",
-    ".multi-page",
-    ".multi-page-list",
-    ".ep-list",
-    ".episode-list",
-    ".season-list",
-    ".bpx-player-ctrl-eplist",
-  ];
-
-  function hasYouTubeNextVideo(player: YouTubePlayer | null): boolean {
-    if (!player?.getPlaylist || !player.getPlaylistIndex) return false;
-    try {
-      const playlist = player.getPlaylist();
-      const index = player.getPlaylistIndex();
-      return Boolean(
-        playlist &&
-        Number.isInteger(index) &&
-        index >= 0 &&
-        index < playlist.length - 1,
-      );
-    } catch {
-      return false;
-    }
-  }
 
   function isBilibiliPage(): boolean {
     const site = globalThis.PipCompanion.site;
     return (
       site.isBilibiliHost(location.hostname) ||
       site.isBilibiliLiveHost(location.hostname)
-    );
-  }
-
-  function hasYouTubePlaylistInfo(player: YouTubePlayer | null): boolean {
-    return Boolean(player?.getPlaylist && player.getPlaylistIndex);
-  }
-
-  function hasYouTubePlaylistContext(): boolean {
-    return Boolean(new URL(location.href).searchParams.get("list"));
-  }
-
-  function hasBilibiliEpisodeList(): boolean {
-    if (/^\/bangumi\/play\/(?:ss|ep)\d+/i.test(location.pathname)) return true;
-    return BILIBILI_EPISODE_LIST_SELECTORS.some((selector) =>
-      document.querySelector(selector),
     );
   }
 
@@ -185,17 +143,15 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   }
 
   function findNextControl(): NextControl | null {
-    const youtubePlayer = getYouTubePlayer();
     if (
       globalThis.PipCompanion.site.isYouTubeHost(location.hostname) &&
-      (!hasYouTubePlaylistContext() ||
-        (hasYouTubePlaylistInfo(youtubePlayer) &&
-          !hasYouTubeNextVideo(youtubePlayer)))
+      globalThis.PipCompanion.ContentPlaylist.getNextItemState() ===
+        "unavailable"
     )
       return null;
 
     if (isBilibiliPage()) {
-      if (!hasBilibiliEpisodeList()) return null;
+      if (!globalThis.PipCompanion.ContentPlaylist.getPlaylist()) return null;
       for (const selector of BILIBILI_NEXT_SELECTORS) {
         const candidate = document.querySelector<NextControl>(selector);
         if (candidate && isUsableNextControl(candidate)) return candidate;
@@ -321,18 +277,16 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   }
 
   function playNextVideo() {
+    const nextItemState =
+      globalThis.PipCompanion.ContentPlaylist.getNextItemState();
     if (
       globalThis.PipCompanion.site.isYouTubeHost(location.hostname) &&
-      !hasYouTubePlaylistContext()
+      nextItemState === "unavailable"
     )
       return;
     prepareNextVideoRequest();
     const player = getYouTubePlayer();
-    if (
-      player?.nextVideo &&
-      hasYouTubePlaylistContext() &&
-      hasYouTubeNextVideo(player)
-    ) {
+    if (player?.nextVideo && nextItemState === "available") {
       try {
         player.nextVideo();
         return;
@@ -461,17 +415,23 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       !nextControl.disabled &&
       nextControl.getAttribute("aria-disabled") !== "true",
     );
+    const nextItemState =
+      globalThis.PipCompanion.ContentPlaylist.getNextItemState();
     const canPlayNext = Boolean(
       globalThis.PipCompanion.site.isYouTubeHost(location.hostname)
-        ? hasYouTubePlaylistContext() &&
-            (hasYouTubePlaylistInfo(player)
-              ? hasYouTubeNextVideo(player) &&
-                Boolean(player?.nextVideo || nextControlUsable)
-              : nextControlUsable)
+        ? nextItemState === "available"
+          ? player?.nextVideo || nextControlUsable
+          : nextItemState === "unknown" && nextControlUsable
         : nextControlUsable,
     );
     state.pipUi.nextButton.disabled = !canPlayNext;
     state.pipUi.nextButton.hidden = !canPlayNext;
+    const hasPlaylist = globalThis.PipCompanion.ContentPlaylist.hasPlaylist();
+    state.pipUi.playlistButton.hidden = !hasPlaylist;
+    if (!hasPlaylist) {
+      state.pipUi.playlistPanel.hidden = true;
+      state.pipUi.playlistButton.setAttribute("aria-expanded", "false");
+    }
 
     const isLive = isLiveStream(state.sourceVideo);
     state.pipUi.speedControl.hidden = isLive;
@@ -568,6 +528,12 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     getSourceVolumePercent,
     setSourceVolumePercent,
     playNextVideo,
+    getPlaylist: globalThis.PipCompanion.ContentPlaylist.getPlaylist,
+    selectPlaylistItem: (index: number) =>
+      globalThis.PipCompanion.ContentPlaylist.selectPlaylistItem(
+        index,
+        prepareNextVideoRequest,
+      ),
     applyPendingNextPlaybackState,
     cancelNextVideoRequest,
     cancelNextPlaybackRestore,

@@ -57,6 +57,7 @@
         "content/video-source.js",
         "content/captions.js",
         "content/feedback.js",
+        "content/pip/playlist.js",
         "content/pip/playback.js",
         "content/screenshot.js",
         "content/pip/lifecycle.js",
@@ -73,11 +74,29 @@
       "run_at": "document_start"
     },
     {
+      "matches": ["*://bilibili.com/*", "*://*.bilibili.com/*"],
+      "world": "MAIN",
+      "js": ["content/bridges/bilibili.js"],
+      "run_at": "document_idle"
+    },
+    {
       "matches": ["*://ani.gamer.com.tw/*", "*://*.gamer.com.tw/*"],
       "all_frames": true,
       "world": "MAIN",
       "js": ["content/bridges/bahamut.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["*://netflix.com/*", "*://*.netflix.com/*"],
+      "world": "MAIN",
+      "js": ["content/bridges/netflix.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/playlist-icon.svg"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

@@ -4,6 +4,19 @@ globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.PipUI = (() => {
   function create(win: Window, actions: PipUiActions, video: HTMLVideoElement) {
     const doc = win.document;
+    const seekVideo = (
+      videoSource: HTMLVideoElement,
+      targetSeconds: number,
+    ) => {
+      if (globalThis.PipCompanion.site.isNetflixHost(location.hostname)) {
+        window.postMessage(
+          { type: "PIP_NETFLIX_SEEK", targetSeconds },
+          location.origin,
+        );
+        return;
+      }
+      videoSource.currentTime = targetSeconds;
+    };
     doc.documentElement.lang = "zh-Hant";
 
     const style = doc.createElement("style");
@@ -112,8 +125,8 @@ globalThis.PipCompanion.PipUI = (() => {
         inset: auto 0 0;
         display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 24px 8px 6px;
+        gap: 4px;
+        padding: 24px 6px 6px;
         background: linear-gradient(transparent, rgba(0, 0, 0, 0.82));
         opacity: 0;
         transform: translateY(4px);
@@ -332,10 +345,78 @@ globalThis.PipCompanion.PipUI = (() => {
         outline-offset: 0;
       }
       button svg {
+        display: block;
         width: 16px;
         height: 16px;
         fill: currentColor;
       }
+      .playlist-button {
+        line-height: 0;
+      }
+      .playlist-button img {
+        display: block;
+        width: 17px;
+        height: 17px;
+        filter: invert(1);
+        transform: translate(-0.5px, -0.5px);
+      }
+      .playlist-panel {
+        position: absolute;
+        z-index: 80;
+        right: 8px;
+        bottom: 48px;
+        width: min(360px, calc(100% - 16px));
+        max-height: min(70%, 360px);
+        overflow: auto;
+        padding: 8px;
+        border: 1px solid #ffffff22;
+        border-radius: 10px;
+        background: #111f;
+        box-shadow: 0 8px 28px #000b;
+        scrollbar-width: thin;
+        scrollbar-color: #ffffff55 transparent;
+      }
+      .playlist-panel::-webkit-scrollbar {
+        width: 6px;
+      }
+      .playlist-panel::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .playlist-panel::-webkit-scrollbar-thumb {
+        border: 1px solid transparent;
+        border-radius: 999px;
+        background: #ffffff55;
+        background-clip: padding-box;
+      }
+      .playlist-panel::-webkit-scrollbar-thumb:hover {
+        background: #ffffff88;
+        background-clip: padding-box;
+      }
+      .playlist-item {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        min-height: 34px;
+        padding: 6px 8px;
+        border-radius: 6px;
+        background: transparent;
+        text-align: left;
+        font-size: 12px;
+      }
+      .playlist-item.current {
+        background: rgba(225, 29, 72, 0.15);
+        color: #fb7185;
+      }
+      .playlist-item:hover,
+      .playlist-item:focus-visible {
+        background: rgba(225, 29, 72, 0.15);
+      }
+      .playlist-item.current:hover,
+      .playlist-item.current:focus-visible {
+        background: rgba(225, 29, 72, 0.2);
+      }
+      .playlist-index { flex: 0 0 28px; color: #999; font-variant-numeric: tabular-nums; }
+      .playlist-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     `;
     const popoverCss = `
       .volume-control,
@@ -458,8 +539,8 @@ globalThis.PipCompanion.PipUI = (() => {
     const responsiveCss = `
       @media (max-width: 440px) {
         .controls {
-          gap: 5px;
-          padding-inline: 6px;
+          gap: 3px;
+          padding-inline: 4px;
         }
         .controls button {
           width: 28px;
@@ -604,6 +685,19 @@ globalThis.PipCompanion.PipUI = (() => {
     const playButton = makeButton("play", "▶", "播放影片");
     const nextButton = makeButton("next", "", "下一集影片");
     nextButton.hidden = true;
+    const playlistButton = makeButton("playlist", "", "播放清單");
+    playlistButton.className = "playlist-button";
+    playlistButton.hidden = true;
+    playlistButton.setAttribute("aria-expanded", "false");
+    const playlistIcon = doc.createElement("img");
+    playlistIcon.src = chrome.runtime.getURL("assets/playlist-icon.svg");
+    playlistIcon.alt = "";
+    playlistIcon.setAttribute("aria-hidden", "true");
+    playlistButton.append(playlistIcon);
+    const playlistPanel = doc.createElement("section");
+    playlistPanel.className = "playlist-panel";
+    playlistPanel.hidden = true;
+    playlistPanel.setAttribute("aria-label", "播放清單");
     const nextIcon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
     nextIcon.setAttribute("viewBox", "0 0 24 24");
     nextIcon.setAttribute("aria-hidden", "true");
@@ -690,12 +784,14 @@ globalThis.PipCompanion.PipUI = (() => {
       volumeControl,
       speedControl,
       danmakuSendToggle,
+      playlistButton,
     );
     screen.append(
       subtitle,
       feedback,
       danmakuSendStatus,
       danmakuSendPanel,
+      playlistPanel,
       miniProgress,
       controls,
     );
@@ -714,6 +810,8 @@ globalThis.PipCompanion.PipUI = (() => {
       volumePath,
       playButton,
       nextButton,
+      playlistButton,
+      playlistPanel,
       speedControl,
       speedButton,
       speedSlider,
@@ -938,6 +1036,94 @@ globalThis.PipCompanion.PipUI = (() => {
       { capture: true },
     );
     nextButton.addEventListener("click", () => actions.playNext());
+    const closePlaylist = () => {
+      playlistPanel.hidden = true;
+      playlistButton.setAttribute("aria-expanded", "false");
+    };
+    const isPlaylistTarget = (target: EventTarget | null) =>
+      target !== null &&
+      (playlistPanel.contains(target as Node) ||
+        playlistButton.contains(target as Node));
+    screen.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (!playlistPanel.hidden && !isPlaylistTarget(e.target))
+          closePlaylist();
+      },
+      { capture: true },
+    );
+    screen.addEventListener(
+      "focusin",
+      (e) => {
+        if (!playlistPanel.hidden && !isPlaylistTarget(e.target))
+          closePlaylist();
+      },
+      { capture: true },
+    );
+    win.addEventListener(
+      "keydown",
+      (e) => {
+        if (playlistPanel.hidden) return;
+        if (e.key === "Escape") {
+          closePlaylist();
+          return;
+        }
+        const inPlaylistPanel = playlistPanel.contains(e.target as Node);
+        const onPlaylistButton = playlistButton.contains(e.target as Node);
+        const buttonKey = ["Enter", " ", "Tab"].includes(e.key);
+        if (!((inPlaylistPanel || onPlaylistButton) && buttonKey))
+          closePlaylist();
+      },
+      { capture: true },
+    );
+    const renderPlaylist = () => {
+      const playlist = actions.getPlaylist();
+      playlistPanel.replaceChildren();
+      if (!playlist || playlist.items.length < 2) {
+        playlistButton.hidden = true;
+        closePlaylist();
+        return;
+      }
+      let currentEntry: HTMLButtonElement | null = null;
+      for (const item of playlist.items) {
+        const entry = doc.createElement("button");
+        entry.type = "button";
+        entry.className = "playlist-item";
+        if (item.index === playlist.currentIndex) {
+          entry.classList.add("current");
+          currentEntry = entry;
+        }
+        entry.setAttribute("aria-label", `${item.index + 1}. ${item.title}`);
+        const index = doc.createElement("span");
+        index.className = "playlist-index";
+        index.textContent = String(item.index + 1).padStart(2, "0");
+        const title = doc.createElement("span");
+        title.className = "playlist-title";
+        title.textContent = item.title;
+        entry.append(index, title);
+        entry.addEventListener("click", () => {
+          actions.selectPlaylistItem(item.index);
+          closePlaylist();
+        });
+        playlistPanel.append(entry);
+      }
+      playlistPanel.hidden = false;
+      playlistButton.setAttribute("aria-expanded", "true");
+      if (currentEntry)
+        win.requestAnimationFrame(() => {
+          const panelRect = playlistPanel.getBoundingClientRect();
+          const entryRect = currentEntry?.getBoundingClientRect();
+          if (!entryRect || playlistPanel.clientHeight === 0) return;
+          playlistPanel.scrollTop +=
+            entryRect.top -
+            panelRect.top -
+            (playlistPanel.clientHeight - currentEntry.clientHeight) / 2;
+        });
+    };
+    playlistButton.addEventListener("click", () => {
+      if (playlistPanel.hidden) renderPlaylist();
+      else closePlaylist();
+    });
 
     volumeSlider.addEventListener("input", () =>
       actions.setVolume(
@@ -1001,7 +1187,7 @@ globalThis.PipCompanion.PipUI = (() => {
         Number.isFinite(duration) && duration > 0
           ? Math.max(0, Math.min(duration, seconds))
           : Math.max(0, seconds);
-      videoSource.currentTime = target;
+      seekVideo(videoSource, target);
       const text = actions.formatTime(target);
       timeFocusText = text;
       setTimeInput(text);
@@ -1074,7 +1260,7 @@ globalThis.PipCompanion.PipUI = (() => {
         e.stopPropagation();
         const backward = e.key === ",";
         const next = videoSource.currentTime + (backward ? -1 : 1) / 60;
-        if (Number.isFinite(next) && next >= 0) videoSource.currentTime = next;
+        if (Number.isFinite(next) && next >= 0) seekVideo(videoSource, next);
         actions.showFrameStepIcon(backward);
         return;
       }
@@ -1183,9 +1369,12 @@ globalThis.PipCompanion.PipUI = (() => {
             key === "arrowleft"
               ? -actions.getSeekSeconds()
               : actions.getSeekSeconds();
-          videoSource.currentTime = Math.max(
-            0,
-            Math.min(videoSource.duration, videoSource.currentTime + delta),
+          seekVideo(
+            videoSource,
+            Math.max(
+              0,
+              Math.min(videoSource.duration, videoSource.currentTime + delta),
+            ),
           );
           break;
         }
@@ -1222,8 +1411,10 @@ globalThis.PipCompanion.PipUI = (() => {
         videoSource.duration <= 0
       )
         return;
-      videoSource.currentTime =
-        (Number(progress.value) / 1000) * videoSource.duration;
+      seekVideo(
+        videoSource,
+        (Number(progress.value) / 1000) * videoSource.duration,
+      );
       update();
     });
 

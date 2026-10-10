@@ -193,6 +193,9 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           globalThis.PipCompanion.ContentPlayback.cancelNextPlaybackRestore,
         toggleMute: globalThis.PipCompanion.ContentPlayback.toggleMute,
         playNext: globalThis.PipCompanion.ContentPlayback.playNextVideo,
+        getPlaylist: globalThis.PipCompanion.ContentPlayback.getPlaylist,
+        selectPlaylistItem:
+          globalThis.PipCompanion.ContentPlayback.selectPlaylistItem,
         setVolume:
           globalThis.PipCompanion.ContentPlayback.setSourceVolumePercent,
         getMaxVolume: () =>

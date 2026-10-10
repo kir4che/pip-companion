@@ -55,6 +55,7 @@
       let spec = "";
       let isLive = false;
       let videoId = "";
+      let playlistIndex = -1;
 
       if (player) {
         if (typeof player.getStoryboardFormat === "function") {
@@ -77,6 +78,13 @@
               isLive = Boolean(data.isLive);
               videoId = data.video_id || "";
             }
+          } catch {}
+        }
+
+        if (typeof player.getPlaylistIndex === "function") {
+          try {
+            const index = player.getPlaylistIndex();
+            if (Number.isInteger(index) && index >= 0) playlistIndex = index;
           } catch {}
         }
       }
@@ -108,6 +116,9 @@
       if (document.documentElement) {
         if (spec) document.documentElement.dataset.pipYtStoryboard = spec;
         if (videoId) document.documentElement.dataset.pipYtVideoId = videoId;
+        if (playlistIndex >= 0)
+          document.documentElement.dataset.pipYtPlaylistIndex =
+            String(playlistIndex);
         document.documentElement.dataset.pipYtIsLive = String(isLive);
       }
 
@@ -133,6 +144,7 @@
     if (document.documentElement) {
       delete document.documentElement.dataset.pipYtStoryboard;
       delete document.documentElement.dataset.pipYtVideoId;
+      delete document.documentElement.dataset.pipYtPlaylistIndex;
       delete document.documentElement.dataset.pipYtIsLive;
     }
     window.postMessage({ type: "PIP_YT_RESET" }, "*");
@@ -155,6 +167,28 @@
       }
     }, 500);
   }
+
+  window.addEventListener(
+    "message",
+    (e) => {
+      if (e.source !== window || e.data?.type !== "PIP_SELECT_YT_PLAYLIST")
+        return;
+      const player = document.querySelector<YouTubePlayer>("#movie_player");
+      const index = Number(e.data.index);
+      if (!player || !Number.isInteger(index) || index < 0) return;
+      try {
+        if (typeof player.playVideoAt === "function") player.playVideoAt(index);
+        else if (
+          typeof e.data.videoId === "string" &&
+          typeof player.loadVideoById === "function"
+        )
+          player.loadVideoById(e.data.videoId);
+        if (document.documentElement)
+          document.documentElement.dataset.pipYtPlaylistIndex = String(index);
+      } catch {}
+    },
+    { passive: true },
+  );
 
   window.addEventListener("yt-navigate-start", resetYouTubeData, {
     passive: true,
