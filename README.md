@@ -12,8 +12,7 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 
 ## Features
 
-- **Picture-in-Picture controls:** play/pause, scrub the timeline, volume, playback speed, frame stepping, and more.
-  - **Play next video:** automatically detects the page's "Next video / Next episode" button when available.
+- **Picture-in-Picture controls:** play/pause, scrub the timeline, volume, playback speed, frame stepping, play next video, and more.
   - **Volume boost:** same-origin videos can be boosted up to 300%; cross-origin videos may be limited to 100%.
   - **Playback speed:** adjust from 0.25× to 5×; automatically hidden during live streams to preserve sync, and some websites may impose limits.
   - **Progress bar & previews:** keeps the mini progress bar visible at the bottom when controls fade out, and hover over the seek bar to preview thumbnails (supported on YouTube, Bilibili, and Bahamut Anime Crazy).
@@ -29,6 +28,8 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 - **Follow playback:** when enabled and the PiP source pauses while another page (or the same page) has a playing video, PiP hands off to it. Due to browser restrictions, cross-tab handoff requires a click on that tab.
 - **Feature toggles and keyboard shortcuts:** toggle danmaku, screenshots, floating comments, and follow playback individually; customize shortcuts for PiP, comments, screenshots, and danmaku.
 - **Embedded videos:** detect videos in matching iframes. Cross-origin compatibility depends on the website and browser permissions, so not every player is guaranteed to work.
+
+> See [Platform Support and Limitations](docs/platform-support.md) for the platform compatibility matrix.
 
 ## Screenshots
 

@@ -53,6 +53,7 @@
         "content/danmaku/sender/youtube.js",
         "content/danmaku/sender/index.js",
         "content/danmaku/index.js",
+        "content/platform.js",
         "content/video-source.js",
         "content/captions.js",
         "content/feedback.js",

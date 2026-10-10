@@ -19,6 +19,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   }
 
   function setSourceVolumePercent(percent: number, unmute: boolean) {
+    if (!applyingNextPlaybackState) cancelNextPlaybackRestore();
     const video = state.sourceVideo;
     if (!video) return;
     if (
@@ -96,31 +97,125 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     ".video-js",
   ];
   const NEXT_LABEL = /next|下一|下一个|下一個|다음/i;
+  const BILIBILI_NEXT_SELECTORS = [
+    ".bpx-player-ctrl-next",
+    ".bpx-player-ctrl-btn-next",
+    ".bpx-player-ctrl-btn[aria-label*='下一']",
+    ".bpx-player-ctrl-btn[title*='下一']",
+    "[class*='next-episode']",
+    "[class*='episode-next']",
+  ];
+  const BILIBILI_EPISODE_LIST_SELECTORS = [
+    ".video-pod__list",
+    ".video-pod__item",
+    ".cur-list",
+    ".multi-page",
+    ".multi-page-list",
+    ".ep-list",
+    ".episode-list",
+    ".season-list",
+    ".bpx-player-ctrl-eplist",
+  ];
+
+  function hasYouTubeNextVideo(player: YouTubePlayer | null): boolean {
+    if (!player?.getPlaylist || !player.getPlaylistIndex) return false;
+    try {
+      const playlist = player.getPlaylist();
+      const index = player.getPlaylistIndex();
+      return Boolean(
+        playlist &&
+        Number.isInteger(index) &&
+        index >= 0 &&
+        index < playlist.length - 1,
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  function isBilibiliPage(): boolean {
+    const site = globalThis.PipCompanion.site;
+    return (
+      site.isBilibiliHost(location.hostname) ||
+      site.isBilibiliLiveHost(location.hostname)
+    );
+  }
+
+  function hasYouTubePlaylistInfo(player: YouTubePlayer | null): boolean {
+    return Boolean(player?.getPlaylist && player.getPlaylistIndex);
+  }
+
+  function hasYouTubePlaylistContext(): boolean {
+    return Boolean(new URL(location.href).searchParams.get("list"));
+  }
+
+  function hasBilibiliEpisodeList(): boolean {
+    if (/^\/bangumi\/play\/(?:ss|ep)\d+/i.test(location.pathname)) return true;
+    return BILIBILI_EPISODE_LIST_SELECTORS.some((selector) =>
+      document.querySelector(selector),
+    );
+  }
+
+  function isUsableNextControl(element: NextControl): boolean {
+    return (
+      !element.disabled &&
+      element.getAttribute("aria-disabled") !== "true" &&
+      element.getClientRects().length > 0
+    );
+  }
+
+  function getNextControlLabel(element: Element): string {
+    return `${element.getAttribute("aria-label") ?? ""} ${
+      element.getAttribute("title") ?? ""
+    } ${element.textContent ?? ""}`;
+  }
+
+  function findByNextLabel(root: Document | Element): NextControl | null {
+    const elements = root.querySelectorAll<NextControl>(
+      "button, a, [role='button'], [aria-label], [title]",
+    );
+    for (const element of elements) {
+      if (
+        NEXT_LABEL.test(getNextControlLabel(element)) &&
+        isUsableNextControl(element)
+      )
+        return element;
+    }
+    return null;
+  }
 
   function findNextControl(): NextControl | null {
+    const youtubePlayer = getYouTubePlayer();
+    if (
+      globalThis.PipCompanion.site.isYouTubeHost(location.hostname) &&
+      (!hasYouTubePlaylistContext() ||
+        (hasYouTubePlaylistInfo(youtubePlayer) &&
+          !hasYouTubeNextVideo(youtubePlayer)))
+    )
+      return null;
+
+    if (isBilibiliPage()) {
+      if (!hasBilibiliEpisodeList()) return null;
+      for (const selector of BILIBILI_NEXT_SELECTORS) {
+        const candidate = document.querySelector<NextControl>(selector);
+        if (candidate && isUsableNextControl(candidate)) return candidate;
+      }
+      return null;
+    }
+
     const known =
       document.querySelector<NextControl>("#movie_player .ytp-next-button") ??
       document.querySelector<NextControl>('[data-uia="control-next"]') ??
       document.querySelector<NextControl>(
         '[data-uia="next-episode-seamless-button"]',
       );
-    if (known) return known;
+    if (known && isUsableNextControl(known)) return known;
     for (const containerSelector of PLAYER_CONTAINERS) {
       const container = document.querySelector(containerSelector);
-      if (!container) continue;
-      const candidate = Array.from(
-        container.querySelectorAll<NextControl>(
-          "button, a, [role='button'], [aria-label], [title]",
-        ),
-      ).find((element) => {
-        const label = `${element.getAttribute("aria-label") ?? ""} ${
-          element.getAttribute("title") ?? ""
-        } ${element.textContent ?? ""}`;
-        return !element.disabled && NEXT_LABEL.test(label);
-      });
+      const candidate = container && findByNextLabel(container);
       if (candidate) return candidate;
     }
-    return null;
+    return findByNextLabel(document);
   }
 
   const NEXT_CONTROL_CACHE_MS = 800;
@@ -139,9 +234,105 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   const NEXT_RETRY_MS = 250;
   const NEXT_RETRY_LIMIT = 12;
 
+  function getVideoSourceKey(video: HTMLVideoElement): string {
+    return video.currentSrc || video.src || "";
+  }
+
+  let nextRequestTimer = 0;
+  let nextRestoreTimer = 0;
+  let applyingNextPlaybackState = false;
+
+  function cancelNextPlaybackRestore() {
+    window.clearInterval(nextRestoreTimer);
+    nextRestoreTimer = 0;
+  }
+
+  function cancelNextVideoRequest() {
+    window.clearTimeout(nextRequestTimer);
+    nextRequestTimer = 0;
+    window.clearTimeout(state.nextClickTimer);
+    state.nextClickTimer = 0;
+    state.nextClickPending = false;
+    state.nextVideoRequested = false;
+    state.nextPlaybackState = null;
+    state.nextVideoSourceKey = "";
+    cancelNextPlaybackRestore();
+  }
+
+  function prepareNextVideoRequest() {
+    cancelNextVideoRequest();
+    const video = state.sourceVideo;
+    if (!video) return;
+    state.nextVideoSourceKey = getVideoSourceKey(video);
+    state.nextPlaybackState = {
+      volumePercent: Math.round(
+        globalThis.PipCompanion.PipAudio.getVolumePercent(video, true),
+      ),
+      muted: video.muted || video.volume === 0,
+      playbackRate: video.playbackRate,
+    };
+    state.nextVideoRequested = true;
+    nextRequestTimer = window.setTimeout(cancelNextVideoRequest, 5000);
+  }
+
+  function applyPendingNextPlaybackState(video: HTMLVideoElement) {
+    const pending = state.nextPlaybackState;
+    if (!pending) return;
+    cancelNextVideoRequest();
+
+    const apply = () => {
+      if (!state.pipWindow || state.sourceVideo !== video || video.ended) {
+        cancelNextPlaybackRestore();
+        return;
+      }
+      if (!isLiveStream(video) && Number.isFinite(pending.playbackRate)) {
+        try {
+          video.playbackRate = pending.playbackRate;
+          getYouTubePlayer()?.setPlaybackRate?.(pending.playbackRate);
+        } catch {
+          // 平台可能限制直播或特定影片
+        }
+      }
+      applyingNextPlaybackState = true;
+      try {
+        setSourceVolumePercent(pending.volumePercent, !pending.muted);
+        if (pending.muted) {
+          try {
+            getYouTubePlayer()?.mute?.();
+          } catch {
+            // API 不可用時仍保留影片靜音。
+          }
+          video.muted = true;
+        }
+        updatePlaybackUi();
+      } finally {
+        applyingNextPlaybackState = false;
+      }
+    };
+
+    // 各平台可能在換片後重設設定，短時間內重套用。
+    apply();
+    let attempts = 0;
+    nextRestoreTimer = window.setInterval(() => {
+      apply();
+      attempts++;
+      if (attempts >= 16) cancelNextPlaybackRestore();
+    }, 150);
+  }
+
   function playNextVideo() {
+    if (
+      globalThis.PipCompanion.site.isYouTubeHost(location.hostname) &&
+      !hasYouTubePlaylistContext()
+    )
+      return;
+    prepareNextVideoRequest();
     const player = getYouTubePlayer();
-    if (player?.nextVideo) {
+    if (
+      player?.nextVideo &&
+      hasYouTubePlaylistContext() &&
+      hasYouTubeNextVideo(player)
+    ) {
       try {
         player.nextVideo();
         return;
@@ -167,7 +358,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       return;
     }
     if (attempt >= NEXT_RETRY_LIMIT) {
-      state.nextClickPending = false;
+      cancelNextVideoRequest();
       return;
     }
     window.clearTimeout(state.nextClickTimer);
@@ -265,15 +456,19 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     }
 
     const nextControl = findNextControlCached();
+    const nextControlUsable = Boolean(
+      nextControl &&
+      !nextControl.disabled &&
+      nextControl.getAttribute("aria-disabled") !== "true",
+    );
     const canPlayNext = Boolean(
-      player
-        ? player.nextVideo ||
-            (nextControl &&
-              !nextControl.disabled &&
-              nextControl.getAttribute("aria-disabled") !== "true")
-        : nextControl &&
-            !nextControl.disabled &&
-            nextControl.getAttribute("aria-disabled") !== "true",
+      globalThis.PipCompanion.site.isYouTubeHost(location.hostname)
+        ? hasYouTubePlaylistContext() &&
+            (hasYouTubePlaylistInfo(player)
+              ? hasYouTubeNextVideo(player) &&
+                Boolean(player?.nextVideo || nextControlUsable)
+              : nextControlUsable)
+        : nextControlUsable,
     );
     state.pipUi.nextButton.disabled = !canPlayNext;
     state.pipUi.nextButton.hidden = !canPlayNext;
@@ -291,6 +486,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   }
 
   function adjustPlaybackRate(direction: number) {
+    cancelNextPlaybackRestore();
     const video = state.sourceVideo;
     if (!video || isLiveStream(video)) return;
     let nextRate;
@@ -316,6 +512,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   }
 
   function togglePlaybackRate() {
+    cancelNextPlaybackRestore();
     const video = state.sourceVideo;
     if (!video || isLiveStream(video)) return;
     if (Math.abs(video.playbackRate - 1) > 0.001) {
@@ -326,6 +523,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   }
 
   function toggleMute() {
+    cancelNextPlaybackRestore();
     if (!state.sourceVideo) return;
     globalThis.PipCompanion.PipAudio.toggleMute(
       state.sourceVideo,
@@ -370,6 +568,9 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     getSourceVolumePercent,
     setSourceVolumePercent,
     playNextVideo,
+    applyPendingNextPlaybackState,
+    cancelNextVideoRequest,
+    cancelNextPlaybackRestore,
     updatePlaybackUi,
     togglePlayback,
     adjustPlaybackRate,

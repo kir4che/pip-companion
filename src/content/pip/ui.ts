@@ -602,7 +602,7 @@ globalThis.PipCompanion.PipUI = (() => {
     danmakuSendStatus.hidden = true;
 
     const playButton = makeButton("play", "▶", "播放影片");
-    const nextButton = makeButton("next", "", "下一部影片");
+    const nextButton = makeButton("next", "", "下一集影片");
     nextButton.hidden = true;
     const nextIcon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
     nextIcon.setAttribute("viewBox", "0 0 24 24");
@@ -859,11 +859,6 @@ globalThis.PipCompanion.PipUI = (() => {
       try {
         const result = await actions.sendDanmaku(submittedText);
         if (result.ok) {
-          setDanmakuSendStatus(
-            result.nativeInputCleared
-              ? "已嘗試送出，請確認聊天室回顯。"
-              : "請確認聊天室是否收到，再決定是否重送。",
-          );
           danmakuCooldownUntil = sendStartedAt + 5000;
           if (
             result.nativeInputCleared &&
@@ -919,9 +914,18 @@ globalThis.PipCompanion.PipUI = (() => {
         return;
       }
       if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
         closeDanmakuSendPanel();
         danmakuSendToggle.focus();
       }
+    });
+    danmakuSendPanel.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      closeDanmakuSendPanel();
+      danmakuSendToggle.focus();
     });
     playButton.addEventListener("click", togglePlayback);
     screen.addEventListener(
@@ -944,6 +948,7 @@ globalThis.PipCompanion.PipUI = (() => {
     speedSlider.addEventListener("input", () => {
       const videoSource = actions.getVideo();
       if (!videoSource) return;
+      actions.cancelNextPlaybackRestore();
       videoSource.playbackRate = Number(speedSlider.value);
       update();
       showSpeedFeedback();

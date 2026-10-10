@@ -69,6 +69,9 @@ const state: State = {
   nextControlCache: null,
   nextClickTimer: 0,
   nextClickPending: false,
+  nextVideoRequested: false,
+  nextPlaybackState: null,
+  nextVideoSourceKey: "",
   scanTimer: 0,
 };
 let captionStyleRevision = 0;
@@ -291,6 +294,16 @@ function scanPage() {
   const current = state.sourceVideo;
   let video = state.pipWindow && state.videoStash ? current : found;
   if (
+    state.nextVideoRequested &&
+    state.pipWindow &&
+    state.videoStash &&
+    found &&
+    found !== current &&
+    found.videoWidth > 0 &&
+    !found.ended
+  )
+    video = found; // 下一集換片才跟著切，避免誤綁廣告或預覽。
+  else if (
     state.followPlaybackPip &&
     state.pipWindow &&
     state.videoStash &&
@@ -324,6 +337,16 @@ function scanPage() {
 
   if (video !== state.sourceVideo)
     globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
+  else if (
+    state.nextVideoRequested &&
+    state.nextPlaybackState &&
+    (video.currentSrc || video.src || "") !== state.nextVideoSourceKey
+  ) {
+    globalThis.PipCompanion.ContentPlayback.applyPendingNextPlaybackState(
+      video,
+    );
+    state.nextVideoRequested = false;
+  }
   if (IS_BILIBILI && !isBilibiliLivePage())
     checkAndBindBilibiliDanmaku(state.sourceVideo);
   globalThis.PipCompanion.ContentCaptions.refreshSubtitle();
@@ -331,6 +354,7 @@ function scanPage() {
 }
 
 const SCAN_PIP_MS = 750;
+const SCAN_NEXT_VIDEO_MS = 150;
 const SCAN_IDLE_MS = 2000;
 
 function scheduleScan() {
@@ -343,7 +367,11 @@ function scheduleScan() {
         scheduleScan();
       }
     },
-    state.pipSession.phase === "active" ? SCAN_PIP_MS : SCAN_IDLE_MS,
+    state.pipSession.phase === "active"
+      ? state.nextVideoRequested
+        ? SCAN_NEXT_VIDEO_MS
+        : SCAN_PIP_MS
+      : SCAN_IDLE_MS,
   );
 }
 

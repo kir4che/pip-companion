@@ -189,6 +189,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           globalThis.PipCompanion.ContentPlayback.adjustPlaybackRate,
         togglePlaybackRate:
           globalThis.PipCompanion.ContentPlayback.togglePlaybackRate,
+        cancelNextPlaybackRestore:
+          globalThis.PipCompanion.ContentPlayback.cancelNextPlaybackRestore,
         toggleMute: globalThis.PipCompanion.ContentPlayback.toggleMute,
         playNext: globalThis.PipCompanion.ContentPlayback.playNextVideo,
         setVolume:
@@ -207,7 +209,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         toggleDanmaku:
           globalThis.PipCompanion.ContentPlayback.toggleDanmakuFromShortcut,
         canSendDanmaku:
-          globalThis.PipCompanion.ContentDanmakuSender.isSupportedPage(),
+          globalThis.PipCompanion.ContentPlatform.getCapabilities().danmakuSend,
         getDanmakuCharacterLimit:
           globalThis.PipCompanion.ContentDanmakuSender.getCharacterLimit,
         sendDanmaku: globalThis.PipCompanion.ContentDanmakuSender.send,
@@ -495,10 +497,15 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     if (state.pipWindow) {
       if (state.pipUi) remountSourceVideo();
       else mountPipVideo(state.pipWindow, video);
+      globalThis.PipCompanion.ContentPlayback.applyPendingNextPlaybackState(
+        video,
+      );
     }
+    state.nextVideoRequested = false;
   }
 
   function closePiP(closeWindow: boolean) {
+    globalThis.PipCompanion.ContentPlayback.cancelNextVideoRequest();
     const session = state.pipSession;
     const oldWindow =
       session.phase === "waiting" || session.phase === "active"

@@ -124,15 +124,19 @@ globalThis.PipCompanion.ContentYouTubeDanmakuSender = (() => {
       )?.set;
       if (setter) setter.call(element, text);
       else element.value = text;
-    } else {
-      element.textContent = text;
+    } else if (!text) element.textContent = "";
+    else {
+      element.focus();
+      const doc = element.ownerDocument;
+      if (!doc.execCommand("insertText", false, text))
+        element.textContent = text;
     }
     const view = element.ownerDocument.defaultView;
     if (view) {
       element.dispatchEvent(
         new view.InputEvent("input", {
           bubbles: true,
-          inputType: "insertText",
+          inputType: text ? "insertText" : "deleteContentBackward",
           data: text,
         }),
       );

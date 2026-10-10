@@ -68,8 +68,27 @@ globalThis.PipCompanion.ContentBahamutDanmakuSender = (() => {
     )?.set;
     if (setter) setter.call(input, value);
     else input.value = value;
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-    input.dispatchEvent(new Event("change", { bubbles: true }));
+    const view = input.ownerDocument.defaultView;
+    input.dispatchEvent(new (view?.Event ?? Event)("input", { bubbles: true }));
+    input.dispatchEvent(
+      new (view?.Event ?? Event)("change", { bubbles: true }),
+    );
+  }
+
+  async function waitForSendButton(button: HTMLElement): Promise<boolean> {
+    const deadline = Date.now() + 500;
+    while (
+      (button.matches(":disabled") ||
+        button.getAttribute("aria-disabled") === "true") &&
+      Date.now() < deadline
+    ) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return (
+      button.isConnected &&
+      !button.matches(":disabled") &&
+      button.getAttribute("aria-disabled") !== "true"
+    );
   }
 
   async function send(
@@ -93,14 +112,13 @@ globalThis.PipCompanion.ContentBahamutDanmakuSender = (() => {
     setNativeValue(composer.input, text);
     if (
       composer.input.value !== text ||
-      composer.button.matches(":disabled") ||
-      composer.button.getAttribute("aria-disabled") === "true"
+      !(await waitForSendButton(composer.button))
     ) {
       if (composer.input.value === text) setNativeValue(composer.input, "");
       return { ok: false, nativeInputCleared: false };
     }
 
-    // Let Bahamut's own player handler validate and send through the signed-in session.
+    // 交由巴哈播放器處理登入與送出。
     composer.button.click();
 
     const deadline = Date.now() + 1000;

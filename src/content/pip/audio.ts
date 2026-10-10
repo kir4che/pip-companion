@@ -32,8 +32,11 @@ globalThis.PipCompanion.PipAudio = (() => {
     return isActiveFor(video) ? 300 : 100;
   }
 
-  function getVolumePercent(video: HTMLVideoElement | null) {
-    if (!video || video.muted) return 0;
+  function getVolumePercent(
+    video: HTMLVideoElement | null,
+    ignoreMuted = false,
+  ) {
+    if (!video || (video.muted && !ignoreMuted)) return 0;
     const chain = activeChain;
     if (chain && isActiveFor(video)) {
       return Math.max(
@@ -64,6 +67,11 @@ globalThis.PipCompanion.PipAudio = (() => {
           chain.gain.gain.value = volume / 100;
         }
         if (unmute && volume > 0) video.muted = false;
+        try {
+          player?.setVolume?.(Math.min(100, volume));
+        } catch {
+          // API 不可用時改用影片元素
+        }
         expectedVolume = video.volume;
         expectedMuted = video.muted;
         if (volume > 0) lastAudibleVolumePercent = volume;
@@ -74,6 +82,11 @@ globalThis.PipCompanion.PipAudio = (() => {
     }
 
     video.volume = volume / 100;
+    try {
+      player?.setVolume?.(Math.min(100, volume));
+    } catch {
+      // API 不可用時改用影片元素
+    }
     if (volume > 0) lastAudibleVolumePercent = volume;
     if (unmute && volume > 0) {
       try {

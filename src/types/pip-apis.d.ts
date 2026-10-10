@@ -4,7 +4,10 @@ type ResizePipResult = { ok: true } | { ok: false };
 
 // PiP 音訊控制功能
 interface PipAudioApi {
-  getVolumePercent(video: HTMLVideoElement | null): number;
+  getVolumePercent(
+    video: HTMLVideoElement | null,
+    ignoreMuted?: boolean,
+  ): number;
   isActiveFor(video: HTMLVideoElement | null): boolean;
   maxVolume(video: HTMLVideoElement | null): number;
   prepare(): void;
@@ -49,6 +52,7 @@ interface BahaStoryboardData {
 interface PipUiActions {
   volumeIconPath: string;
   getVideo(): HTMLVideoElement | null;
+  cancelNextPlaybackRestore(): void;
   getSeekSeconds(): SeekSeconds;
   updatePlaybackUi(): void;
   togglePlayback(): void;
@@ -186,6 +190,18 @@ interface PipCompanionUtil {
   parseTime(input: string): number | null;
 }
 
+interface ContentPlatformCapabilities {
+  id: "youtube" | "bilibili" | "twitch" | "bahamut" | "generic";
+  captions: boolean;
+  danmakuDisplay: boolean;
+  danmakuSend: boolean;
+  screenshot: boolean;
+}
+
+interface ContentPlatformApi {
+  getCapabilities(): ContentPlatformCapabilities;
+}
+
 interface ContentVideoApi {
   getDocumentPip(): Window["documentPictureInPicture"];
   findVideo(includeDeep?: boolean): HTMLVideoElement | null;
@@ -214,6 +230,9 @@ interface ContentPlaybackApi {
   getSourceVolumePercent(): number;
   setSourceVolumePercent(percent: number, unmute: boolean): void;
   playNextVideo(): void;
+  applyPendingNextPlaybackState(video: HTMLVideoElement): void;
+  cancelNextVideoRequest(): void;
+  cancelNextPlaybackRestore(): void;
   updatePlaybackUi(): void;
   togglePlayback(): void;
   adjustPlaybackRate(direction: number): void;
@@ -290,6 +309,7 @@ interface PipCompanionGlobal {
   PipAudio: PipAudioApi;
   PipUI: PipUiApi;
   ContentVideo: ContentVideoApi;
+  ContentPlatform: ContentPlatformApi;
   ContentCaptions: ContentCaptionsApi;
   ContentFeedback: ContentFeedbackApi;
   ContentPlayback: ContentPlaybackApi;

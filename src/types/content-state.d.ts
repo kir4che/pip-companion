@@ -1,6 +1,12 @@
 // 記錄頁面與浮動視窗運作狀態的資料型別
 type NextControl = HTMLElement & { disabled?: boolean };
 
+interface PendingNextPlaybackState {
+  volumePercent: number;
+  muted: boolean;
+  playbackRate: number;
+}
+
 interface VideoStash {
   parent: Node | null;
   next: Node | null;
@@ -61,5 +67,8 @@ interface State {
   nextControlCache: NextControl | null;
   nextClickTimer: number;
   nextClickPending: boolean;
+  nextVideoRequested: boolean;
+  nextPlaybackState: PendingNextPlaybackState | null;
+  nextVideoSourceKey: string;
   scanTimer: number;
 }
