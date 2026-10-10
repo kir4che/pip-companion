@@ -19,6 +19,9 @@ const {
   matchesShortcut,
 } = globalThis.PipCompanion.util;
 const captionSettings = globalThis.PipCompanion.captionSettings;
+let pipHandoffRetryAfter = 0;
+const PIP_HANDOFF_RETRY_DELAY_MS = 1500;
+
 const state: State = {
   launchShortcut: { ...SHORTCUT_DEFAULTS.launchShortcut },
   commentsShortcut: { ...SHORTCUT_DEFAULTS.commentsShortcut },
@@ -27,6 +30,7 @@ const state: State = {
   commentsEnabled: true,
   screenshotEnabled: true,
   danmakuEnabled: true,
+  followPlaybackPip: false,
   seekSeconds: DEFAULT_SEEK_SECONDS,
   lastNonOneRate: 1.25,
   sourceVideo: null,
@@ -46,6 +50,8 @@ const state: State = {
     return session.phase === "active" ? session.ui : null;
   },
   globalPipOpen: false,
+  globalPipSourcePlaying: true,
+  pipHandoffPending: false,
   captionNode: null,
   captionExtract: null,
   captionObserver: null,
@@ -88,6 +94,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.danmakuEnabled = changes.danmakuEnabled.newValue !== false;
     state.pipUi?.setDanmakuEnabled(state.danmakuEnabled);
   }
+  if (changes.followPlaybackPip) {
+    state.followPlaybackPip = changes.followPlaybackPip.newValue === true;
+    if (state.followPlaybackPip) void requestPipHandoff();
+  }
   if (changes.seekSeconds)
     state.seekSeconds = normalizeSeekSeconds(changes.seekSeconds.newValue);
   const captionStyleChange = changes[captionSettings.STORAGE_KEY];
@@ -108,6 +118,7 @@ async function loadSettings() {
       commentsEnabled: true,
       screenshotEnabled: true,
       danmakuEnabled: true,
+      followPlaybackPip: false,
       seekSeconds: DEFAULT_SEEK_SECONDS,
       [captionSettings.STORAGE_KEY]: captionSettings.DEFAULTS,
     });
@@ -117,6 +128,7 @@ async function loadSettings() {
     state.commentsEnabled = stored.commentsEnabled !== false;
     state.screenshotEnabled = stored.screenshotEnabled !== false;
     state.danmakuEnabled = stored.danmakuEnabled !== false;
+    state.followPlaybackPip = stored.followPlaybackPip === true;
     state.seekSeconds = normalizeSeekSeconds(stored.seekSeconds);
     if (styleRevision === captionStyleRevision)
       state.captionStyle = captionSettings.normalize(
@@ -129,6 +141,7 @@ async function loadSettings() {
     state.commentsEnabled = true;
     state.screenshotEnabled = true;
     state.danmakuEnabled = true;
+    state.followPlaybackPip = false;
     state.seekSeconds = DEFAULT_SEEK_SECONDS;
     if (styleRevision === captionStyleRevision)
       state.captionStyle = { ...captionSettings.DEFAULTS };
@@ -136,6 +149,7 @@ async function loadSettings() {
 
   globalThis.PipCompanion.ContentCaptions.renderSubtitle();
   nudgeScan();
+  void requestPipHandoff();
 }
 
 function onPageKeyDown(e: KeyboardEvent) {
@@ -216,6 +230,17 @@ chrome.runtime.onMessage.addListener(
     if (!globalThis.PipCompanion.util.isExtensionMessage(message)) return;
     if (message.type === "PIP_GLOBAL_STATE") {
       state.globalPipOpen = message.pipOpen === true;
+      state.globalPipSourcePlaying = message.pipOpen
+        ? message.sourcePlaying !== false
+        : true;
+      if (message.pipOpen && !state.globalPipSourcePlaying)
+        void requestPipHandoff();
+      return;
+    }
+    if (message.type === "PIP_SOURCE_PLAYBACK_CHANGED") {
+      state.globalPipSourcePlaying = message.playing;
+      pipHandoffRetryAfter = 0;
+      if (!message.playing) void requestPipHandoff();
       return;
     }
     if (message?.type === "PING") {
@@ -265,14 +290,22 @@ function scanPage() {
   const found = globalThis.PipCompanion.ContentVideo.findVideo();
   const current = state.sourceVideo;
   let video = state.pipWindow && state.videoStash ? current : found;
-  if (state.pipWindow && state.videoStash && found && found !== current) {
+  if (
+    state.followPlaybackPip &&
+    state.pipWindow &&
+    state.videoStash &&
+    found &&
+    found !== current
+  ) {
     const stashParent = state.videoStash.parent;
     const sameContainer = Boolean(
       stashParent?.isConnected && stashParent.contains(found),
     );
     if (
       found.videoWidth > 0 &&
-      (sameContainer || (current?.paused === true && !found.paused))
+      !found.paused &&
+      !found.ended &&
+      (sameContainer || current?.paused === true)
     )
       video = found;
   }
@@ -323,11 +356,53 @@ function nudgeScan() {
   }
 }
 
+async function requestPipHandoff() {
+  if (
+    Date.now() < pipHandoffRetryAfter ||
+    !state.followPlaybackPip ||
+    !state.globalPipOpen ||
+    state.globalPipSourcePlaying ||
+    state.pipWindow ||
+    state.pipHandoffPending
+  )
+    return;
+
+  let video = state.sourceVideo;
+  if (!video || !video.isConnected || video.paused || video.ended) {
+    video = globalThis.PipCompanion.ContentVideo.findVideo();
+    if (video && video !== state.sourceVideo)
+      globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
+  }
+  if (!video || video.paused || video.ended) return;
+
+  state.pipHandoffPending = true;
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "REQUEST_PIP_HANDOFF",
+    } satisfies ExtensionMessage);
+    if (response?.ok === true) pipHandoffRetryAfter = 0;
+    else {
+      pipHandoffRetryAfter = Date.now() + PIP_HANDOFF_RETRY_DELAY_MS;
+      if (state.sourceVideo && !state.sourceVideo.paused)
+        globalThis.PipCompanion.ContentFeedback.showPageToast(
+          "無法自動切換 PiP，請在此頁按 PiP 快捷鍵重新開啟。",
+        );
+    }
+  } catch {
+    pipHandoffRetryAfter = Date.now() + PIP_HANDOFF_RETRY_DELAY_MS;
+  } finally {
+    state.pipHandoffPending = false;
+  }
+}
+
 window.addEventListener("keydown", onPageKeyDown, true);
 void chrome.runtime
   .sendMessage({ type: "GET_PIP_STATE" } satisfies ExtensionMessage)
   .then((response) => {
     state.globalPipOpen = response?.pipOpen === true;
+    state.globalPipSourcePlaying = response?.sourcePlaying !== false;
+    if (state.globalPipOpen && !state.globalPipSourcePlaying)
+      void requestPipHandoff();
   })
   .catch(() => {});
 window.addEventListener("yt-navigate-finish", () => {
@@ -335,7 +410,26 @@ window.addEventListener("yt-navigate-finish", () => {
   nudgeScan();
 });
 window.addEventListener("yt-player-updated", nudgeScan);
-document.addEventListener("play", nudgeScan, true);
+document.addEventListener(
+  "play",
+  () => {
+    pipHandoffRetryAfter = 0;
+    nudgeScan();
+    void requestPipHandoff();
+  },
+  true,
+);
+
+for (const gestureEvent of ["pointerdown", "keydown"] as const) {
+  document.addEventListener(
+    gestureEvent,
+    () => {
+      void requestPipHandoff();
+    },
+    true,
+  );
+}
+
 document.addEventListener("loadedmetadata", nudgeScan, true);
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) nudgeScan();

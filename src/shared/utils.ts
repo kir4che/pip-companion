@@ -83,13 +83,50 @@ globalThis.PipCompanion.util = (() => {
     switch (value.type) {
       case "PING":
       case "GET_PIP_STATE":
-      case "OPEN_PIP":
       case "CLOSE_PIP":
       case "CLOSE_ALL_PIP":
+      case "GET_PIP_BOUNDS":
+      case "REQUEST_PIP_HANDOFF":
         return true;
+      case "OPEN_PIP":
+        return true;
+      case "SAVE_PIP_BOUNDS":
+        return (
+          [
+            value.innerWidth,
+            value.left,
+            value.top,
+            value.width,
+            value.height,
+          ].every(
+            (number) => typeof number === "number" && Number.isFinite(number),
+          ) &&
+          typeof value.innerWidth === "number" &&
+          value.innerWidth > 0 &&
+          typeof value.width === "number" &&
+          value.width > 0 &&
+          typeof value.height === "number" &&
+          value.height > 0
+        );
+      case "RESTORE_PIP_BOUNDS":
+        return (
+          typeof value.innerWidth === "number" &&
+          Number.isFinite(value.innerWidth) &&
+          value.innerWidth > 0
+        );
       case "PIP_STATE_CHANGED":
+        return (
+          typeof value.pipOpen === "boolean" &&
+          (value.playing === undefined || typeof value.playing === "boolean")
+        );
       case "PIP_GLOBAL_STATE":
-        return typeof value.pipOpen === "boolean";
+        return (
+          typeof value.pipOpen === "boolean" &&
+          (value.sourcePlaying === undefined ||
+            typeof value.sourcePlaying === "boolean")
+        );
+      case "PIP_SOURCE_PLAYBACK_CHANGED":
+        return typeof value.playing === "boolean";
       case "RESIZE_PIP_WINDOW":
         return (
           typeof value.innerWidth === "number" &&

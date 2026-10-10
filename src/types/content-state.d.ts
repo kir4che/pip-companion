@@ -24,6 +24,7 @@ interface State {
   commentsEnabled: boolean;
   screenshotEnabled: boolean;
   danmakuEnabled: boolean;
+  followPlaybackPip: boolean;
   seekSeconds: SeekSeconds;
 
   // 目前播放的影片與浮動視窗狀態
@@ -35,6 +36,8 @@ interface State {
   readonly pipWindow: Window | null;
   readonly pipUi: PipUiHandle | null;
   globalPipOpen: boolean;
+  globalPipSourcePlaying: boolean;
+  pipHandoffPending: boolean;
 
   // 字幕來源與顯示狀態
   nativeCaptionTracks: Map<TextTrack, TextTrackMode> | null;

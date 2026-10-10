@@ -1,18 +1,177 @@
 "use strict";
 
 globalThis.PipCompanion.ContentPipLifecycle = (() => {
-  function notifyPipState(pipOpen: boolean) {
+  let boundsTimer = 0;
+  let boundsDebounceTimer = 0;
+  let boundsSavePromise: Promise<void> | null = null;
+  let pendingBounds: {
+    win: Window;
+    innerWidth: number;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    signature: string;
+  } | null = null;
+  let lastSavedBounds = "";
+  const PIP_BOUNDS_POLL_MS = 1000;
+  const PIP_BOUNDS_SAVE_DEBOUNCE_MS = 1200;
+  let cachedPipSize: { width: number; height: number } | null = null;
+
+  function loadCachedPipSize() {
+    void chrome.runtime
+      .sendMessage({ type: "GET_PIP_BOUNDS" } satisfies ExtensionMessage)
+      .then((result) => {
+        if (
+          result?.ok === true &&
+          typeof result.width === "number" &&
+          typeof result.height === "number"
+        )
+          cachedPipSize = { width: result.width, height: result.height };
+      })
+      .catch(() => {});
+  }
+
+  function notifyPipState(pipOpen: boolean, playing = true) {
     try {
       if (!chrome.runtime?.id) return;
       void chrome.runtime
         .sendMessage({
           type: "PIP_STATE_CHANGED",
           pipOpen,
+          playing,
         } satisfies ExtensionMessage)
         .catch(() => {});
     } catch {
       // 擴充插件在重新載入或關閉期間可能失效
     }
+  }
+
+  function notifySourcePlayback(playing: boolean) {
+    if (!state.pipWindow || !chrome.runtime?.id) return;
+    void chrome.runtime
+      .sendMessage({
+        type: "PIP_SOURCE_PLAYBACK_CHANGED",
+        playing,
+      } satisfies ExtensionMessage)
+      .catch(() => {});
+  }
+
+  function observePipBounds(win: Window) {
+    if (win.closed) return;
+    const bounds = {
+      win,
+      innerWidth: win.innerWidth,
+      left: win.screenX,
+      top: win.screenY,
+      width: win.outerWidth,
+      height: win.outerHeight,
+    };
+    const signature = [
+      bounds.left,
+      bounds.top,
+      bounds.width,
+      bounds.height,
+    ].join(":");
+
+    if (signature === lastSavedBounds) {
+      pendingBounds = null;
+      window.clearTimeout(boundsDebounceTimer);
+      boundsDebounceTimer = 0;
+      return;
+    }
+
+    pendingBounds = { ...bounds, signature };
+    window.clearTimeout(boundsDebounceTimer);
+    boundsDebounceTimer = window.setTimeout(() => {
+      boundsDebounceTimer = 0;
+      void flushPipBounds();
+    }, PIP_BOUNDS_SAVE_DEBOUNCE_MS);
+  }
+
+  async function flushPipBounds(force = false, win?: Window) {
+    window.clearTimeout(boundsDebounceTimer);
+    boundsDebounceTimer = 0;
+    if (force && win && !win.closed) {
+      const bounds = {
+        win,
+        innerWidth: win.innerWidth,
+        left: win.screenX,
+        top: win.screenY,
+        width: win.outerWidth,
+        height: win.outerHeight,
+      };
+      pendingBounds = {
+        ...bounds,
+        signature: [bounds.left, bounds.top, bounds.width, bounds.height].join(
+          ":",
+        ),
+      };
+    }
+
+    while (boundsSavePromise) await boundsSavePromise;
+    if (!force && boundsDebounceTimer) return;
+    const latest = pendingBounds;
+    if (!latest || latest.win.closed) return;
+    if (!force && latest.signature === lastSavedBounds) {
+      pendingBounds = null;
+      return;
+    }
+    pendingBounds = null;
+
+    const savePromise = (async () => {
+      try {
+        const result = await chrome.runtime.sendMessage({
+          type: "SAVE_PIP_BOUNDS",
+          innerWidth: latest.innerWidth,
+          left: latest.left,
+          top: latest.top,
+          width: latest.width,
+          height: latest.height,
+        } satisfies ExtensionMessage);
+        if (result?.ok) {
+          lastSavedBounds = latest.signature;
+          cachedPipSize = { width: latest.width, height: latest.height };
+        }
+      } catch {
+        // PiP 視窗關閉或擴充功能重新載入時，忽略暫存失敗。
+      }
+    })();
+    boundsSavePromise = savePromise;
+    try {
+      await savePromise;
+    } finally {
+      if (boundsSavePromise === savePromise) boundsSavePromise = null;
+    }
+  }
+
+  function startPipBoundsTracking(win: Window) {
+    window.clearInterval(boundsTimer);
+    window.clearTimeout(boundsDebounceTimer);
+    boundsTimer = window.setInterval(
+      () => observePipBounds(win),
+      PIP_BOUNDS_POLL_MS,
+    );
+    observePipBounds(win);
+  }
+
+  async function restorePipBounds(win = state.pipWindow) {
+    if (!win || win.closed) return { ok: false };
+    let result: { ok?: boolean; missing?: boolean } = { ok: false };
+    for (let attempt = 0; attempt < 6; attempt++) {
+      try {
+        result = await chrome.runtime.sendMessage({
+          type: "RESTORE_PIP_BOUNDS",
+          innerWidth: win.innerWidth,
+        } satisfies ExtensionMessage);
+      } catch {
+        result = { ok: false };
+      }
+      if (result.ok || result.missing) break;
+      await new Promise((resolve) => window.setTimeout(resolve, 250));
+    }
+    if (result.ok || result.missing) startPipBoundsTracking(win);
+    return result;
   }
 
   function createPipUi(win: Window, video: HTMLVideoElement) {
@@ -282,6 +441,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       () => {
         sync();
         setDanmakuPaused(false);
+        notifySourcePlayback(true);
       },
       { signal },
     );
@@ -291,6 +451,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       () => {
         sync();
         setDanmakuPaused(true);
+        notifySourcePlayback(false);
       },
       { signal },
     );
@@ -355,6 +516,14 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     } catch (error) {
       console.warn("[Caption PiP] Could not destroy PiP danmaku:", error);
     }
+    window.clearInterval(boundsTimer);
+    boundsTimer = 0;
+    window.clearTimeout(boundsDebounceTimer);
+    boundsDebounceTimer = 0;
+    const boundsSave =
+      oldWindow && !oldWindow.closed
+        ? flushPipBounds(true, oldWindow)
+        : Promise.resolve();
     const videoRestored = releasePipVideo();
     if (!videoRestored && closeWindow && oldWindow && !oldWindow.closed) return;
 
@@ -369,14 +538,17 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     } catch (error) {
       console.warn("[Caption PiP] Could not reset storyboard:", error);
     }
-    if (oldWindow) notifyPipState(false);
-    if (closeWindow && oldWindow) {
-      try {
-        if (!oldWindow.closed) oldWindow.close();
-      } catch (error) {
-        console.warn("[Caption PiP] Could not close PiP window:", error);
-      }
-    }
+    if (oldWindow && !oldWindow.closed) {
+      void boundsSave.finally(() => {
+        notifyPipState(false);
+        if (!closeWindow) return;
+        try {
+          if (!oldWindow.closed) oldWindow.close();
+        } catch (error) {
+          console.warn("[Caption PiP] Could not close PiP window:", error);
+        }
+      });
+    } else if (oldWindow) notifyPipState(false);
   }
 
   async function openPiP(): Promise<PipOperationResult> {
@@ -401,8 +573,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       if (!documentPip) throw new Error("Document PiP unavailable");
       globalThis.PipCompanion.PipAudio.prepare();
       const windowPromise = documentPip.requestWindow({
-        width: 640,
-        height: 360,
+        width: cachedPipSize?.width ?? 640,
+        height: cachedPipSize?.height ?? 360,
       });
       const nextWindow = await windowPromise;
       if (openingVideo && state.sourceVideo !== openingVideo) {
@@ -422,6 +594,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         { once: true },
       );
 
+      await restorePipBounds(nextWindow);
       if (state.sourceVideo) mountPipVideo(nextWindow, state.sourceVideo);
       else {
         showPipWaiting(nextWindow);
@@ -444,7 +617,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           waitTimer,
         };
       }
-      notifyPipState(true);
+      notifyPipState(true, !state.sourceVideo?.paused);
+      notifySourcePlayback(!state.sourceVideo?.paused);
       return { ok: true };
     } catch (error) {
       if (state.pipWindow) closePiP(true);
@@ -467,9 +641,12 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     }
   }
 
+  loadCachedPipSize();
+
   return {
     bindSourceVideo,
     closePiP,
     openPiP,
+    restorePipBounds,
   };
 })();

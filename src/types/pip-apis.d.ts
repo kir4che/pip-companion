@@ -247,6 +247,7 @@ interface ContentPipLifecycleApi {
   bindSourceVideo(video: HTMLVideoElement): void;
   closePiP(closeWindow: boolean): void;
   openPiP(): Promise<PipOperationResult>;
+  restorePipBounds(): Promise<{ ok?: boolean; missing?: boolean }>;
 }
 
 interface ContentDanmakuSenderPlatformApi {
