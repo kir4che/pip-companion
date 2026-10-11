@@ -1,3 +1,8 @@
+## 0.3.1
+
+- Fixed Bilibili storyboard thumbnails loading for the wrong video part or failing to load reliably
+- Fixed PiP follow switching to a video playing only as a hover preview
+
 ## 0.3.0
 
 - Added shared PiP playlists for YouTube, Bilibili, and Bahamut Anime Crazy, with per-video durations when available
