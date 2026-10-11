@@ -1,3 +1,10 @@
+## 0.3.0
+
+- Added shared PiP playlists for YouTube, Bilibili, and Bahamut Anime Crazy, with per-video durations when available
+- Fixed Netflix PiP seeking and improved cross-platform playback recovery and next-video continuity
+- Improved accessibility across the popup, PiP, and floating comments, including keyboard and screen-reader support
+- Improved live-stream time display and refined playlist, control-bar, and danmaku input behavior
+
 ## 0.2.0
 
 - Added PiP danmaku input controls for supported platforms #5
