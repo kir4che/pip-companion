@@ -29,6 +29,7 @@ button {
   border: 0;
   border-radius: 7px;
   background: #e11d48;
+  color: #fff;
   font-weight: 650;
 }
 
@@ -61,27 +62,47 @@ button {
 
 .help {
   position: relative;
-  flex: 0 0 auto;
+  display: grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  place-items: center;
+  cursor: help;
+}
+
+.help-icon {
+  display: grid;
   width: 16px;
   height: 16px;
-  padding: 0;
+  place-items: center;
   border: 1px solid #52525b;
   border-radius: 50%;
   background: #27272a;
   color: #a1a1aa;
   font-size: 11px;
   line-height: 14px;
-  text-align: center;
-  cursor: help;
 }
 
-.help:hover {
+.help:hover .help-icon {
+  color: #f4f4f5;
+}
+
+.help:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.help:focus-visible .help-icon {
+  box-shadow: inset 0 0 0 2px #3ea6ff;
   color: #f4f4f5;
 }
 
 .help .help-tip {
   position: absolute;
-  top: 20px;
+  top: 24px;
   right: 0;
   z-index: 10;
   width: 196px;
@@ -212,14 +233,35 @@ button {
   transition: transform 0.15s ease;
 }
 
-.toggle-row input:checked,
-.danmaku-switch:checked {
+.toggle-row input:checked {
+  background: #e11d48;
+}
+
+.danmaku-switch:checked::before {
   background: #e11d48;
 }
 
 .toggle-row input:checked::after,
 .danmaku-switch:checked::after {
   transform: translateX(15px);
+}
+
+.danmaku-switch {
+  height: 24px;
+  background: transparent;
+}
+
+.danmaku-switch::before {
+  content: "";
+  position: absolute;
+  inset: 2.5px 0;
+  border-radius: 10px;
+  background: #3f3f46;
+  transition: background 0.15s ease;
+}
+
+.danmaku-switch::after {
+  top: 4.5px;
 }
 
 .danmaku-toggle-row {
@@ -441,6 +483,36 @@ button {
 }
 
 button:focus-visible {
-  outline: 2px solid #3ea6ff;
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+input:focus-visible,
+select:focus-visible {
+  outline: none;
+}
+
+.toggle-row input:focus-visible,
+.danmaku-switch:focus-visible {
+  box-shadow: inset 0 0 0 2px #fff;
+}
+
+input[type="range"]:focus-visible {
+  accent-color: #fff;
+}
+
+input[type="color"]:focus-visible,
+select:focus-visible {
+  border-color: #3ea6ff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

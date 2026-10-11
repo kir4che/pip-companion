@@ -298,11 +298,12 @@ globalThis.PipCompanion.PipUI = (() => {
       }
       button:focus-visible {
         outline: none;
-        background: #444d;
+        box-shadow: inset 0 0 0 2px #3ea6ff;
+        background: #111f;
       }
-      input:not(.danmaku-send-input):focus-visible {
-        outline: 2px solid #3ea6ff;
-        outline-offset: 2px;
+      input:not([type="range"]):not(.danmaku-send-input):focus-visible {
+        outline: none;
+        box-shadow: inset 0 -2px 0 #3ea6ff;
       }
       .time {
         flex: 0 0 auto;
@@ -339,10 +340,12 @@ globalThis.PipCompanion.PipUI = (() => {
         accent-color: #f33;
         transform: scaleY(0.85);
       }
-      input.progress:focus,
-      input.progress:focus-visible {
+      input[type="range"]:focus {
         outline: none;
-        outline-offset: 0;
+      }
+      input[type="range"]:focus-visible {
+        outline: none;
+        accent-color: #3ea6ff;
       }
       button svg {
         display: block;
@@ -565,8 +568,14 @@ globalThis.PipCompanion.PipUI = (() => {
         }
       }
       @media (prefers-reduced-motion: reduce) {
-        .controls {
+        .controls,
+        .mini-progress,
+        .time-tooltip,
+        .volume-popover,
+        .speed-popover,
+        .playlist-panel {
           transition: none;
+          scroll-behavior: auto;
         }
         .feedback[data-mode="icon"] {
           animation: none;
@@ -657,7 +666,9 @@ globalThis.PipCompanion.PipUI = (() => {
     danmakuSendToggle.hidden = !actions.canSendDanmaku;
     danmakuSendToggle.setAttribute("aria-expanded", "false");
     const danmakuSendPanel = doc.createElement("form");
+    danmakuSendPanel.id = "danmaku-send-panel";
     danmakuSendPanel.className = "danmaku-send-panel";
+    danmakuSendToggle.setAttribute("aria-controls", danmakuSendPanel.id);
     danmakuSendPanel.hidden = true;
     const danmakuSendField = doc.createElement("div");
     danmakuSendField.className = "danmaku-send-field";
@@ -683,6 +694,7 @@ globalThis.PipCompanion.PipUI = (() => {
     danmakuSendStatus.hidden = true;
 
     const playButton = makeButton("play", "▶", "播放影片");
+    playButton.setAttribute("aria-keyshortcuts", "Space");
     const nextButton = makeButton("next", "", "下一集影片");
     nextButton.hidden = true;
     const playlistButton = makeButton("playlist", "", "播放清單");
@@ -695,7 +707,9 @@ globalThis.PipCompanion.PipUI = (() => {
     playlistIcon.setAttribute("aria-hidden", "true");
     playlistButton.append(playlistIcon);
     const playlistPanel = doc.createElement("section");
+    playlistPanel.id = "pip-playlist-panel";
     playlistPanel.className = "playlist-panel";
+    playlistButton.setAttribute("aria-controls", playlistPanel.id);
     playlistPanel.hidden = true;
     playlistPanel.setAttribute("aria-label", "播放清單");
     const nextIcon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -708,6 +722,7 @@ globalThis.PipCompanion.PipUI = (() => {
 
     const speedButton = makeButton("speed", "1×", "播放速度 1×");
     speedButton.className = "speed-button";
+    speedButton.setAttribute("aria-keyshortcuts", "Shift+, Shift+.");
     const timeGroup = doc.createElement("span");
     timeGroup.className = "time";
     const timeCurrent = doc.createElement("input");
@@ -742,6 +757,7 @@ globalThis.PipCompanion.PipUI = (() => {
     volumePath.setAttribute("d", actions.volumeIconPath);
     volumeIcon.append(volumePath);
     volumeButton.append(volumeIcon);
+    volumeButton.setAttribute("aria-keyshortcuts", "M");
     const volumePopover = doc.createElement("div");
     volumePopover.className = "volume-popover";
     const volumeValue = doc.createElement("input");
@@ -1066,6 +1082,7 @@ globalThis.PipCompanion.PipUI = (() => {
         if (playlistPanel.hidden) return;
         if (e.key === "Escape") {
           closePlaylist();
+          playlistButton.focus();
           return;
         }
         const inPlaylistPanel = playlistPanel.contains(e.target as Node);
@@ -1091,6 +1108,7 @@ globalThis.PipCompanion.PipUI = (() => {
         entry.className = "playlist-item";
         if (item.index === playlist.currentIndex) {
           entry.classList.add("current");
+          entry.setAttribute("aria-current", "true");
           currentEntry = entry;
         }
         entry.setAttribute("aria-label", `${item.index + 1}. ${item.title}`);
@@ -1104,6 +1122,7 @@ globalThis.PipCompanion.PipUI = (() => {
         entry.addEventListener("click", () => {
           actions.selectPlaylistItem(item.index);
           closePlaylist();
+          playlistButton.focus();
         });
         playlistPanel.append(entry);
       }

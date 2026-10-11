@@ -94,12 +94,18 @@ function ensureFloatingCommentsButton(shortcut: Shortcut) {
 
   const shortcutText = globalThis.PipCompanion.util.formatShortcut(shortcut);
   const tooltipText = `留言區 (${shortcutText})`;
+  const isExpanded = document.body.classList.contains(
+    FLOATING_COMMENTS_BODY_CLASS,
+  );
   const buttonClass = isBilibili
     ? "bili-floating-comments-btn"
     : "yt-floating-comments-btn";
   const existing = rightControls.querySelector(`.${buttonClass}`);
   if (existing) {
-    if (existing.getAttribute("data-shortcut") === shortcutText) return;
+    if (existing.getAttribute("data-shortcut") === shortcutText) {
+      existing.setAttribute("aria-expanded", String(isExpanded));
+      return;
+    }
     existing.remove();
   }
 
@@ -109,6 +115,7 @@ function ensureFloatingCommentsButton(shortcut: Shortcut) {
     : "ytp-button yt-floating-comments-btn";
   button.type = "button";
   button.setAttribute("aria-label", tooltipText);
+  button.setAttribute("aria-expanded", String(isExpanded));
   button.setAttribute("data-tooltip-title", tooltipText);
   button.setAttribute("data-title-no-tooltip", "留言區");
   button.setAttribute(
@@ -194,6 +201,7 @@ function toggleFloatingComments(forceState?: boolean) {
     if (isBilibili)
       document.body.classList.add(BILIBILI_FLOATING_COMMENTS_BODY_CLASS);
     toggleBtn?.classList.add("active");
+    toggleBtn?.setAttribute("aria-expanded", "true");
 
     const hasComments = isBilibili
       ? comments.querySelector(
@@ -226,6 +234,7 @@ function toggleFloatingComments(forceState?: boolean) {
         panel.classList.remove(FLOATING_COMMENTS_PANEL_CLASS),
       );
     toggleBtn?.classList.remove("active");
+    toggleBtn?.setAttribute("aria-expanded", "false");
   }
 }
 

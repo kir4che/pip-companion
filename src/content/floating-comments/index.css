@@ -149,6 +149,22 @@ body.yt-floating-comments-open ytd-comments#comments {
   color: var(--pc-floating-comments-text) !important;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  body.yt-floating-comments-open.yt-floating-comments-bottom-sheet #comments,
+  body.yt-floating-comments-open.yt-floating-comments-bottom-sheet
+    ytd-comments#comments,
+  .yt-floating-comments-close-btn,
+  .yt-floating-comments-tooltip,
+  .yt-pip-screenshot-tooltip,
+  .bili-floating-comments-btn svg,
+  .ytp-button.yt-floating-comments-btn svg,
+  .ytp-button.yt-pip-screenshot-btn svg {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .bili-floating-comments-btn,
 .ytp-button.yt-floating-comments-btn,
 .ytp-button.yt-pip-screenshot-btn {
