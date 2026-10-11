@@ -324,6 +324,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
 
   function updatePlaybackUi() {
     if (!state.sourceVideo || !state.pipUi) return;
+    const isLive = isLiveStream(state.sourceVideo);
     const player = getYouTubePlayer();
     let muted = state.sourceVideo.muted || state.sourceVideo.volume === 0;
     try {
@@ -368,18 +369,19 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       ? state.sourceVideo.duration
       : 0;
     const durationText = globalThis.PipCompanion.util.formatTime(duration);
+    const currentTimeText = globalThis.PipCompanion.util.formatTime(
+      state.sourceVideo.currentTime,
+    );
     if (
       state.pipUi.timeCurrent.ownerDocument.activeElement !==
       state.pipUi.timeCurrent
     ) {
-      const timeText = globalThis.PipCompanion.util.formatTime(
-        state.sourceVideo.currentTime,
-      );
-      state.pipUi.timeCurrent.value = timeText;
-      state.pipUi.timeCurrent.size = Math.max(4, timeText.length);
+      state.pipUi.timeCurrent.value = currentTimeText;
+      state.pipUi.timeCurrent.size = Math.max(4, currentTimeText.length);
     }
 
     state.pipUi.timeDuration.textContent = `/ ${durationText}`;
+    state.pipUi.timeDuration.hidden = isLive;
     const progressPercent =
       duration > 0 && Number.isFinite(state.sourceVideo.currentTime)
         ? Math.max(
@@ -396,7 +398,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     state.pipUi.progress.disabled = duration <= 0;
     state.pipUi.progress.setAttribute(
       "aria-valuetext",
-      `${globalThis.PipCompanion.util.formatTime(state.sourceVideo.currentTime)} / ${globalThis.PipCompanion.util.formatTime(duration)}`,
+      isLive ? currentTimeText : `${currentTimeText} / ${durationText}`,
     );
     if (
       state.pipUi.progress.ownerDocument.activeElement !== state.pipUi.progress
@@ -433,7 +435,6 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       state.pipUi.playlistButton.setAttribute("aria-expanded", "false");
     }
 
-    const isLive = isLiveStream(state.sourceVideo);
     state.pipUi.speedControl.hidden = isLive;
   }
 

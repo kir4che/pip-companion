@@ -40,6 +40,7 @@ type SeekSeconds = 1 | 3 | 5 | 10 | 15 | 30;
 interface PlaylistItem {
   index: number;
   title: string;
+  duration?: string;
   videoId?: string;
 }
 

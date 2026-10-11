@@ -14,6 +14,12 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
   ];
   const YOUTUBE_PLAYLIST_SELECTORS =
     "ytd-playlist-panel-video-renderer, ytd-playlist-video-renderer";
+  const YOUTUBE_DURATION_SELECTOR =
+    "ytd-thumbnail-overlay-time-status-renderer #text";
+  const BILIBILI_DURATION_SELECTOR =
+    ".video-pod__item-duration, .video-pod__item-time, .ep-duration, .duration, [class*='duration']";
+  const BAHAMUT_DURATION_SELECTOR = ".duration, [class*='duration']";
+  const DURATION_PATTERN = /^\d{1,2}:\d{2}(?::\d{2})?$/;
 
   function getYouTubePlayer(): YouTubePlayer | null {
     return document.querySelector<YouTubePlayer>("#movie_player");
@@ -90,7 +96,35 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     );
   }
 
-  function getInitialYouTubePlaylist(): { id: string; title: string }[] {
+  function normalizeDuration(
+    value: string | null | undefined,
+  ): string | undefined {
+    const duration = value?.replace(/\s+/g, " ").trim();
+    return duration && DURATION_PATTERN.test(duration) ? duration : undefined;
+  }
+
+  function getElementDuration(
+    element: HTMLElement | null | undefined,
+    selector: string,
+  ): string | undefined {
+    if (!element) return undefined;
+    for (const candidate of element.querySelectorAll<HTMLElement>(selector)) {
+      const duration = normalizeDuration(candidate.textContent);
+      if (duration) return duration;
+    }
+    return undefined;
+  }
+
+  function removeDurationSuffix(title: string, duration?: string): string {
+    if (!duration || !title.endsWith(duration)) return title;
+    return title.slice(0, -duration.length).trimEnd() || title;
+  }
+
+  function getInitialYouTubePlaylist(): {
+    id: string;
+    title: string;
+    duration?: string;
+  }[] {
     const response = globalThis as typeof globalThis & {
       ytInitialPlayerResponse?: unknown;
     };
@@ -114,7 +148,27 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
           isRecord(run) && typeof run.text === "string" ? run.text : "",
         )
         .join("");
-      return id ? [{ id, title: title || `影片 ${id}` }] : [];
+      const lengthText = isRecord(renderer.lengthText)
+        ? typeof renderer.lengthText.simpleText === "string"
+          ? renderer.lengthText.simpleText
+          : Array.isArray(renderer.lengthText.runs)
+            ? renderer.lengthText.runs
+                .map((run) =>
+                  isRecord(run) && typeof run.text === "string" ? run.text : "",
+                )
+                .join("")
+            : undefined
+        : undefined;
+      const duration = normalizeDuration(lengthText);
+      return id
+        ? [
+            {
+              id,
+              title: title || `影片 ${id}`,
+              ...(duration ? { duration } : {}),
+            },
+          ]
+        : [];
     });
   }
 
@@ -165,6 +219,10 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
         Number.isInteger(bridgeCurrentIndex) && bridgeCurrentIndex >= 0
           ? bridgeCurrentIndex
           : apiCurrentIndex;
+      const initialItems = getInitialYouTubePlaylist();
+      const initialItemsById = new Map(
+        initialItems.map((item) => [item.id, item]),
+      );
 
       if (ids.length >= 2) {
         const elementsByVideoId = new Map<string, HTMLElement>();
@@ -173,23 +231,30 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
             elementsByVideoId.set(element.dataset.videoId, element);
         }
         return {
-          items: ids.map((id, index) => ({
-            index,
-            title: getPlaylistTitle(index, elementsByVideoId.get(id)),
-            videoId: id,
-          })),
+          items: ids.map((id, index) => {
+            const element = elementsByVideoId.get(id);
+            const duration =
+              getElementDuration(element, YOUTUBE_DURATION_SELECTOR) ??
+              initialItemsById.get(id)?.duration;
+            return {
+              index,
+              title: getPlaylistTitle(index, element),
+              videoId: id,
+              ...(duration ? { duration } : {}),
+            };
+          }),
           currentIndex:
             currentIndex >= 0 && currentIndex < ids.length ? currentIndex : 0,
         };
       }
 
-      const initialItems = getInitialYouTubePlaylist();
       if (initialItems.length >= 2)
         return {
           items: initialItems.map((item, index) => ({
             index,
             title: item.title,
             videoId: item.id,
+            ...(item.duration ? { duration: item.duration } : {}),
           })),
           currentIndex:
             currentIndex >= 0 && currentIndex < initialItems.length
@@ -200,12 +265,19 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
       const elements = getYouTubePlaylistElements();
       if (elements.length >= 2)
         return {
-          items: elements.map((element, index) => ({
-            index,
-            title:
-              element.querySelector("#video-title")?.textContent?.trim() ||
-              `影片 ${index + 1}`,
-          })),
+          items: elements.map((element, index) => {
+            const duration = getElementDuration(
+              element,
+              YOUTUBE_DURATION_SELECTOR,
+            );
+            return {
+              index,
+              title:
+                element.querySelector("#video-title")?.textContent?.trim() ||
+                `影片 ${index + 1}`,
+              ...(duration ? { duration } : {}),
+            };
+          }),
           currentIndex:
             currentIndex >= 0 && currentIndex < elements.length
               ? currentIndex
@@ -263,13 +335,21 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
               element.getAttribute("aria-current") === "true",
           );
     return {
-      items: elements.map((element, index) => ({
-        index,
-        title:
+      items: elements.map((element, index) => {
+        const duration = getElementDuration(
+          element,
+          BILIBILI_DURATION_SELECTOR,
+        );
+        const rawTitle =
           element.textContent?.replace(/\s+/g, " ").trim() ||
-          `第 ${index + 1} 集`,
-        ...(element.dataset.key ? { videoId: element.dataset.key } : {}),
-      })),
+          `第 ${index + 1} 集`;
+        return {
+          index,
+          title: removeDurationSuffix(rawTitle, duration),
+          ...(duration ? { duration } : {}),
+          ...(element.dataset.key ? { videoId: element.dataset.key } : {}),
+        };
+      }),
       currentIndex: currentIndex >= 0 ? currentIndex : 0,
     };
   }
@@ -300,10 +380,13 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
           );
     return {
       items: elements.map((element, index) => {
-        const episode = element.textContent?.trim() || String(index + 1);
+        const duration = getElementDuration(element, BAHAMUT_DURATION_SELECTOR);
+        const rawEpisode = element.textContent?.trim() || String(index + 1);
+        const episode = removeDurationSuffix(rawEpisode, duration);
         return {
           index,
           title: /^第/.test(episode) ? episode : `第 ${episode} 集`,
+          ...(duration ? { duration } : {}),
           ...(element.dataset.aniVideoSn
             ? { videoId: element.dataset.aniVideoSn }
             : {}),

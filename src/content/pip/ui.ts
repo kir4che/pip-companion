@@ -206,7 +206,7 @@ globalThis.PipCompanion.PipUI = (() => {
         gap: 4px;
         padding: 3px;
         border: 1px solid rgba(255, 255, 255, 0.14);
-        border-radius: 19px;
+        border-radius: 16px;
         background: rgba(12, 12, 12, 0.84);
       }
       .danmaku-send-field {
@@ -216,10 +216,10 @@ globalThis.PipCompanion.PipUI = (() => {
       }
       .danmaku-send-input {
         width: 100%;
-        height: 30px;
+        height: 26px;
         padding: 0 52px 0 10px;
         border: 0;
-        border-radius: 18px;
+        border-radius: 14px;
         outline: none;
         background: transparent;
         color: #fff;
@@ -247,9 +247,9 @@ globalThis.PipCompanion.PipUI = (() => {
       .danmaku-send-submit {
         width: auto;
         min-width: 48px;
-        height: 28px;
+        height: 24px;
         padding: 0 10px;
-        border-radius: 16px;
+        border-radius: 14px;
         background: #00a1d6;
         font-size: 12px;
       }
@@ -314,6 +314,9 @@ globalThis.PipCompanion.PipUI = (() => {
         font-size: 12px;
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
+      }
+      .time:has(.time-duration[hidden]) {
+        min-width: 0;
       }
       .time-current {
         height: 18px;
@@ -419,7 +422,8 @@ globalThis.PipCompanion.PipUI = (() => {
         background: rgba(225, 29, 72, 0.2);
       }
       .playlist-index { flex: 0 0 28px; color: #999; font-variant-numeric: tabular-nums; }
-      .playlist-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .playlist-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .playlist-duration { flex: 0 0 auto; margin-left: auto; padding-left: 8px; color: #999; font-variant-numeric: tabular-nums; }
     `;
     const popoverCss = `
       .volume-control,
@@ -793,13 +797,13 @@ globalThis.PipCompanion.PipUI = (() => {
     speedControl.append(speedButton, speedPopover);
     controls.append(
       timeTooltip,
+      danmakuSendToggle,
       playButton,
       nextButton,
       timeGroup,
       progress,
       volumeControl,
       speedControl,
-      danmakuSendToggle,
       playlistButton,
     );
     screen.append(
@@ -1060,6 +1064,23 @@ globalThis.PipCompanion.PipUI = (() => {
       target !== null &&
       (playlistPanel.contains(target as Node) ||
         playlistButton.contains(target as Node));
+    let playlistCloseTimer = 0;
+    screen.addEventListener("pointerenter", () => {
+      win.clearTimeout(playlistCloseTimer);
+    });
+    screen.addEventListener("pointerleave", () => {
+      if (playlistPanel.hidden) return;
+      win.clearTimeout(playlistCloseTimer);
+      playlistCloseTimer = win.setTimeout(() => {
+        const activeElement = doc.activeElement;
+        if (
+          isPlaylistTarget(activeElement) &&
+          activeElement?.matches(":focus-visible")
+        )
+          return;
+        closePlaylist();
+      }, 250);
+    });
     screen.addEventListener(
       "pointerdown",
       (e) => {
@@ -1111,7 +1132,10 @@ globalThis.PipCompanion.PipUI = (() => {
           entry.setAttribute("aria-current", "true");
           currentEntry = entry;
         }
-        entry.setAttribute("aria-label", `${item.index + 1}. ${item.title}`);
+        entry.setAttribute(
+          "aria-label",
+          `${item.index + 1}. ${item.title}${item.duration ? `, ${item.duration}` : ""}`,
+        );
         const index = doc.createElement("span");
         index.className = "playlist-index";
         index.textContent = String(item.index + 1).padStart(2, "0");
@@ -1119,6 +1143,12 @@ globalThis.PipCompanion.PipUI = (() => {
         title.className = "playlist-title";
         title.textContent = item.title;
         entry.append(index, title);
+        if (item.duration) {
+          const duration = doc.createElement("span");
+          duration.className = "playlist-duration";
+          duration.textContent = item.duration;
+          entry.append(duration);
+        }
         entry.addEventListener("click", () => {
           actions.selectPlaylistItem(item.index);
           closePlaylist();
@@ -1511,6 +1541,14 @@ globalThis.PipCompanion.PipUI = (() => {
     );
 
     let hideControlsTimer = 0;
+    const scheduleHideControls = () => {
+      win.clearTimeout(hideControlsTimer);
+      hideControlsTimer = win.setTimeout(
+        () => screen.classList.remove("controls-visible"),
+        500,
+      );
+    };
+    screen.addEventListener("pointerleave", scheduleHideControls);
     win.addEventListener(
       "pointermove",
       (e) => {
@@ -1524,10 +1562,7 @@ globalThis.PipCompanion.PipUI = (() => {
           target.closest(".controls")
         )
           return;
-        hideControlsTimer = win.setTimeout(
-          () => screen.classList.remove("controls-visible"),
-          1000,
-        );
+        scheduleHideControls();
       },
       { passive: true },
     );
