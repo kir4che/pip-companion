@@ -10,6 +10,16 @@ function isBilibiliLivePage() {
   return contentSiteUtils.isBilibiliLiveHost(location.hostname);
 }
 
+function isPointerHoveringVideo(video: HTMLVideoElement): boolean {
+  for (
+    let element: Element | null = video;
+    element;
+    element = element.parentElement
+  )
+    if (element.matches(":hover")) return true;
+  return false;
+}
+
 const {
   SHORTCUT_DEFAULTS,
   SHORTCUT_KEYS,
@@ -324,6 +334,7 @@ function scanPage() {
       state.videoStash &&
       found &&
       found !== current &&
+      !isPointerHoveringVideo(found) &&
       found.videoWidth > 0 &&
       !found.ended
     )
@@ -333,7 +344,8 @@ function scanPage() {
       state.pipWindow &&
       state.videoStash &&
       found &&
-      found !== current
+      found !== current &&
+      !isPointerHoveringVideo(found)
     ) {
       const stashParent = state.videoStash.parent;
       const sameContainer = Boolean(
@@ -424,8 +436,10 @@ async function requestPipHandoff() {
   let video = state.sourceVideo;
   if (!video || !video.isConnected || video.paused || video.ended) {
     video = globalThis.PipCompanion.ContentVideo.findVideo();
-    if (video && video !== state.sourceVideo)
+    if (video && video !== state.sourceVideo) {
+      if (isPointerHoveringVideo(video)) return;
       globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
+    }
   }
   if (!video || video.paused || video.ended) return;
 
