@@ -71,6 +71,7 @@ globalThis.PipCompanion.util = (() => {
     pin("快轉", "ArrowRight"),
     pin("音量 +10", "ArrowUp"),
     pin("音量 -10", "ArrowDown"),
+    pin("自動調整比例", "KeyR"),
   ];
 
   function isRecord(value: unknown): value is Record<string, unknown> {

@@ -341,14 +341,18 @@ globalThis.PipCompanion.PipUI = (() => {
         flex: 1 1 auto;
         min-width: 24px;
         accent-color: #f33;
+        touch-action: none;
         transform: scaleY(0.85);
       }
       input[type="range"]:focus {
         outline: none;
       }
-      input[type="range"]:focus-visible {
-        outline: none;
-        accent-color: #3ea6ff;
+      input[type="range"]::-webkit-slider-thumb {
+        border-radius: 50%;
+      }
+      input[type="range"]:focus-visible::-webkit-slider-thumb {
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px #111, 0 0 0 4px #3ea6ff;
       }
       button svg {
         display: block;
@@ -585,6 +589,21 @@ globalThis.PipCompanion.PipUI = (() => {
           animation: none;
         }
       }
+      @media (forced-colors: active) {
+        :focus-visible {
+          outline: 2px solid Highlight !important;
+          outline-offset: 2px;
+          box-shadow: none !important;
+        }
+        input[type="range"]:focus-visible {
+          outline: none !important;
+        }
+        input[type="range"]:focus-visible::-webkit-slider-thumb {
+          outline: 2px solid Highlight;
+          outline-offset: 2px;
+          box-shadow: none;
+        }
+      }
     `;
     style.textContent = [
       baseCss,
@@ -746,6 +765,7 @@ globalThis.PipCompanion.PipUI = (() => {
     progress.type = "range";
     progress.min = "0";
     progress.max = "1000";
+    const progressMax = Number(progress.max);
     progress.value = "0";
     progress.setAttribute("aria-label", "播放進度");
     const volumeControl = doc.createElement("div");
@@ -1264,6 +1284,10 @@ globalThis.PipCompanion.PipUI = (() => {
       }
     });
 
+    doc.documentElement.addEventListener("pointerenter", () => {
+      if (!doc.hasFocus()) win.focus();
+    });
+
     win.addEventListener("keydown", (e) => {
       if (
         e.key === "Enter" &&
@@ -1452,7 +1476,28 @@ globalThis.PipCompanion.PipUI = (() => {
       update();
     });
 
+    let seekingPointerId: number | null = null;
+    const progressRatioAt = (clientX: number) => {
+      const rect = progress.getBoundingClientRect();
+      if (rect.width <= 0) return null;
+      return Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    };
+    const progressTimeAtRatio = (
+      videoSource: HTMLVideoElement,
+      ratio: number,
+    ) => videoSource.duration * ratio;
+    const seekProgressToRatio = (
+      videoSource: HTMLVideoElement,
+      ratio: number,
+    ) => {
+      const targetTime = progressTimeAtRatio(videoSource, ratio);
+      progress.value = String(Math.round(ratio * progressMax));
+      seekVideo(videoSource, targetTime);
+      update();
+    };
+
     progress.addEventListener("input", () => {
+      if (seekingPointerId !== null) return;
       const videoSource = actions.getVideo();
       if (
         !videoSource ||
@@ -1460,12 +1505,36 @@ globalThis.PipCompanion.PipUI = (() => {
         videoSource.duration <= 0
       )
         return;
-      seekVideo(
-        videoSource,
-        (Number(progress.value) / 1000) * videoSource.duration,
-      );
-      update();
+      seekProgressToRatio(videoSource, Number(progress.value) / progressMax);
     });
+
+    progress.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (progress.disabled) return;
+        const ratio = progressRatioAt(e.clientX);
+        const videoSource = actions.getVideo();
+        if (
+          ratio === null ||
+          !videoSource ||
+          !Number.isFinite(videoSource.duration) ||
+          videoSource.duration <= 0
+        )
+          return;
+        e.preventDefault();
+        progress.focus({ preventScroll: true });
+        seekingPointerId = e.pointerId;
+        progress.setPointerCapture(e.pointerId);
+        seekProgressToRatio(videoSource, ratio);
+      },
+      { capture: true },
+    );
+    const finishSeeking = (e: PointerEvent) => {
+      if (seekingPointerId === e.pointerId) seekingPointerId = null;
+    };
+    progress.addEventListener("pointerup", finishSeeking);
+    progress.addEventListener("pointercancel", finishSeeking);
+    progress.addEventListener("lostpointercapture", finishSeeking);
 
     progress.addEventListener("pointermove", (e) => {
       const videoSource = actions.getVideo();
@@ -1475,15 +1544,13 @@ globalThis.PipCompanion.PipUI = (() => {
         videoSource.duration <= 0
       )
         return;
-      const progressRect = progress.getBoundingClientRect();
+      const ratio = progressRatioAt(e.clientX);
       const controlsRect = controls.getBoundingClientRect();
-      if (progressRect.width <= 0 || controlsRect.width <= 0) return;
-      const ratio = Math.max(
-        0,
-        Math.min(1, (e.clientX - progressRect.left) / progressRect.width),
-      );
-      const targetTime = videoSource.duration * ratio;
+      if (ratio === null || controlsRect.width <= 0) return;
+      const targetTime = progressTimeAtRatio(videoSource, ratio);
       timeTooltipText.textContent = actions.formatTime(targetTime);
+      if (seekingPointerId === e.pointerId)
+        seekProgressToRatio(videoSource, ratio);
 
       const frame = actions.getStoryboardFrame?.(targetTime);
       if (frame && frame.url) {

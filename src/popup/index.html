@@ -27,20 +27,26 @@
                     ><span>播放 / 暫停</span><kbd>Space</kbd></span
                   >
                   <span class="help-row"
-                    ><span>字幕開關</span><kbd>C</kbd></span
-                  >
-                  <span class="help-row"
                     ><span>左右跳轉（秒數可調）</span><kbd>← / →</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>逐格後退 / 前進</span><kbd>, / .</kbd></span
                   >
                   <span class="help-row"
                     ><span>音量控制</span><kbd>↓ / ↑</kbd></span
                   >
+                  <span class="help-row"
+                    ><span>字幕開關</span><kbd>C</kbd></span
+                  >
                   <span class="help-row"><span>靜音</span><kbd>M</kbd></span>
                   <span class="help-row"
+                    ><span>逐格後退 / 前進</span><kbd>, / .</kbd></span
+                  >
+                  <span class="help-row"
                     ><span>倍速控制</span><kbd>Shift + , / Shift + .</kbd></span
+                  >
+                  <span class="help-row"
+                    ><span>彈幕輸入</span><kbd>Enter</kbd></span
+                  >
+                  <span class="help-row"
+                    ><span>自動調整比例</span><kbd>R</kbd></span
                   >
                   <span class="help-row"
                     ><span>調整 PiP 大小</span
@@ -95,27 +101,25 @@
             </label>
           </div>
           <div class="toggle-list">
-            <p class="list-title">功能開關</p>
+            <p class="list-title">功能設定</p>
             <div class="danmaku-toggle-row">
-              <div class="danmaku-label">
-                <label for="danmaku-toggle">彈幕</label>
-                <button
-                  class="settings-open"
-                  id="danmaku-settings-open"
-                  type="button"
-                  aria-label="彈幕顯示設定"
-                  title="彈幕顯示設定"
+              <label class="danmaku-label" for="danmaku-toggle">彈幕</label>
+              <button
+                class="settings-open"
+                id="danmaku-settings-open"
+                type="button"
+                aria-label="彈幕顯示設定"
+                title="彈幕顯示設定"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  width="17"
+                  height="17"
                 >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    width="17"
-                    height="17"
-                  >
-                    <use href="assets/settings-icon.svg#settings" />
-                  </svg>
-                </button>
-              </div>
+                  <use href="assets/settings-icon.svg#settings" />
+                </svg>
+              </button>
               <input
                 class="danmaku-switch"
                 type="checkbox"
