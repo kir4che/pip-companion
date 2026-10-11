@@ -1,6 +1,9 @@
 # 幕伴 PiP · PiP Companion
 
-English | [繁體中文](README.zh-TW.md)
+<p align="right">
+  <a href="https://chromewebstore.google.com/detail/%E5%B9%95%E4%BC%B4-pip-%C2%B7-pip-companion/gnfofimkbdmkbjejmkdmihdpemlgejlm?utm_source=item-share-cb"><img align="left" height="20" src="https://img.shields.io/chrome-web-store/v/gnfofimkbdmkbjejmkdmihdpemlgejlm?label=chrome" alt="Chrome Web Store version" /></a>
+  English | <a href="README.zh-TW.md">繁體中文</a>
+</p>
 
 A browser extension that brings web videos into Picture-in-Picture, with captions, danmaku, screenshots, and floating comments panels.
 

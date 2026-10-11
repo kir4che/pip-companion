@@ -1,6 +1,9 @@
 # 幕伴 PiP · PiP Companion
 
-[English](README.md) | 繁體中文
+<p align="right">
+  <a href="https://chromewebstore.google.com/detail/%E5%B9%95%E4%BC%B4-pip-%C2%B7-pip-companion/gnfofimkbdmkbjejmkdmihdpemlgejlm?utm_source=item-share-cb"><img align="left" height="20" src="https://img.shields.io/chrome-web-store/v/gnfofimkbdmkbjejmkdmihdpemlgejlm?label=chrome" alt="Chrome 線上應用程式商店版本" /></a>
+  <a href="README.md">English</a> | 繁體中文
+</p>
 
 讓網頁影片在子母畫面中播放，支援字幕、彈幕、截圖與浮動留言區。
 

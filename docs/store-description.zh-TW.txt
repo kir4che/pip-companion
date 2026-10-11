@@ -1,0 +1,21 @@
+看影片不必被分頁綁住。把網頁影片放進子母畫面（PiP），邊工作、瀏覽留言或追彈幕；還能自訂字幕、截圖及切換播放中的影片，讓觀看更自在。
+
+【功能特色】
+• PiP 播放控制：播放／暫停、進度跳轉、音量、倍速、逐格播放；YouTube、Bilibili 與巴哈動畫瘋支援播放清單及縮圖預覽。
+• 字幕：顯示影片字幕並自訂樣式，不影響原播放器。
+• 彈幕：顯示 Bilibili、巴哈動畫瘋彈幕及 YouTube、Twitch 聊天室；支援在 PiP 中發送彈幕與自訂外觀。
+• 浮動留言區：一邊看影片，一邊瀏覽 YouTube 或 Bilibili 留言。
+• 截圖：將影片畫面儲存為 PNG
+• 影片跟隨：PiP 影片暫停後，可切換至其他正在播放的影片。
+
+【快捷鍵】
+• 開／關 PiP：Alt/Opt + Shift + P
+• 彈幕：D
+• 截圖：Alt/Opt + P
+• 浮動留言區：Alt/Opt + C
+PiP 內可用 Space 播放／暫停、方向鍵跳轉與調整音量，也支援字幕、靜音、逐格及倍速快捷鍵。
+
+【隱私與支援】
+• 僅於瀏覽器本機執行，不蒐集個人資料。
+• 平台支援與限制：https://github.com/kir4che/pip-companion/blob/main/docs/platform-support.zh-TW.md
+• 問題回報與建議：https://github.com/kir4che/pip-companion/issues
