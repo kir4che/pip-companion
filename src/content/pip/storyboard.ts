@@ -34,9 +34,9 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
   let cachedYtStoryboard: ParsedYouTubeStoryboard | null = null;
   let ytFetchPending = false;
 
-  let cachedBvid = "";
+  let cachedBilibiliKey = "";
   let cachedBilibiliData: BilibiliVideoshotData | null = null;
-  let bilibiliFetchPending = false;
+  const bilibiliFetchPending = new Set<string>();
 
   let cachedBahaData: BahaStoryboardData | null = null;
 
@@ -284,6 +284,15 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     );
   }
 
+  function getBilibiliPage(): number {
+    const page = Number(new URLSearchParams(location.search).get("p") || 1);
+    return Number.isSafeInteger(page) && page > 0 ? page : 1;
+  }
+
+  function getBilibiliKey(bvid: string): string {
+    return `${bvid}:p${getBilibiliPage()}`;
+  }
+
   async function resolveBilibiliImagesToBlobs(
     images: string[],
   ): Promise<string[]> {
@@ -305,31 +314,56 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
   }
 
   function loadBilibiliVideoshot(bvid: string) {
-    if (cachedBvid === bvid || bilibiliFetchPending) return;
-    bilibiliFetchPending = true;
-    fetch(
-      `https://api.bilibili.com/x/player/videoshot?bvid=${encodeURIComponent(bvid)}&index=1`,
-      {
-        credentials: "include",
-      },
-    )
+    const page = getBilibiliPage();
+    const key = `${bvid}:p${page}`;
+    if (cachedBilibiliKey === key || bilibiliFetchPending.has(key)) return;
+    bilibiliFetchPending.add(key);
+
+    const currentKey = () => {
+      const currentBvid = getBilibiliBvid();
+      return currentBvid ? getBilibiliKey(currentBvid) : "";
+    };
+    const query = `bvid=${encodeURIComponent(bvid)}`;
+
+    fetch(`https://api.bilibili.com/x/player/pagelist?${query}`, {
+      credentials: "include",
+    })
       .then((res) => res.json())
+      .then((json) => {
+        if (json?.code !== 0 || !Array.isArray(json.data)) return null;
+        const pageData = json.data.find(
+          (item: unknown): item is { page: number; cid: number } =>
+            globalThis.PipCompanion.util.isRecord(item) &&
+            item.page === page &&
+            typeof item.cid === "number" &&
+            Number.isSafeInteger(item.cid) &&
+            item.cid > 0,
+        );
+        return pageData?.cid
+          ? fetch(
+              `https://api.bilibili.com/x/player/videoshot?${query}&cid=${pageData.cid}&index=1`,
+              { credentials: "include" },
+            ).then((res) => res.json())
+          : null;
+      })
       .then(async (json) => {
         if (
-          json &&
-          json.code === 0 &&
-          json.data &&
-          Array.isArray(json.data.image)
-        ) {
-          json.data.image = await resolveBilibiliImagesToBlobs(json.data.image);
-          cachedBvid = bvid;
-          cachedBilibiliData = json.data;
-        }
+          !json ||
+          json.code !== 0 ||
+          !json.data ||
+          !Array.isArray(json.data.image) ||
+          currentKey() !== key
+        )
+          return;
+
+        const data = json.data as BilibiliVideoshotData;
+        data.image = await resolveBilibiliImagesToBlobs(data.image);
+        if (currentKey() !== key) return;
+        cachedBilibiliKey = key;
+        cachedBilibiliData = data;
       })
       .catch(() => {})
-      .finally(() => {
-        bilibiliFetchPending = false;
-      });
+      .finally(() => bilibiliFetchPending.delete(key));
   }
 
   function getBilibiliFrame(
@@ -599,7 +633,10 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
 
     if (platform === "bilibili") {
       const bvid = getBilibiliBvid();
-      if (bvid && (cachedBvid !== bvid || !cachedBilibiliData))
+      if (
+        bvid &&
+        (cachedBilibiliKey !== getBilibiliKey(bvid) || !cachedBilibiliData)
+      )
         loadBilibiliVideoshot(bvid);
       return;
     }
@@ -637,9 +674,10 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     if (platform === "bilibili") {
       const bvid = getBilibiliBvid();
       if (!bvid) return null;
-      if (cachedBvid !== bvid || !cachedBilibiliData)
+      const key = getBilibiliKey(bvid);
+      if (cachedBilibiliKey !== key || !cachedBilibiliData)
         loadBilibiliVideoshot(bvid);
-      if (cachedBilibiliData && cachedBvid === bvid)
+      if (cachedBilibiliData && cachedBilibiliKey === key)
         return getBilibiliFrame(cachedBilibiliData, seconds, video.duration);
       return null;
     }
@@ -657,7 +695,7 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
   function reset() {
     cachedYtVideoId = "";
     cachedYtStoryboard = null;
-    cachedBvid = "";
+    cachedBilibiliKey = "";
     cachedBilibiliData = null;
     cachedBahaData = null;
   }
