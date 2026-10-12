@@ -125,15 +125,92 @@
           </div>
           <div class="shortcut-grid">
             <div class="shortcut-item">
-              <span class="shortcut-name">__MSG_popupPip__</span>
+              <span class="shortcut-name">__MSG_popupOpenPip__</span>
               <button
                 class="shortcut-btn"
                 data-shortcut="launchShortcut"
-                aria-label="__MSG_popupPip__"
+                aria-label="__MSG_popupOpenPip__"
                 type="button"
                 disabled
               >
-                Alt+Shift+P
+                Alt + Shift + P
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutPlayPause__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipPlayPauseShortcut"
+                type="button"
+                disabled
+              >
+                Space
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutRewind__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipSeekBackwardShortcut"
+                type="button"
+                disabled
+              >
+                ←
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutForward__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipSeekForwardShortcut"
+                type="button"
+                disabled
+              >
+                →
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutVolumeDown__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipVolumeDownShortcut"
+                type="button"
+                disabled
+              >
+                ↓
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutVolumeUp__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipVolumeUpShortcut"
+                type="button"
+                disabled
+              >
+                ↑
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutMute__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipMuteShortcut"
+                type="button"
+                disabled
+              >
+                M
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutCaptions__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipToggleCaptionsShortcut"
+                type="button"
+                disabled
+              >
+                C
               </button>
             </div>
             <div class="shortcut-item">
@@ -149,15 +226,14 @@
               </button>
             </div>
             <div class="shortcut-item">
-              <span class="shortcut-name">__MSG_popupScreenshot__</span>
+              <span class="shortcut-name">__MSG_shortcutDanmakuInput__</span>
               <button
                 class="shortcut-btn"
-                data-shortcut="screenshotShortcut"
-                aria-label="__MSG_popupScreenshot__"
+                data-shortcut="pipDanmakuInputShortcut"
                 type="button"
                 disabled
               >
-                Alt+P
+                Enter
               </button>
             </div>
             <div class="shortcut-item">
@@ -169,46 +245,86 @@
                 type="button"
                 disabled
               >
-                Alt+C
+                Alt + C
               </button>
             </div>
-          </div>
-
-          <div class="fixed-shortcuts-box">
-            <h4>__MSG_popupFixedShortcuts__</h4>
-            <div class="fixed-shortcuts-grid">
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutPlayPause__</span><kbd>Space</kbd>
-              </div>
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutSeek__</span><kbd>← / →</kbd>
-              </div>
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutVolume__</span><kbd>↓ / ↑</kbd>
-              </div>
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutCaptions__</span><kbd>C</kbd>
-              </div>
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutMute__</span><kbd>M</kbd>
-              </div>
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutFrameStep__</span><kbd>, / .</kbd>
-              </div>
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutPlaybackSpeed__</span
-                ><kbd>Shift + , / Shift + .</kbd>
-              </div>
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutDanmakuInput__</span><kbd>Enter</kbd>
-              </div>
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutAspectRatio__</span><kbd>R</kbd>
-              </div>
-              <div class="fixed-shortcut-row">
-                <span>__MSG_shortcutResizePip__</span
-                ><kbd id="pip-resize-shortcut">Ctrl + wheel</kbd>
-              </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_popupScreenshot__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="screenshotShortcut"
+                aria-label="__MSG_popupScreenshot__"
+                type="button"
+                disabled
+              >
+                Alt + P
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutSlower__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipPlaybackRateDownShortcut"
+                type="button"
+                disabled
+              >
+                Shift + ,
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutFaster__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipPlaybackRateUpShortcut"
+                type="button"
+                disabled
+              >
+                Shift + .
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutStepBackward__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipFrameStepBackwardShortcut"
+                type="button"
+                disabled
+              >
+                ,
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutStepForward__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipFrameStepForwardShortcut"
+                type="button"
+                disabled
+              >
+                .
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutAutoFit__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipAutoFitShortcut"
+                type="button"
+                disabled
+              >
+                R
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_shortcutResizePip__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="pipResizeShortcut"
+                type="button"
+                disabled
+              >
+                Ctrl + Wheel
+              </button>
             </div>
           </div>
         </section>

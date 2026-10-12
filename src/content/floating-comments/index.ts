@@ -100,10 +100,9 @@ function ensureFloatingCommentsButton(shortcut: Shortcut) {
   if (!rightControls) return;
 
   const shortcutText = globalThis.PipCompanion.util.formatShortcut(shortcut);
-  const tooltipText = globalThis.PipCompanion.util.getMessage(
-    "commentsTooltip",
-    shortcutText,
-  );
+  const tooltipText = shortcut.code
+    ? globalThis.PipCompanion.util.getMessage("commentsTooltip", shortcutText)
+    : globalThis.PipCompanion.util.getMessage("popupFloatingComments");
   const isExpanded = document.body.classList.contains(
     FLOATING_COMMENTS_BODY_CLASS,
   );
@@ -139,10 +138,11 @@ function ensureFloatingCommentsButton(shortcut: Shortcut) {
     "data-title-no-tooltip",
     globalThis.PipCompanion.util.getMessage("popupFloatingComments"),
   );
-  button.setAttribute(
-    "aria-keyshortcuts",
-    globalThis.PipCompanion.util.formatShortcut(shortcut, true),
+  const ariaShortcut = globalThis.PipCompanion.util.formatShortcut(
+    shortcut,
+    true,
   );
+  if (ariaShortcut) button.setAttribute("aria-keyshortcuts", ariaShortcut);
   button.setAttribute("data-shortcut", shortcutText);
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");

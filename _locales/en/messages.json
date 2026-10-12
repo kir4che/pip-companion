@@ -7,19 +7,54 @@
   "popupClosePip": { "message": "Close PiP" },
   "popupMainMenu": { "message": "Main menu" },
   "popupShortcuts": { "message": "Shortcuts" },
-  "popupFixedShortcuts": { "message": "Built-in shortcuts" },
   "shortcutPlayPause": { "message": "Play / pause" },
-  "shortcutSeek": { "message": "Seek" },
-  "shortcutVolume": { "message": "Volume control" },
-  "shortcutCaptions": { "message": "Toggle captions" },
+  "shortcutCaptions": { "message": "Captions" },
   "shortcutMute": { "message": "Mute" },
-  "shortcutFrameStep": { "message": "Frame backward / forward" },
-  "shortcutPlaybackSpeed": { "message": "Playback speed" },
   "shortcutDanmakuInput": { "message": "Danmaku input" },
-  "shortcutAspectRatio": { "message": "Auto-fit aspect ratio" },
   "shortcutResizePip": { "message": "Resize PiP" },
-  "popupPip": { "message": "PiP" },
   "popupDanmaku": { "message": "Danmaku" },
+  "popupAdditionalDanmakuSettings": {
+    "message": "Additional danmaku settings"
+  },
+  "popupAdditionalDanmaku": { "message": "Additional danmaku" },
+  "popupAdditionalDanmakuScope": { "message": "Settings scope" },
+  "popupAdditionalDanmakuScopeTooltip": {
+    "message": "Settings apply only to the current tab and are disabled when you switch videos, reload, or the source fails."
+  },
+  "popupAdditionalDanmakuEnabled": { "message": "Show additional danmaku" },
+  "popupAdditionalDanmakuUrl": {
+    "message": "Source URL (Bilibili, Bahamut Anime, Twitch)"
+  },
+  "popupAdditionalDanmakuUrlPlaceholder": {
+    "message": "Bilibili, Bahamut Anime, or twitch.tv/channel-name"
+  },
+  "popupAdditionalDanmakuOffset": {
+    "message": "Time offset / delay (seconds)"
+  },
+  "popupAdditionalDanmakuConnectionFailed": {
+    "message": "Could not connect to the current tab. Reload the video page and try again."
+  },
+  "popupAdditionalDanmakuStorageFailed": {
+    "message": "Could not read additional danmaku for this tab."
+  },
+  "popupAdditionalDanmakuApplyFailed": {
+    "message": "Could not apply additional danmaku for this tab. Reload the page and try again."
+  },
+  "popupAdditionalDanmakuLoadFailed": {
+    "message": "Could not load additional danmaku. Reopen the settings page and try again."
+  },
+  "popupAdditionalDanmakuInvalidUrl": {
+    "message": "Enter a valid Bilibili, Bahamut Anime, or Twitch video URL."
+  },
+  "popupAdditionalDanmakuInvalidOffset": {
+    "message": "The time offset must be between -3600 and 3600 seconds."
+  },
+  "popupAdditionalDanmakuDisableFailed": {
+    "message": "Could not disable the current source. Reload the video page and try again."
+  },
+  "popupAdditionalDanmakuSaveFailed": {
+    "message": "Could not save. Reload the video page and try again."
+  },
   "popupScreenshot": { "message": "Screenshot" },
   "popupFloatingComments": { "message": "Floating comments" },
   "popupSeekInterval": { "message": "Seek interval" },
@@ -98,6 +133,7 @@
     "message": "Could not save the seek interval. Please try again."
   },
   "popupRecordingShortcut": { "message": "Press a key…" },
+  "popupRecordingResizeShortcut": { "message": "Hold a modifier and scroll…" },
   "popupOtherShortcut": { "message": "Other shortcut" },
   "popupCheckingPip": { "message": "Checking PiP status…" },
   "popupClosingPip": { "message": "Closing PiP…" },
@@ -122,13 +158,19 @@
     "message": "Unrecognized key. Please choose another."
   },
   "popupNavigationKey": {
-    "message": "System navigation keys (Tab, Enter, etc.) cannot be used alone."
+    "message": "Tab and other system navigation keys cannot be used alone."
   },
   "popupShortcutConflict": {
     "message": "This shortcut conflicts with \"$1\". Please choose another."
   },
+  "popupResetShortcut": { "message": "Reset shortcut to default" },
+  "popupClearShortcut": { "message": "Clear shortcut" },
+  "popupShortcutUnassigned": { "message": "Unassigned" },
   "popupCannotSaveShortcut": {
     "message": "Could not save the shortcut. Please try again."
+  },
+  "popupResizeNeedsModifier": {
+    "message": "Hold at least one modifier key while scrolling."
   },
   "shortcutStepBackward": { "message": "Frame backward" },
   "shortcutStepForward": { "message": "Frame forward" },

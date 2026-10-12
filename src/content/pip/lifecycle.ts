@@ -218,7 +218,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           globalThis.PipCompanion.ContentDanmakuSender.getCharacterLimit,
         sendDanmaku: globalThis.PipCompanion.ContentDanmakuSender.send,
         matchesCommentsShortcut: (e) =>
-          state.commentsEnabled && matchesShortcut(e, state.commentsShortcut),
+          state.commentsEnabled &&
+          matchesShortcut(e, state.shortcuts.commentsShortcut),
         matchesDanmakuShortcut: (e) =>
           state.danmakuEnabled &&
           isDanmakuEnabled() &&
@@ -226,11 +227,20 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
             IS_BILIBILI ||
             globalThis.PipCompanion.site.isTwitchHost(location.hostname) ||
             globalThis.PipCompanion.site.isBahamutHost(location.hostname)) &&
-          matchesShortcut(e, state.danmakuShortcut),
+          matchesShortcut(e, state.shortcuts.danmakuShortcut),
         matchesScreenshotShortcut: (e) =>
           state.screenshotEnabled &&
-          matchesShortcut(e, state.screenshotShortcut),
-        matchesLaunchShortcut: (e) => matchesShortcut(e, state.launchShortcut),
+          matchesShortcut(e, state.shortcuts.screenshotShortcut),
+        matchesLaunchShortcut: (e) =>
+          matchesShortcut(e, state.shortcuts.launchShortcut),
+        matchesShortcut: (e, key) =>
+          globalThis.PipCompanion.util.matchesShortcut(e, state.shortcuts[key]),
+        matchesWheelShortcut: (e) =>
+          globalThis.PipCompanion.util.matchesWheelShortcut(
+            e,
+            state.shortcuts.pipResizeShortcut,
+          ),
+        getShortcut: (key) => state.shortcuts[key],
         closePip: () => closePiP(true),
         screenshot: globalThis.PipCompanion.ContentScreenshot.savePipScreenshot,
         formatTime: globalThis.PipCompanion.util.formatTime,

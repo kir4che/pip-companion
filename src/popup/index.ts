@@ -110,10 +110,9 @@ function renderLaunchShortcut(
     util.SHORTCUT_DEFAULTS.launchShortcut,
   );
   launchShortcutLabel.textContent = util.formatShortcut(shortcut);
-  openButton.setAttribute(
-    "aria-keyshortcuts",
-    util.formatShortcut(shortcut, true),
-  );
+  const ariaShortcut = util.formatShortcut(shortcut, true);
+  if (ariaShortcut) openButton.setAttribute("aria-keyshortcuts", ariaShortcut);
+  else openButton.removeAttribute("aria-keyshortcuts");
 }
 
 renderLaunchShortcut();

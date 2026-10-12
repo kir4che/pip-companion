@@ -719,7 +719,6 @@ globalThis.PipCompanion.PipUI = (() => {
     danmakuSendStatus.hidden = true;
 
     const playButton = makeButton("play", "▶", t("pipPlayVideo"));
-    playButton.setAttribute("aria-keyshortcuts", "Space");
     const nextButton = makeButton("next", "", t("pipNextEpisode"));
     nextButton.hidden = true;
     const playlistButton = makeButton("playlist", "", t("pipPlaylist"));
@@ -747,7 +746,6 @@ globalThis.PipCompanion.PipUI = (() => {
 
     const speedButton = makeButton("speed", "1×", t("pipPlaybackSpeed", "1×"));
     speedButton.className = "speed-button";
-    speedButton.setAttribute("aria-keyshortcuts", "Shift+, Shift+.");
     const timeGroup = doc.createElement("span");
     timeGroup.className = "time";
     const timeCurrent = doc.createElement("input");
@@ -783,7 +781,6 @@ globalThis.PipCompanion.PipUI = (() => {
     volumePath.setAttribute("d", actions.volumeIconPath);
     volumeIcon.append(volumePath);
     volumeButton.append(volumeIcon);
-    volumeButton.setAttribute("aria-keyshortcuts", "M");
     const volumePopover = doc.createElement("div");
     volumePopover.className = "volume-popover";
     const volumeValue = doc.createElement("input");
@@ -841,6 +838,26 @@ globalThis.PipCompanion.PipUI = (() => {
     doc.head.replaceChildren(style);
     doc.body.replaceChildren(app);
     doc.title = t("pipTitle");
+
+    const refreshShortcuts = () => {
+      const format = (key: ShortcutKey) =>
+        globalThis.PipCompanion.util.formatShortcut(
+          actions.getShortcut(key),
+          true,
+        );
+      const setAriaShortcuts = (element: HTMLElement, keys: ShortcutKey[]) => {
+        const value = keys.map(format).filter(Boolean).join(" ");
+        if (value) element.setAttribute("aria-keyshortcuts", value);
+        else element.removeAttribute("aria-keyshortcuts");
+      };
+      setAriaShortcuts(playButton, ["pipPlayPauseShortcut"]);
+      setAriaShortcuts(speedButton, [
+        "pipPlaybackRateDownShortcut",
+        "pipPlaybackRateUpShortcut",
+      ]);
+      setAriaShortcuts(volumeButton, ["pipMuteShortcut"]);
+    };
+    refreshShortcuts();
 
     const refreshLocale = () => {
       doc.documentElement.lang = globalThis.PipCompanion.util.getHtmlLanguage();
@@ -902,6 +919,7 @@ globalThis.PipCompanion.PipUI = (() => {
       timeTooltipThumb,
       timeTooltipText,
       refreshLocale,
+      refreshShortcuts,
       setDanmakuEnabled: (enabled: boolean) => setDanmakuEnabled(enabled),
     };
 
@@ -1330,8 +1348,9 @@ globalThis.PipCompanion.PipUI = (() => {
     });
 
     win.addEventListener("keydown", (e) => {
+      const matches = (key: ShortcutKey) => actions.matchesShortcut(e, key);
       if (
-        e.key === "Enter" &&
+        matches("pipDanmakuInputShortcut") &&
         danmakuEnabled &&
         actions.canSendDanmaku &&
         danmakuSendPanel.hidden &&
@@ -1353,46 +1372,37 @@ globalThis.PipCompanion.PipUI = (() => {
         return;
       const target = e.target instanceof Element ? e.target : null;
       const videoSource = actions.getVideo();
-      const plain = !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey;
-      if (plain && e.code === "Space" && videoSource) {
+      if (videoSource && matches("pipPlayPauseShortcut")) {
         e.preventDefault();
         e.stopPropagation();
         togglePlayback();
         return;
       }
+      const frameBackward = matches("pipFrameStepBackwardShortcut");
+      const frameForward = matches("pipFrameStepForwardShortcut");
       if (
         videoSource &&
         !e.repeat &&
-        !e.shiftKey &&
-        (e.key === "," || e.key === ".") &&
-        !e.ctrlKey &&
-        !e.altKey &&
-        !e.metaKey &&
+        (frameBackward || frameForward) &&
         !target?.closest?.("input[type='range']")
       ) {
         e.preventDefault();
         e.stopPropagation();
-        const backward = e.key === ",";
+        const backward = frameBackward;
         const next = videoSource.currentTime + (backward ? -1 : 1) / 60;
         if (Number.isFinite(next) && next >= 0) seekVideo(videoSource, next);
         actions.showFrameStepIcon(backward);
         return;
       }
-      const decreaseRate = e.shiftKey && e.code === "Comma";
-      const increaseRate = e.shiftKey && e.code === "Period";
-      if (
-        videoSource &&
-        !e.ctrlKey &&
-        !e.altKey &&
-        !e.metaKey &&
-        (decreaseRate || increaseRate)
-      ) {
+      const decreaseRate = matches("pipPlaybackRateDownShortcut");
+      const increaseRate = matches("pipPlaybackRateUpShortcut");
+      if (videoSource && (decreaseRate || increaseRate)) {
         e.preventDefault();
         e.stopPropagation();
         adjustPlaybackRate(decreaseRate ? -1 : 1);
         return;
       }
-      if (plain && !e.repeat && videoSource && e.key.toLowerCase() === "r") {
+      if (videoSource && !e.repeat && matches("pipAutoFitShortcut")) {
         e.preventDefault();
         e.stopPropagation();
         const aspectRatio = videoSource.videoWidth / videoSource.videoHeight;
@@ -1417,11 +1427,7 @@ globalThis.PipCompanion.PipUI = (() => {
         void actions.resize(win.innerWidth, width, height).catch(() => {});
         return;
       }
-      if (
-        plain &&
-        videoSource &&
-        (e.key.toLowerCase() === "c" || e.code === "KeyC")
-      ) {
+      if (videoSource && matches("pipToggleCaptionsShortcut")) {
         e.preventDefault();
         e.stopPropagation();
         actions.toggleCaptions();
@@ -1451,67 +1457,51 @@ globalThis.PipCompanion.PipUI = (() => {
         actions.closePip();
         return;
       }
-      const key = e.code === "Space" ? " " : e.key.toLowerCase();
+      const volumeUp = matches("pipVolumeUpShortcut");
+      const volumeDown = matches("pipVolumeDownShortcut");
+      const mute = matches("pipMuteShortcut");
+      const seekBackward = matches("pipSeekBackwardShortcut");
+      const seekForward = matches("pipSeekForwardShortcut");
       const rangeFocused = Boolean(target?.closest?.("input[type='range']"));
-      const volumeKey = key === "arrowup" || key === "arrowdown";
-      const directKey = key === "m";
-      const horizontalArrow = key === "arrowleft" || key === "arrowright";
       if (
         !videoSource ||
-        e.ctrlKey ||
-        e.altKey ||
-        e.metaKey ||
-        e.shiftKey ||
         (target instanceof HTMLElement && target.isContentEditable) ||
         (target?.closest?.(
           "button, input, select, textarea, [contenteditable='true']",
         ) &&
-          !(directKey || (rangeFocused && (volumeKey || horizontalArrow))))
+          !(
+            mute ||
+            (rangeFocused &&
+              (volumeUp || volumeDown || seekBackward || seekForward))
+          ))
       )
         return;
-      if (rangeFocused && horizontalArrow) return;
+      if (rangeFocused && (seekBackward || seekForward)) return;
 
-      switch (key) {
-        case "arrowleft":
-        case "arrowright": {
-          if (
-            !Number.isFinite(videoSource.duration) ||
-            videoSource.duration <= 0
-          )
-            return;
-          const delta =
-            key === "arrowleft"
-              ? -actions.getSeekSeconds()
-              : actions.getSeekSeconds();
-          seekVideo(
-            videoSource,
-            Math.max(
-              0,
-              Math.min(videoSource.duration, videoSource.currentTime + delta),
-            ),
-          );
-          break;
-        }
-        case "arrowup":
-        case "arrowdown": {
-          const delta = key === "arrowup" ? 10 : -10;
-          const next = Math.max(
-            0,
-            Math.min(
-              actions.getMaxVolume(),
-              actions.getVolumePercent() + delta,
-            ),
-          );
-          actions.setVolume(next, delta > 0);
-          actions.showVolumeFeedback();
-          break;
-        }
-        case "m":
-          toggleMute();
-          break;
-        default:
+      if (seekBackward || seekForward) {
+        if (!Number.isFinite(videoSource.duration) || videoSource.duration <= 0)
           return;
-      }
+        const delta = seekBackward
+          ? -actions.getSeekSeconds()
+          : actions.getSeekSeconds();
+        seekVideo(
+          videoSource,
+          Math.max(
+            0,
+            Math.min(videoSource.duration, videoSource.currentTime + delta),
+          ),
+        );
+      } else if (volumeUp || volumeDown) {
+        const delta = volumeUp ? 10 : -10;
+        const next = Math.max(
+          0,
+          Math.min(actions.getMaxVolume(), actions.getVolumePercent() + delta),
+        );
+        actions.setVolume(next, delta > 0);
+        actions.showVolumeFeedback();
+      } else if (mute) toggleMute();
+      else return;
+
       e.preventDefault();
       e.stopPropagation();
       update();
@@ -1632,7 +1622,7 @@ globalThis.PipCompanion.PipUI = (() => {
     win.addEventListener(
       "wheel",
       (e) => {
-        if (!(e.metaKey || e.ctrlKey) || e.deltaY === 0) return;
+        if (!actions.matchesWheelShortcut(e) || e.deltaY === 0) return;
         e.preventDefault();
         e.stopPropagation();
         const currentWidth = win.outerWidth;

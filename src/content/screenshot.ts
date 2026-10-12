@@ -96,10 +96,12 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
     if (!rightControls) return;
 
     const shortcutText = globalThis.PipCompanion.util.formatShortcut(shortcut);
-    const tooltipText = globalThis.PipCompanion.util.getMessage(
-      "screenshotTooltip",
-      shortcutText,
-    );
+    const tooltipText = shortcut.code
+      ? globalThis.PipCompanion.util.getMessage(
+          "screenshotTooltip",
+          shortcutText,
+        )
+      : globalThis.PipCompanion.util.getMessage("screenshot");
     const existing = rightControls.querySelector(".yt-pip-screenshot-btn");
     if (existing) {
       if (existing.getAttribute("data-shortcut") === shortcutText) {
@@ -125,10 +127,11 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
       "data-title-no-tooltip",
       globalThis.PipCompanion.util.getMessage("screenshot"),
     );
-    btn.setAttribute(
-      "aria-keyshortcuts",
-      globalThis.PipCompanion.util.formatShortcut(shortcut, true),
+    const ariaShortcut = globalThis.PipCompanion.util.formatShortcut(
+      shortcut,
+      true,
     );
+    if (ariaShortcut) btn.setAttribute("aria-keyshortcuts", ariaShortcut);
     btn.setAttribute("data-shortcut", shortcutText);
 
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");

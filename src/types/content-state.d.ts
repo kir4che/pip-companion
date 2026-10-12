@@ -23,10 +23,7 @@ type PipSession =
 
 interface State {
   // 快捷鍵與功能開關
-  launchShortcut: Shortcut;
-  commentsShortcut: Shortcut;
-  screenshotShortcut: Shortcut;
-  danmakuShortcut: Shortcut;
+  shortcuts: Record<ShortcutKey, Shortcut>;
   commentsEnabled: boolean;
   screenshotEnabled: boolean;
   danmakuEnabled: boolean;

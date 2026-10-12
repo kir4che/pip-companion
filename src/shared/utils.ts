@@ -2,6 +2,7 @@
 
 globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.util = (() => {
+  const isMac = navigator.platform.includes("Mac");
   const SHORTCUT_DEFAULTS: Record<ShortcutKey, Shortcut> = {
     launchShortcut: {
       code: "KeyP",
@@ -31,13 +32,108 @@ globalThis.PipCompanion.util = (() => {
       shift: false,
       meta: false,
     },
+    pipPlayPauseShortcut: {
+      code: "Space",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipSeekBackwardShortcut: {
+      code: "ArrowLeft",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipSeekForwardShortcut: {
+      code: "ArrowRight",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipVolumeDownShortcut: {
+      code: "ArrowDown",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipVolumeUpShortcut: {
+      code: "ArrowUp",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipToggleCaptionsShortcut: {
+      code: "KeyC",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipMuteShortcut: {
+      code: "KeyM",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipFrameStepBackwardShortcut: {
+      code: "Comma",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipFrameStepForwardShortcut: {
+      code: "Period",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipPlaybackRateDownShortcut: {
+      code: "Comma",
+      ctrl: false,
+      alt: false,
+      shift: true,
+      meta: false,
+    },
+    pipPlaybackRateUpShortcut: {
+      code: "Period",
+      ctrl: false,
+      alt: false,
+      shift: true,
+      meta: false,
+    },
+    pipDanmakuInputShortcut: {
+      code: "Enter",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipAutoFitShortcut: {
+      code: "KeyR",
+      ctrl: false,
+      alt: false,
+      shift: false,
+      meta: false,
+    },
+    pipResizeShortcut: {
+      code: "Wheel",
+      ctrl: !isMac,
+      alt: false,
+      shift: false,
+      meta: isMac,
+    },
   };
-  const SHORTCUT_KEYS: ShortcutKey[] = [
-    "launchShortcut",
-    "commentsShortcut",
-    "screenshotShortcut",
-    "danmakuShortcut",
-  ];
+  const SHORTCUT_KEYS: ShortcutKey[] = Object.keys(
+    SHORTCUT_DEFAULTS,
+  ) as ShortcutKey[];
   const DEFAULT_SEEK_SECONDS: SeekSeconds = 5;
   const SEEK_SECONDS_OPTIONS = [
     1, 3, 5, 10, 15, 30,
@@ -101,28 +197,6 @@ globalThis.PipCompanion.util = (() => {
       /\$(\d+)/g,
       (placeholder, index: string) => values[Number(index) - 1] ?? placeholder,
     );
-  }
-
-  const pin = (label: string, code: string, shift = false) => ({
-    label,
-    shortcut: { code, ctrl: false, alt: false, shift, meta: false },
-  });
-
-  function getFixedShortcuts(): { label: string; shortcut: Shortcut }[] {
-    return [
-      pin(getMessage("shortcutPlayPause"), "Space"),
-      pin(getMessage("shortcutCaptions"), "KeyC"),
-      pin(getMessage("shortcutMute"), "KeyM"),
-      pin(getMessage("shortcutStepBackward"), "Comma"),
-      pin(getMessage("shortcutStepForward"), "Period"),
-      pin(getMessage("shortcutSlower"), "Comma", true),
-      pin(getMessage("shortcutFaster"), "Period", true),
-      pin(getMessage("shortcutRewind"), "ArrowLeft"),
-      pin(getMessage("shortcutForward"), "ArrowRight"),
-      pin(getMessage("shortcutVolumeUp"), "ArrowUp"),
-      pin(getMessage("shortcutVolumeDown"), "ArrowDown"),
-      pin(getMessage("shortcutAutoFit"), "KeyR"),
-    ];
   }
 
   function isRecord(value: unknown): value is Record<string, unknown> {
@@ -239,6 +313,7 @@ globalThis.PipCompanion.util = (() => {
 
   function matchesShortcut(event: KeyboardEvent, shortcut: Shortcut) {
     return (
+      shortcut.code !== "" &&
       event.code === shortcut.code &&
       event.ctrlKey === shortcut.ctrl &&
       event.altKey === shortcut.alt &&
@@ -247,7 +322,20 @@ globalThis.PipCompanion.util = (() => {
     );
   }
 
-  function formatShortcut(value: Shortcut, forAria = false) {
+  function matchesWheelShortcut(event: WheelEvent, shortcut: Shortcut) {
+    return (
+      shortcut.code === "Wheel" &&
+      event.ctrlKey === shortcut.ctrl &&
+      event.altKey === shortcut.alt &&
+      event.shiftKey === shortcut.shift &&
+      (event.metaKey || event.getModifierState("Meta")) === shortcut.meta
+    );
+  }
+
+  function formatShortcut(value: Shortcut, forAria = false, spaced = false) {
+    if (value.code === "")
+      return forAria ? "" : getMessage("popupShortcutUnassigned");
+
     const platform = navigator.platform;
     const isMac = platform.includes("Mac");
     const useMacSymbols = isMac && !forAria;
@@ -264,15 +352,28 @@ globalThis.PipCompanion.util = (() => {
       else parts.push("Meta");
     }
 
-    const key = value.code.startsWith("Key")
-      ? value.code.slice(3)
-      : value.code.startsWith("Digit")
-        ? value.code.slice(5)
-        : value.code === "Space"
-          ? "Space"
-          : value.code;
+    const keyLabels: Record<string, string> = {
+      ArrowDown: forAria ? "ArrowDown" : "↓",
+      ArrowLeft: forAria ? "ArrowLeft" : "←",
+      ArrowRight: forAria ? "ArrowRight" : "→",
+      ArrowUp: forAria ? "ArrowUp" : "↑",
+      Wheel: forAria ? "Wheel" : getMessage("popupWheel"),
+      Comma: ",",
+      Period: ".",
+    };
+    const key =
+      keyLabels[value.code] ??
+      (value.code.startsWith("Key")
+        ? value.code.slice(3)
+        : value.code.startsWith("Digit")
+          ? value.code.slice(5)
+          : value.code === "Space"
+            ? "Space"
+            : value.code);
     parts.push(key);
-    return parts.join(useMacSymbols ? "" : "+");
+    return parts.join(
+      forAria ? "+" : spaced ? " + " : useMacSymbols ? "" : "+",
+    );
   }
 
   function formatTime(seconds: number) {
@@ -319,10 +420,10 @@ globalThis.PipCompanion.util = (() => {
     normalizeSeekSeconds,
     isRecord,
     isExtensionMessage,
-    getFixedShortcuts,
     normalizeShortcut,
     hasMetaModifier,
     matchesShortcut,
+    matchesWheelShortcut,
     formatShortcut,
     formatTime,
     parseTime,

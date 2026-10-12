@@ -243,6 +243,121 @@
         </div>
       </section>
       <section
+        id="additional-danmaku-settings-view"
+        class="popup-view danmaku-settings-view"
+        aria-labelledby="additional-danmaku-settings-title"
+        hidden
+      >
+        <header class="settings-page-header">
+          <button
+            class="back-button"
+            id="additional-danmaku-back"
+            type="button"
+            aria-label="__MSG_popupBackToMenu__"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <div class="settings-title-hint-group">
+            <h1 id="additional-danmaku-settings-title">
+              __MSG_popupAdditionalDanmaku__
+            </h1>
+            <button
+              class="settings-hint-button"
+              type="button"
+              aria-label="__MSG_popupAdditionalDanmakuScope__"
+              aria-describedby="additional-danmaku-scope-tooltip"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                width="16"
+                height="16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <circle cx="10" cy="10" r="8" />
+                <path
+                  d="M8.2 7.5a1.9 1.9 0 1 1 3.3 1.3c-.9.8-1.5 1.1-1.5 2.4"
+                />
+                <circle
+                  cx="10"
+                  cy="14.5"
+                  r=".7"
+                  fill="currentColor"
+                  stroke="none"
+                />
+              </svg>
+              <span
+                id="additional-danmaku-scope-tooltip"
+                class="settings-hint-tooltip"
+                role="tooltip"
+                >__MSG_popupAdditionalDanmakuScopeTooltip__</span
+              >
+            </button>
+          </div>
+        </header>
+        <div class="additional-danmaku-settings">
+          <label class="source-toggle" for="additional-bilibili-enabled">
+            <span>__MSG_popupAdditionalDanmakuEnabled__</span>
+            <input
+              id="additional-bilibili-enabled"
+              type="checkbox"
+              role="switch"
+            />
+          </label>
+          <label class="range-row" for="additional-bilibili-url">
+            <span>__MSG_popupAdditionalDanmakuUrl__</span>
+            <span class="source-input-wrap">
+              <input
+                id="additional-bilibili-url"
+                class="source-input"
+                type="url"
+                placeholder="__MSG_popupAdditionalDanmakuUrlPlaceholder__"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <span
+                id="additional-bilibili-url-error"
+                class="source-input-error-tooltip"
+                role="tooltip"
+              ></span>
+            </span>
+          </label>
+          <label class="range-row" for="additional-bilibili-offset">
+            <span>__MSG_popupAdditionalDanmakuOffset__</span>
+            <span class="source-input-wrap">
+              <input
+                id="additional-bilibili-offset"
+                class="source-input"
+                type="number"
+                min="-3600"
+                max="3600"
+                step="0.1"
+                value="0"
+              />
+              <span
+                id="additional-bilibili-offset-error"
+                class="source-input-error-tooltip"
+                role="tooltip"
+              ></span>
+            </span>
+          </label>
+        </div>
+      </section>
+      <section
         id="caption-settings-view"
         class="popup-view settings-subview"
         aria-labelledby="caption-settings-title"

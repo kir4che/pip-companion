@@ -161,6 +161,42 @@ body {
   text-align: center;
 }
 
+.shortcut-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shortcut-clear-btn,
+.shortcut-reset-btn {
+  display: grid;
+  flex: 0 0 25px;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.shortcut-clear-btn[hidden],
+.shortcut-reset-btn[hidden] {
+  display: none;
+}
+
+.shortcut-clear-btn:disabled,
+.shortcut-reset-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.shortcut-clear-btn img,
+.shortcut-reset-btn img {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
 .secondary-btn {
   border-radius: 6px;
   padding: 6px 12px;
@@ -170,44 +206,6 @@ body {
 .shortcut-btn:hover,
 .secondary-btn:hover {
   background: #3f3f46;
-}
-
-.fixed-shortcuts-box {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid #27272a;
-}
-
-.fixed-shortcuts-box h4 {
-  margin: 0 0 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #a1a1aa;
-}
-
-.fixed-shortcuts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
-  gap: 8px 16px;
-}
-
-.fixed-shortcut-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #d4d4d8;
-  padding: 3px 0;
-}
-
-.fixed-shortcut-row kbd {
-  padding: 2px 5px;
-  border: 1px solid rgb(255 255 255 / 35%);
-  border-radius: 4px;
-  font-size: 11px;
-  line-height: 1.2;
-  white-space: nowrap;
-  letter-spacing: 1.5px;
 }
 
 .setting-row {

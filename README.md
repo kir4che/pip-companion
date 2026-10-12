@@ -47,31 +47,22 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 - Open PiP: on a page with a playable video, click **Open PiP** in the extension popup, or press `Shift + Alt/Opt + P` on the page to toggle PiP on or off.
 - Customize shortcuts: open the extension’s **All settings** page, select a shortcut in **Shortcuts**, then press a new combination.
 
-Default shortcuts:
-
-These shortcuts work on supported video pages; PiP does not need to be open.
-
-| Action                       | Shortcut              | Disable in popup? |
-| ---------------------------- | --------------------- | ----------------- |
-| Open/close PiP               | `Shift + Alt/Opt + P` | —                 |
-| Turn danmaku on/off          | `D`                   | ✅                |
-| Screenshot                   | `Alt/Opt + P`         | ✅                |
-| Open/close floating comments | `Alt/Opt + C`         | ✅                |
-
-Shortcuts inside the PiP window:
-
-| Action                | Shortcut                  |
-| --------------------- | ------------------------- |
-| Play or pause         | `Space`                   |
-| Seek (5s by default)  | `←` / `→`                 |
-| Adjust volume         | `↑` / `↓`                 |
-| Toggle captions       | `C`                       |
-| Toggle mute           | `M`                       |
-| Step one frame        | `,` / `.`                 |
-| Adjust playback speed | `Shift + ,` / `Shift + .` |
-| Danmaku input         | `Enter`                   |
-| Auto-adjust aspect    | `R`                       |
-| Resize PiP            | `Ctrl/Cmd + scroll wheel` |
+| Action                   | Default shortcut          |
+| ------------------------ | ------------------------- |
+| Open PiP                 | `Shift + Alt/Opt + P`     |
+| Play or pause            | `Space`                   |
+| Seek (5s by default)     | `←` / `→`                 |
+| Adjust volume            | `↓` / `↑`                 |
+| Mute                     | `M`                       |
+| Captions                 | `C`                       |
+| Fanmaku                  | `D`                       |
+| Danmaku input            | `Enter`                   |
+| Ffloating comments       | `Alt/Opt + C`             |
+| Take screenshot          | `Alt/Opt + P`             |
+| Adjust playback speed    | `Shift + ,` / `Shift + .` |
+| Step one frame           | `,` / `.`                 |
+| Auto-adjust aspect ratio | `R`                       |
+| Resize PiP               | `Ctrl/Cmd + scroll wheel` |
 
 ## Installation
 

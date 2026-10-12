@@ -35,10 +35,7 @@ let pipSourceRecoveryStartedAt = 0;
 const PIP_SOURCE_RECOVERY_WAIT_MS = 5000;
 
 const state: State = {
-  launchShortcut: { ...SHORTCUT_DEFAULTS.launchShortcut },
-  commentsShortcut: { ...SHORTCUT_DEFAULTS.commentsShortcut },
-  screenshotShortcut: { ...SHORTCUT_DEFAULTS.screenshotShortcut },
-  danmakuShortcut: { ...SHORTCUT_DEFAULTS.danmakuShortcut },
+  shortcuts: { ...SHORTCUT_DEFAULTS },
   commentsEnabled: true,
   screenshotEnabled: true,
   danmakuEnabled: true,
@@ -101,7 +98,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   let shortcutChanged = false;
   for (const key of SHORTCUT_KEYS) {
     if (!changes[key]) continue;
-    state[key] = normalizeShortcut(
+    state.shortcuts[key] = normalizeShortcut(
       changes[key].newValue,
       SHORTCUT_DEFAULTS[key],
     );
@@ -112,6 +109,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.commentsEnabled = changes.commentsEnabled.newValue !== false;
   if (changes.screenshotEnabled)
     state.screenshotEnabled = changes.screenshotEnabled.newValue !== false;
+  if (shortcutChanged) state.pipUi?.refreshShortcuts();
+
   if (changes.danmakuEnabled) {
     state.danmakuEnabled = changes.danmakuEnabled.newValue !== false;
     state.pipUi?.setDanmakuEnabled(state.danmakuEnabled);
@@ -147,7 +146,10 @@ async function loadSettings() {
     });
     globalThis.PipCompanion.util.setLanguagePreference(stored.uiLanguage);
     for (const key of SHORTCUT_KEYS) {
-      state[key] = normalizeShortcut(stored[key], SHORTCUT_DEFAULTS[key]);
+      state.shortcuts[key] = normalizeShortcut(
+        stored[key],
+        SHORTCUT_DEFAULTS[key],
+      );
     }
     state.commentsEnabled = stored.commentsEnabled !== false;
     state.screenshotEnabled = stored.screenshotEnabled !== false;
@@ -159,9 +161,7 @@ async function loadSettings() {
         stored[captionSettings.STORAGE_KEY],
       );
   } catch {
-    for (const key of SHORTCUT_KEYS) {
-      state[key] = { ...SHORTCUT_DEFAULTS[key] };
-    }
+    state.shortcuts = { ...SHORTCUT_DEFAULTS };
     state.commentsEnabled = true;
     state.screenshotEnabled = true;
     state.danmakuEnabled = true;
@@ -185,7 +185,7 @@ function onPageKeyDown(e: KeyboardEvent) {
     (target.isContentEditable ||
       target.closest("input, textarea, select, [contenteditable='true']"));
 
-  if (matchesShortcut(e, state.launchShortcut)) {
+  if (matchesShortcut(e, state.shortcuts.launchShortcut)) {
     if (
       state.pipSession.phase !== "closed" &&
       state.pipWindow &&
@@ -222,7 +222,7 @@ function onPageKeyDown(e: KeyboardEvent) {
   }
 
   if (isEditableTarget || !state.sourceVideo) return;
-  if (matchesShortcut(e, state.commentsShortcut)) {
+  if (matchesShortcut(e, state.shortcuts.commentsShortcut)) {
     if (!(IS_YOUTUBE || IS_BILIBILI) || !state.commentsEnabled) return;
     e.preventDefault();
     e.stopPropagation();
@@ -233,14 +233,14 @@ function onPageKeyDown(e: KeyboardEvent) {
     state.danmakuEnabled &&
     isDanmakuEnabled() &&
     (IS_YOUTUBE || IS_BILIBILI || IS_TWITCH || IS_BAHAMUT) &&
-    matchesShortcut(e, state.danmakuShortcut)
+    matchesShortcut(e, state.shortcuts.danmakuShortcut)
   ) {
     e.preventDefault();
     e.stopPropagation();
     globalThis.PipCompanion.ContentPlayback.toggleDanmakuFromShortcut();
     return;
   }
-  if (matchesShortcut(e, state.screenshotShortcut)) {
+  if (matchesShortcut(e, state.shortcuts.screenshotShortcut)) {
     if (!state.screenshotEnabled) return;
     e.preventDefault();
     e.stopPropagation();
@@ -293,7 +293,7 @@ function scanPage() {
 
   if (IS_YOUTUBE || IS_BILIBILI) {
     if (state.commentsEnabled && IS_YOUTUBE)
-      ensureFloatingCommentsButton(state.commentsShortcut);
+      ensureFloatingCommentsButton(state.shortcuts.commentsShortcut);
     else
       document
         .querySelectorAll(
@@ -302,7 +302,7 @@ function scanPage() {
         .forEach((button) => button.remove());
     if (state.screenshotEnabled)
       globalThis.PipCompanion.ContentScreenshot.ensureScreenshotButton(
-        state.screenshotShortcut,
+        state.shortcuts.screenshotShortcut,
       );
     else document.querySelector(".yt-pip-screenshot-btn")?.remove();
     if (document.body.classList.contains(FLOATING_COMMENTS_BODY_CLASS)) {

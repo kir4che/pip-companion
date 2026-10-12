@@ -103,6 +103,9 @@ interface PipUiActions {
   matchesDanmakuShortcut(e: KeyboardEvent): boolean;
   matchesScreenshotShortcut(e: KeyboardEvent): boolean;
   matchesLaunchShortcut(e: KeyboardEvent): boolean;
+  matchesShortcut(e: KeyboardEvent, key: ShortcutKey): boolean;
+  matchesWheelShortcut(e: WheelEvent): boolean;
+  getShortcut(key: ShortcutKey): Shortcut;
   closePip(): void;
   screenshot(): void;
   formatTime(seconds: number): string;
@@ -139,6 +142,7 @@ interface PipUiHandle {
   readonly timeTooltipThumb: HTMLElement;
   readonly timeTooltipText: HTMLElement;
   refreshLocale(): void;
+  refreshShortcuts(): void;
   setDanmakuEnabled(enabled: boolean): void;
 }
 
@@ -208,7 +212,6 @@ interface PipCompanionUtil {
   getLanguagePreference(): "auto" | "en" | "zh_TW" | "zh_CN";
   SHORTCUT_DEFAULTS: Record<ShortcutKey, Shortcut>;
   SHORTCUT_KEYS: ShortcutKey[];
-  getFixedShortcuts(): { label: string; shortcut: Shortcut }[];
   DEFAULT_SEEK_SECONDS: SeekSeconds;
   SEEK_SECONDS_OPTIONS: readonly SeekSeconds[];
   normalizeSeekSeconds(value: unknown): SeekSeconds;
@@ -217,7 +220,8 @@ interface PipCompanionUtil {
   normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut;
   hasMetaModifier(e: KeyboardEvent): boolean;
   matchesShortcut(e: KeyboardEvent, shortcut: Shortcut): boolean;
-  formatShortcut(value: Shortcut, forAria?: boolean): string;
+  matchesWheelShortcut(e: WheelEvent, shortcut: Shortcut): boolean;
+  formatShortcut(value: Shortcut, forAria?: boolean, spaced?: boolean): string;
   formatTime(seconds: number): string;
   parseTime(input: string): number | null;
 }
