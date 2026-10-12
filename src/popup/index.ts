@@ -39,39 +39,24 @@ function refreshLocalizedMarkup() {
 refreshLocalizedMarkup();
 
 const openButton = document.querySelector("#open-pip") as HTMLButtonElement;
-const statusEl = document.querySelector("#status") as HTMLElement;
-const pipResizeShortcut = document.querySelector(
-  "#pip-resize-shortcut",
+const openButtonLabel = document.querySelector(
+  "#open-pip-label",
 ) as HTMLElement;
-pipResizeShortcut.textContent = navigator.platform.includes("Mac")
-  ? `⌘ + ${t("popupWheel")}`
-  : `Ctrl + ${t("popupWheel")}`;
-const seekSecondsSelect = document.querySelector(
-  "#seek-seconds",
-) as HTMLSelectElement;
-const languageSelect = document.querySelector(
-  "#language-select",
-) as HTMLSelectElement;
-languageSelect.value = util.getLocale();
-languageSelect.addEventListener("change", async () => {
-  const previousLanguage = util.getLanguagePreference();
-  const nextLanguage = util.setLanguagePreference(languageSelect.value);
-  try {
-    await chrome.storage.local.set({ uiLanguage: nextLanguage });
-    refreshPopupLocale();
-  } catch {
-    util.setLanguagePreference(previousLanguage);
-    languageSelect.value = util.getLocale();
-    refreshPopupLocale();
-    showStatus(t("popupLanguageSaveFailed"), true);
-  }
+const launchShortcutLabel = document.querySelector(
+  "#launch-shortcut",
+) as HTMLElement;
+const statusEl = document.querySelector("#status") as HTMLElement;
+const openOptionsButton = document.querySelector(
+  "#open-options-page",
+) as HTMLButtonElement | null;
+openOptionsButton?.addEventListener("click", () => {
+  if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
+  else window.open(chrome.runtime.getURL("ui/options/index.html"));
 });
-for (const seconds of util.SEEK_SECONDS_OPTIONS) {
-  const option = document.createElement("option");
-  option.value = String(seconds);
-  option.textContent = t("popupSeconds", String(seconds));
-  seekSecondsSelect.append(option);
-}
+
+const versionEl = document.querySelector("#ext-version") as HTMLElement | null;
+if (versionEl) versionEl.textContent = chrome.runtime.getManifest().version;
+
 const menuView = document.querySelector("#menu-view") as HTMLElement;
 const danmakuSettingsView = document.querySelector(
   "#danmaku-settings-view",
@@ -117,20 +102,39 @@ captionSettingsBack.addEventListener("click", () => setSettingsView("menu"));
 let pipOpen = false;
 let pipStateSyncPending = false;
 
+function renderLaunchShortcut(
+  value: unknown = util.SHORTCUT_DEFAULTS.launchShortcut,
+) {
+  const shortcut = util.normalizeShortcut(
+    value,
+    util.SHORTCUT_DEFAULTS.launchShortcut,
+  );
+  launchShortcutLabel.textContent = util.formatShortcut(shortcut);
+  openButton.setAttribute(
+    "aria-keyshortcuts",
+    util.formatShortcut(shortcut, true),
+  );
+}
+
+renderLaunchShortcut();
+
+async function loadLaunchShortcut() {
+  try {
+    const stored = await chrome.storage.local.get("launchShortcut");
+    renderLaunchShortcut(stored.launchShortcut);
+  } catch {
+    // 儲存空間無法使用時，保留預設快捷鍵顯示。
+  }
+}
+
 function setPipOpen(open: boolean) {
   pipOpen = open;
-  openButton.textContent = open ? t("popupClosePip") : t("popupOpenPip");
+  openButtonLabel.textContent = open ? t("popupClosePip") : t("popupOpenPip");
 }
 
 function refreshPopupLocale() {
   refreshLocalizedMarkup();
-  pipResizeShortcut.textContent = navigator.platform.includes("Mac")
-    ? `⌘ + ${t("popupWheel")}`
-    : `Ctrl + ${t("popupWheel")}`;
-  for (const option of seekSecondsSelect.options)
-    option.textContent = t("popupSeconds", option.value);
   setPipOpen(pipOpen);
-  renderShortcuts();
   renderDanmakuStyle();
   showStatus("");
 }
@@ -219,20 +223,6 @@ const screenshotToggle = document.querySelector(
 const followPlaybackPipToggle = document.querySelector(
   "#follow-playback-pip-toggle",
 ) as HTMLInputElement;
-const shortcuts = new Map<ShortcutKey, Shortcut>();
-for (const key of util.SHORTCUT_KEYS) {
-  shortcuts.set(key, { ...util.SHORTCUT_DEFAULTS[key] });
-}
-
-const shortcutButtons = new Map<ShortcutKey, HTMLButtonElement>();
-for (const key of util.SHORTCUT_KEYS) {
-  const button = document.querySelector<HTMLButtonElement>(
-    `[data-shortcut="${key}"]`,
-  );
-  if (button) shortcutButtons.set(key, button);
-}
-
-let recordingKey: ShortcutKey | null = null;
 
 function showStatus(message: string, error = false) {
   statusEl.textContent = message;
@@ -560,86 +550,6 @@ captionStyleReset.addEventListener("click", () => {
   void saveCaptionStyle();
 });
 
-function setShortcutVisibility(
-  key: "commentsShortcut" | "screenshotShortcut" | "danmakuShortcut",
-  enabled: boolean,
-) {
-  const button = shortcutButtons.get(key);
-  const row = button?.closest<HTMLElement>(".shortcut-row");
-  if (row) row.hidden = !enabled;
-  if (button) button.disabled = !enabled;
-
-  if (!enabled && recordingKey === key) {
-    recordingKey = null;
-    renderShortcut(key);
-  }
-}
-
-function renderShortcut(key: ShortcutKey) {
-  const button = shortcutButtons.get(key);
-  if (!button) return;
-  const value = shortcuts.get(key) ?? util.SHORTCUT_DEFAULTS[key];
-  button.textContent =
-    recordingKey === key
-      ? t("popupRecordingShortcut")
-      : util.formatShortcut(value);
-}
-
-function renderShortcuts() {
-  for (const key of util.SHORTCUT_KEYS) renderShortcut(key);
-}
-
-async function loadShortcuts() {
-  try {
-    const stored = await chrome.storage.local.get(util.SHORTCUT_DEFAULTS);
-    for (const key of util.SHORTCUT_KEYS) {
-      shortcuts.set(
-        key,
-        util.normalizeShortcut(stored[key], util.SHORTCUT_DEFAULTS[key]),
-      );
-    }
-  } catch {
-    // 預設值已就位
-  }
-
-  renderShortcuts();
-}
-
-function setSeekSeconds(value: unknown) {
-  seekSecondsSelect.value = String(util.normalizeSeekSeconds(value));
-}
-
-async function loadSeekSeconds() {
-  seekSecondsSelect.disabled = true;
-  try {
-    const stored = await chrome.storage.local.get({
-      seekSeconds: util.DEFAULT_SEEK_SECONDS,
-    });
-    setSeekSeconds(stored.seekSeconds);
-  } catch {
-    setSeekSeconds(util.DEFAULT_SEEK_SECONDS);
-  } finally {
-    seekSecondsSelect.disabled = false;
-  }
-}
-
-async function saveSeekSeconds() {
-  const seekSeconds = util.normalizeSeekSeconds(
-    Number(seekSecondsSelect.value),
-  );
-  try {
-    await chrome.storage.local.set({ seekSeconds });
-    showStatus("");
-  } catch {
-    showStatus(t("popupCannotSaveSeek"), true);
-    await loadSeekSeconds();
-  }
-}
-
-seekSecondsSelect.addEventListener("change", () => {
-  void saveSeekSeconds();
-});
-
 async function loadToggles() {
   try {
     const stored = await chrome.storage.local.get({
@@ -658,17 +568,10 @@ async function loadToggles() {
     screenshotToggle.checked = true;
     followPlaybackPipToggle.checked = false;
   }
-
-  setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
-  setShortcutVisibility("commentsShortcut", commentsToggle.checked);
-  setShortcutVisibility("screenshotShortcut", screenshotToggle.checked);
 }
 
 danmakuToggle.addEventListener("change", () => {
-  setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
-  void saveToggle(danmakuToggle, "danmakuEnabled", () =>
-    setShortcutVisibility("danmakuShortcut", danmakuToggle.checked),
-  );
+  void saveToggle(danmakuToggle, "danmakuEnabled");
 });
 
 danmakuFontFamily.addEventListener("change", () => {
@@ -711,11 +614,12 @@ danmakuStyleReset.addEventListener("click", () => {
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== "local") return;
 
-  if (changes.seekSeconds) setSeekSeconds(changes.seekSeconds.newValue);
-  if (changes.danmakuEnabled) {
-    danmakuToggle.checked = changes.danmakuEnabled.newValue !== false;
-    setShortcutVisibility("danmakuShortcut", danmakuToggle.checked);
+  if (changes.uiLanguage) {
+    util.setLanguagePreference(changes.uiLanguage.newValue);
+    refreshPopupLocale();
   }
+  if (changes.danmakuEnabled)
+    danmakuToggle.checked = changes.danmakuEnabled.newValue !== false;
   if (changes.commentsEnabled)
     commentsToggle.checked = changes.commentsEnabled.newValue !== false;
   if (changes.screenshotEnabled)
@@ -723,6 +627,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (changes.followPlaybackPip)
     followPlaybackPipToggle.checked =
       changes.followPlaybackPip.newValue === true;
+  if (changes.launchShortcut)
+    renderLaunchShortcut(changes.launchShortcut.newValue);
 
   const danmakuChange = changes[popupDanmakuSettings.STORAGE_KEY];
   if (danmakuChange && !popupDanmakuStyleDirty) {
@@ -740,17 +646,11 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 });
 
 commentsToggle.addEventListener("change", () => {
-  setShortcutVisibility("commentsShortcut", commentsToggle.checked);
-  void saveToggle(commentsToggle, "commentsEnabled", () =>
-    setShortcutVisibility("commentsShortcut", commentsToggle.checked),
-  );
+  void saveToggle(commentsToggle, "commentsEnabled");
 });
 
 screenshotToggle.addEventListener("change", () => {
-  setShortcutVisibility("screenshotShortcut", screenshotToggle.checked);
-  void saveToggle(screenshotToggle, "screenshotEnabled", () =>
-    setShortcutVisibility("screenshotShortcut", screenshotToggle.checked),
-  );
+  void saveToggle(screenshotToggle, "screenshotEnabled");
 });
 
 followPlaybackPipToggle.addEventListener("change", () => {
@@ -856,140 +756,12 @@ openButton.addEventListener("click", async () => {
   }
 });
 
-function sameShortcut(a: Shortcut, b: Shortcut) {
-  return (
-    a.code === b.code &&
-    a.ctrl === b.ctrl &&
-    a.alt === b.alt &&
-    a.shift === b.shift &&
-    a.meta === b.meta
-  );
-}
-
-function shortcutName(key: ShortcutKey) {
-  return (
-    shortcutButtons.get(key)?.closest(".shortcut-row")?.querySelector("span")
-      ?.textContent ?? t("popupOtherShortcut")
-  );
-}
-
-function findConflict(shortcut: Shortcut, self: ShortcutKey) {
-  const other = util.SHORTCUT_KEYS.find(
-    (key) =>
-      key !== self &&
-      sameShortcut(shortcuts.get(key) ?? util.SHORTCUT_DEFAULTS[key], shortcut),
-  );
-
-  if (other) return shortcutName(other);
-  return (
-    util
-      .getFixedShortcuts()
-      .find((entry) => sameShortcut(entry.shortcut, shortcut))?.label ?? null
-  );
-}
-
-for (const key of util.SHORTCUT_KEYS) {
-  shortcutButtons.get(key)?.addEventListener("click", () => {
-    recordingKey = key;
-    renderShortcuts();
-  });
-}
-
-document.addEventListener(
-  "keydown",
-  async (e) => {
-    if (!recordingKey) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.key === "Escape") {
-      recordingKey = null;
-      renderShortcuts();
-      showStatus("");
-      return;
-    }
-
-    const isMetaKey =
-      e.key === "Meta" ||
-      e.key === "OS" ||
-      e.code === "MetaLeft" ||
-      e.code === "MetaRight";
-    if (
-      navigator.platform.includes("Win") &&
-      (util.hasMetaModifier(e) || isMetaKey)
-    ) {
-      showStatus(t("popupWinKeyUnsupported"), true);
-      return;
-    }
-
-    if (["Control", "Alt", "Shift"].includes(e.key)) return;
-    if (isMetaKey) {
-      const modifierName = navigator.platform.includes("Mac")
-        ? "Command"
-        : "Meta";
-      showStatus(t("popupModifierKey", modifierName));
-      return;
-    }
-
-    if (e.code === "Unidentified") {
-      showStatus(t("popupUnrecognizedKey"), true);
-      return;
-    }
-
-    const isNavigationKey = [
-      "Tab",
-      "Enter",
-      "Backspace",
-      "Delete",
-      "CapsLock",
-    ].includes(e.key);
-    if (
-      !e.ctrlKey &&
-      !e.altKey &&
-      !e.metaKey &&
-      !e.shiftKey &&
-      isNavigationKey
-    ) {
-      showStatus(t("popupNavigationKey"), true);
-      return;
-    }
-
-    const key = recordingKey;
-    const shortcut: Shortcut = {
-      code: e.code,
-      ctrl: e.ctrlKey,
-      alt: e.altKey,
-      shift: e.shiftKey,
-      meta: util.hasMetaModifier(e),
-    };
-    const conflict = findConflict(shortcut, key);
-    if (conflict) {
-      showStatus(t("popupShortcutConflict", conflict), true);
-      return;
-    }
-
-    recordingKey = null;
-    renderShortcut(key);
-
-    try {
-      await chrome.storage.local.set({ [key]: shortcut });
-      shortcuts.set(key, shortcut);
-      renderShortcut(key);
-      showStatus("");
-    } catch {
-      showStatus(t("popupCannotSaveShortcut"), true);
-    }
-  },
-  true,
-);
-
 setDanmakuStyleControlsDisabled(true);
 setCaptionStyleControlsDisabled(true);
 renderDanmakuStyle();
 renderCaptionStyle();
-void loadShortcuts();
 void loadToggles();
-void loadSeekSeconds();
+void loadLaunchShortcut();
 void loadDanmakuStyle();
 void loadCaptionStyle();
 void syncPipState();

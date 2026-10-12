@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>__MSG_optionsTitle__</title>
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div class="options-layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <img src="../../assets/icon-48.png" alt="" width="32" height="32" />
+          <h1 class="brand-title">__MSG_optionsBrandTitle__</h1>
+        </div>
+        <nav class="nav-menu" aria-label="__MSG_popupAllSettings__">
+          <a href="#general" class="nav-item active"
+            >__MSG_popupGeneralSettings__</a
+          >
+          <a href="#features" class="nav-item">__MSG_popupFeatureSettings__</a>
+          <a href="#shortcuts" class="nav-item">__MSG_popupShortcuts__</a>
+          <a href="#danmaku" class="nav-item">__MSG_popupDanmakuStyle__</a>
+          <a href="#captions" class="nav-item">__MSG_popupCaptionStyle__</a>
+        </nav>
+      </aside>
+
+      <main class="content">
+        <header class="content-header">
+          <h2>__MSG_popupAllSettings__</h2>
+        </header>
+
+        <!-- 一般設定 -->
+        <section id="general" class="settings-card">
+          <div class="card-header">
+            <h3>__MSG_popupGeneralSettings__</h3>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-title" for="seek-seconds"
+                >__MSG_popupSeekInterval__</label
+              >
+            </div>
+            <select id="seek-seconds" class="form-select" disabled></select>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-title" for="language-select"
+                >__MSG_popupLanguage__</label
+              >
+            </div>
+            <select id="language-select" class="form-select">
+              <option value="en">English</option>
+              <option value="zh_TW">繁體中文</option>
+              <option value="zh_CN">简体中文</option>
+            </select>
+          </div>
+        </section>
+
+        <!-- 功能設定 -->
+        <section id="features" class="settings-card">
+          <div class="card-header">
+            <h3>__MSG_popupFeatureSettings__</h3>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-title" for="danmaku-toggle"
+                >__MSG_popupDanmaku__</label
+              >
+            </div>
+            <input
+              class="toggle-switch"
+              type="checkbox"
+              id="danmaku-toggle"
+              checked
+              disabled
+            />
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-title" for="screenshot-toggle"
+                >__MSG_popupScreenshot__</label
+              >
+            </div>
+            <input
+              class="toggle-switch"
+              type="checkbox"
+              id="screenshot-toggle"
+              checked
+              disabled
+            />
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-title" for="comments-toggle"
+                >__MSG_popupFloatingComments__</label
+              >
+            </div>
+            <input
+              class="toggle-switch"
+              type="checkbox"
+              id="comments-toggle"
+              checked
+              disabled
+            />
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <label class="setting-title" for="follow-playback-pip-toggle"
+                >__MSG_popupFollowPlayback__</label
+              >
+            </div>
+            <input
+              class="toggle-switch"
+              type="checkbox"
+              id="follow-playback-pip-toggle"
+              disabled
+            />
+          </div>
+        </section>
+
+        <!-- 快捷鍵設定 -->
+        <section id="shortcuts" class="settings-card">
+          <div class="card-header">
+            <h3>__MSG_popupShortcuts__</h3>
+          </div>
+          <div class="shortcut-grid">
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_popupPip__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="launchShortcut"
+                aria-label="__MSG_popupPip__"
+                type="button"
+                disabled
+              >
+                Alt+Shift+P
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_popupDanmaku__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="danmakuShortcut"
+                aria-label="__MSG_popupDanmaku__"
+                type="button"
+                disabled
+              >
+                D
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_popupScreenshot__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="screenshotShortcut"
+                aria-label="__MSG_popupScreenshot__"
+                type="button"
+                disabled
+              >
+                Alt+P
+              </button>
+            </div>
+            <div class="shortcut-item">
+              <span class="shortcut-name">__MSG_popupFloatingComments__</span>
+              <button
+                class="shortcut-btn"
+                data-shortcut="commentsShortcut"
+                aria-label="__MSG_popupFloatingComments__"
+                type="button"
+                disabled
+              >
+                Alt+C
+              </button>
+            </div>
+          </div>
+
+          <div class="fixed-shortcuts-box">
+            <h4>__MSG_popupFixedShortcuts__</h4>
+            <div class="fixed-shortcuts-grid">
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutPlayPause__</span><kbd>Space</kbd>
+              </div>
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutSeek__</span><kbd>← / →</kbd>
+              </div>
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutVolume__</span><kbd>↓ / ↑</kbd>
+              </div>
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutCaptions__</span><kbd>C</kbd>
+              </div>
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutMute__</span><kbd>M</kbd>
+              </div>
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutFrameStep__</span><kbd>, / .</kbd>
+              </div>
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutPlaybackSpeed__</span
+                ><kbd>Shift + , / Shift + .</kbd>
+              </div>
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutDanmakuInput__</span><kbd>Enter</kbd>
+              </div>
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutAspectRatio__</span><kbd>R</kbd>
+              </div>
+              <div class="fixed-shortcut-row">
+                <span>__MSG_shortcutResizePip__</span
+                ><kbd id="pip-resize-shortcut">Ctrl + wheel</kbd>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 彈幕樣式 -->
+        <section id="danmaku" class="settings-card">
+          <div class="card-header">
+            <h3>__MSG_popupDanmakuStyle__</h3>
+            <button
+              id="danmaku-style-reset"
+              class="secondary-btn"
+              type="button"
+            >
+              __MSG_popupResetDanmakuStyle__
+            </button>
+          </div>
+          <div class="controls-grid">
+            <label class="control-field" for="danmaku-size">
+              <span class="control-label">
+                __MSG_popupFontSize__
+                <output id="danmaku-size-value">120%</output>
+              </span>
+              <input
+                id="danmaku-size"
+                type="range"
+                min="50"
+                max="400"
+                step="5"
+              />
+            </label>
+            <label class="control-field" for="danmaku-speed">
+              <span class="control-label">
+                __MSG_popupScrollSpeed__
+                <output id="danmaku-speed-value">__MSG_speedNormal__</output>
+              </span>
+              <input
+                id="danmaku-speed"
+                type="range"
+                min="0"
+                max="4"
+                step="1"
+                list="danmaku-speed-levels"
+                aria-valuetext="__MSG_speedNormal__"
+              />
+              <datalist id="danmaku-speed-levels">
+                <option value="0"></option>
+                <option value="1"></option>
+                <option value="2"></option>
+                <option value="3"></option>
+                <option value="4"></option>
+              </datalist>
+            </label>
+            <label class="control-field" for="danmaku-opacity">
+              <span class="control-label">
+                __MSG_popupOpacity__
+                <output id="danmaku-opacity-value">85%</output>
+              </span>
+              <input
+                id="danmaku-opacity"
+                type="range"
+                min="10"
+                max="100"
+                step="5"
+              />
+            </label>
+            <label class="control-field" for="danmaku-area">
+              <span class="control-label">
+                __MSG_popupDisplayArea__
+                <output id="danmaku-area-value">50%</output>
+              </span>
+              <input
+                id="danmaku-area"
+                type="range"
+                min="10"
+                max="100"
+                step="1"
+              />
+            </label>
+            <label class="control-field" for="danmaku-font-family">
+              <span class="control-label">__MSG_popupFont__</span>
+              <select id="danmaku-font-family">
+                <optgroup label="__MSG_popupFontGeneral__">
+                  <option value="default">__MSG_popupSystemDefault__</option>
+                  <option value="sansSerif">__MSG_popupSansSerif__</option>
+                  <option value="serif">__MSG_popupSerif__</option>
+                  <option value="monospace">__MSG_popupMonospace__</option>
+                </optgroup>
+                <optgroup label="__MSG_popupFontAdvanced__">
+                  <option value="arial">__MSG_popupArialLatin__</option>
+                  <option value="notoSansTC">Noto Sans TC</option>
+                  <option value="microsoftJhengHei">
+                    __MSG_popupBlackFont__
+                  </option>
+                  <option value="song">__MSG_popupSongFont__</option>
+                  <option value="fangSong">__MSG_popupFangSongFont__</option>
+                  <option value="kai">__MSG_popupKaiFont__</option>
+                </optgroup>
+              </select>
+            </label>
+            <label class="control-field" for="danmaku-weight">
+              <span class="control-label">
+                __MSG_popupFontWeight__
+                <output id="danmaku-weight-value">500</output>
+              </span>
+              <input
+                id="danmaku-weight"
+                type="range"
+                min="400"
+                max="900"
+                step="100"
+              />
+            </label>
+            <label class="control-field" for="danmaku-max-size">
+              <span class="control-label">
+                __MSG_popupMaxFontSize__
+                <output id="danmaku-max-size-value">40px</output>
+              </span>
+              <input
+                id="danmaku-max-size"
+                type="range"
+                min="16"
+                max="96"
+                step="1"
+              />
+            </label>
+          </div>
+        </section>
+
+        <!-- 字幕樣式設定 -->
+        <section id="captions" class="settings-card">
+          <div class="card-header">
+            <h3>__MSG_popupCaptionStyle__</h3>
+            <button
+              id="caption-style-reset"
+              class="secondary-btn"
+              type="button"
+            >
+              __MSG_popupResetCaptionStyle__
+            </button>
+          </div>
+          <div
+            class="subtitle-preview"
+            aria-label="__MSG_popupCaptionPreview__"
+          >
+            <div class="subtitle-preview-caption" id="caption-preview">
+              <span class="subtitle-preview-segment"
+                >__MSG_popupCaptionPreviewText__</span
+              >
+              <span class="subtitle-preview-segment"
+                >__MSG_popupCaptionPreviewSecondLine__</span
+              >
+            </div>
+          </div>
+          <div class="controls-grid">
+            <label class="control-field" for="caption-size">
+              <span class="control-label">
+                __MSG_popupFontSize__
+                <output id="caption-size-value">100%</output>
+              </span>
+              <input
+                id="caption-size"
+                type="range"
+                min="50"
+                max="200"
+                step="5"
+              />
+            </label>
+            <label class="control-field color-field" for="caption-text-color">
+              <span class="control-label">__MSG_popupTextColor__</span>
+              <input
+                id="caption-text-color"
+                type="color"
+                aria-label="__MSG_popupTextColor__"
+              />
+            </label>
+            <label
+              class="control-field color-field"
+              for="caption-background-color"
+            >
+              <span class="control-label">__MSG_popupBackgroundColor__</span>
+              <input
+                id="caption-background-color"
+                type="color"
+                aria-label="__MSG_popupBackgroundColor__"
+              />
+            </label>
+            <label class="control-field" for="caption-background-opacity">
+              <span class="control-label">
+                __MSG_popupBackgroundOpacity__
+                <output id="caption-background-opacity-value">75%</output>
+              </span>
+              <input
+                id="caption-background-opacity"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+              />
+            </label>
+            <label class="control-field" for="caption-position">
+              <span class="control-label">
+                __MSG_popupVerticalPosition__
+                <output id="caption-position-value">10%</output>
+              </span>
+              <input
+                id="caption-position"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+              />
+            </label>
+            <label class="control-field" for="caption-font-family">
+              <span class="control-label">__MSG_popupFont__</span>
+              <select id="caption-font-family">
+                <optgroup label="__MSG_popupFontGeneral__">
+                  <option value="default">__MSG_popupSystemDefault__</option>
+                  <option value="sansSerif">__MSG_popupSansSerif__</option>
+                  <option value="serif">__MSG_popupSerif__</option>
+                  <option value="monospace">__MSG_popupMonospace__</option>
+                </optgroup>
+                <optgroup label="__MSG_popupFontAdvanced__">
+                  <option value="arial">__MSG_popupArialLatin__</option>
+                  <option value="notoSansTC">Noto Sans TC</option>
+                  <option value="microsoftJhengHei">
+                    __MSG_popupBlackFont__
+                  </option>
+                  <option value="song">__MSG_popupSongFont__</option>
+                  <option value="fangSong">__MSG_popupFangSongFont__</option>
+                  <option value="kai">__MSG_popupKaiFont__</option>
+                </optgroup>
+              </select>
+            </label>
+            <label class="control-field" for="caption-edge-style">
+              <span class="control-label">__MSG_popupTextEdge__</span>
+              <select id="caption-edge-style">
+                <option value="none">__MSG_popupNone__</option>
+                <option value="shadow">__MSG_popupShadow__</option>
+                <option value="raised">__MSG_popupRaised__</option>
+                <option value="depressed">__MSG_popupDepressed__</option>
+                <option value="outline">__MSG_popupOutline__</option>
+              </select>
+            </label>
+            <label class="control-field color-field" for="caption-edge-color">
+              <span class="control-label">__MSG_popupEdgeColor__</span>
+              <input
+                id="caption-edge-color"
+                type="color"
+                aria-label="__MSG_popupEdgeColor__"
+              />
+            </label>
+            <label
+              id="caption-outline-width-row"
+              class="control-field"
+              for="caption-outline-width"
+            >
+              <span class="control-label">
+                __MSG_popupOutlineWidth__
+                <output id="caption-outline-width-value">1px</output>
+              </span>
+              <input
+                id="caption-outline-width"
+                type="range"
+                min="0.5"
+                max="3"
+                step="0.5"
+              />
+            </label>
+            <label class="control-field" for="caption-font-weight">
+              <span class="control-label">
+                __MSG_popupFontWeight__
+                <output id="caption-font-weight-value">400</output>
+              </span>
+              <input
+                id="caption-font-weight"
+                type="range"
+                min="100"
+                max="900"
+                step="100"
+              />
+            </label>
+            <label class="control-field" for="caption-line-height">
+              <span class="control-label">
+                __MSG_popupLineHeight__
+                <output id="caption-line-height-value">100%</output>
+              </span>
+              <input
+                id="caption-line-height"
+                type="range"
+                min="100"
+                max="200"
+                step="5"
+              />
+            </label>
+          </div>
+        </section>
+
+        <footer class="support-footer">
+          <a
+            href="https://www.buymeacoffee.com/kir4che"
+            target="_blank"
+            rel="noopener noreferrer"
+            >__MSG_optionsSupportDevelopment__</a
+          >
+        </footer>
+
+        <p id="status" class="status-msg" role="status"></p>
+      </main>
+    </div>
+
+    <script src="../../shared/locales.js"></script>
+    <script src="../../shared/utils.js"></script>
+    <script src="../../shared/danmaku-settings.js"></script>
+    <script src="../../shared/caption-settings.js"></script>
+    <script type="module" src="/options/index.js"></script>
+  </body>
+</html>

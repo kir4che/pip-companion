@@ -11,6 +11,8 @@ const staticFiles = [
   ["manifest.json", "manifest.json"],
   ["src/popup/index.html", "popup.html"],
   ["src/popup/index.css", "popup.css"],
+  ["src/options/index.html", "ui/options/index.html"],
+  ["src/options/index.css", "ui/options/index.css"],
   [
     "src/content/floating-comments/index.css",
     "content/floating-comments/index.css",

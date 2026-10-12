@@ -21,6 +21,10 @@
       "128": "assets/icon.png"
     }
   },
+  "options_ui": {
+    "page": "ui/options/index.html",
+    "open_in_tab": true
+  },
   "background": {
     "service_worker": "background/index.js",
     "type": "module"

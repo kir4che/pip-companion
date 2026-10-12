@@ -26,7 +26,12 @@
   "popupSeconds": { "message": "$1 sec" },
   "popupWheel": { "message": "wheel" },
   "popupFeatureSettings": { "message": "Feature settings" },
-  "popupOtherSettings": { "message": "Other settings" },
+  "popupGeneralSettings": { "message": "General settings" },
+  "popupAllSettings": { "message": "All settings" },
+  "popupReportIssue": { "message": "Report an issue" },
+  "optionsTitle": { "message": "PiP Companion Settings" },
+  "optionsBrandTitle": { "message": "PiP Companion" },
+  "optionsSupportDevelopment": { "message": "Support PiP Companion" },
   "popupLanguage": { "message": "Language" },
   "popupLanguageSaveFailed": {
     "message": "Could not save language preference."
@@ -37,7 +42,7 @@
   "popupCaptionStyleSettings": { "message": "Caption style settings" },
   "popupFollowPlayback": { "message": "Follow video playback" },
   "popupBackToMenu": { "message": "Back to main menu" },
-  "popupDanmakuSettings": { "message": "Danmaku settings" },
+  "popupDanmakuStyle": { "message": "Danmaku style" },
   "popupFontSize": { "message": "Font size" },
   "popupScrollSpeed": { "message": "Scroll speed" },
   "speedVerySlow": { "message": "Very slow" },

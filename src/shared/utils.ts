@@ -253,12 +253,14 @@ globalThis.PipCompanion.util = (() => {
     const useMacSymbols = isMac && !forAria;
     const isWindows = platform.includes("Win");
     const parts: string[] = [];
-    if (value.ctrl) parts.push(useMacSymbols ? "⌃" : "Ctrl");
-    if (value.alt) parts.push(useMacSymbols ? "⌥" : "Alt");
     if (value.shift) parts.push(useMacSymbols ? "⇧" : "Shift");
+    if (value.ctrl)
+      parts.push(forAria ? "Control" : useMacSymbols ? "⌃" : "Ctrl");
+    if (value.alt) parts.push(useMacSymbols ? "⌥" : "Alt");
     if (value.meta) {
-      if (isMac) parts.push(forAria ? "Command" : "⌘");
-      else if (isWindows) parts.push(forAria ? "Windows" : "Win");
+      if (forAria) parts.push("Meta");
+      else if (isMac) parts.push("⌘");
+      else if (isWindows) parts.push("Win");
       else parts.push("Meta");
     }
 

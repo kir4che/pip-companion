@@ -9,208 +9,136 @@
   <body>
     <main>
       <button class="primary" id="open-pip" type="button">
-        __MSG_popupOpenPip__
+        <span id="open-pip-label">__MSG_popupOpenPip__</span>
+        <kbd id="launch-shortcut"></kbd>
       </button>
-      <div class="popup-views">
-        <section
-          id="menu-view"
-          class="popup-view"
-          aria-label="__MSG_popupMainMenu__"
-        >
-          <div class="shortcut-list">
-            <p class="list-title">
-              __MSG_popupShortcuts__
-              <button
-                class="help"
-                type="button"
-                aria-label="__MSG_popupFixedShortcuts__"
-                aria-describedby="fixed-shortcut"
-              >
-                <span class="help-icon" aria-hidden="true">?</span>
-                <span class="help-tip" id="fixed-shortcut">
-                  <span class="help-title">__MSG_popupFixedShortcuts__</span>
-                  <span class="help-row"
-                    ><span>__MSG_shortcutPlayPause__</span
-                    ><kbd>Space</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>__MSG_shortcutSeek__</span><kbd>← / →</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>__MSG_shortcutVolume__</span><kbd>↓ / ↑</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>__MSG_shortcutCaptions__</span><kbd>C</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>__MSG_shortcutMute__</span><kbd>M</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>__MSG_shortcutFrameStep__</span
-                    ><kbd>, / .</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>__MSG_shortcutPlaybackSpeed__</span
-                    ><kbd>Shift + , / Shift + .</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>__MSG_shortcutDanmakuInput__</span
-                    ><kbd>Enter</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>__MSG_shortcutAspectRatio__</span><kbd>R</kbd></span
-                  >
-                  <span class="help-row"
-                    ><span>__MSG_shortcutResizePip__</span
-                    ><kbd id="pip-resize-shortcut">Ctrl + wheel</kbd></span
-                  >
-                </span>
-              </button>
-            </p>
-            <div class="shortcut-row">
-              <span>__MSG_popupPip__</span>
-              <button
-                class="shortcut"
-                data-shortcut="launchShortcut"
-                type="button"
-              >
-                Alt+Shift+P
-              </button>
-            </div>
-            <div class="shortcut-row">
-              <span>__MSG_popupDanmaku__</span>
-              <button
-                class="shortcut"
-                data-shortcut="danmakuShortcut"
-                type="button"
-              >
-                D
-              </button>
-            </div>
-            <div class="shortcut-row">
-              <span>__MSG_popupScreenshot__</span>
-              <button
-                class="shortcut"
-                data-shortcut="screenshotShortcut"
-                type="button"
-              >
-                Alt+P
-              </button>
-            </div>
-            <div class="shortcut-row">
-              <span>__MSG_popupFloatingComments__</span>
-              <button
-                class="shortcut"
-                data-shortcut="commentsShortcut"
-                type="button"
-              >
-                Alt+C
-              </button>
-            </div>
-            <label class="shortcut-row seek-seconds-row" for="seek-seconds">
-              <span>__MSG_popupSeekInterval__</span>
-              <select id="seek-seconds" disabled></select>
-            </label>
-          </div>
-          <div class="toggle-list">
-            <p class="list-title">__MSG_popupFeatureSettings__</p>
-            <div class="danmaku-toggle-row">
-              <label class="danmaku-label" for="danmaku-toggle"
-                >__MSG_popupDanmaku__</label
-              >
-              <button
-                class="settings-open"
-                id="danmaku-settings-open"
-                type="button"
-                aria-label="__MSG_popupDanmakuDisplaySettings__"
-                title="__MSG_popupDanmakuDisplaySettings__"
-              >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  width="17"
-                  height="17"
-                >
-                  <use href="assets/settings-icon.svg#settings" />
-                </svg>
-              </button>
-              <input
-                class="danmaku-switch"
-                type="checkbox"
-                id="danmaku-toggle"
-                checked
-              />
-            </div>
-            <div class="toggle-row">
-              <span>__MSG_popupCaptionStyle__</span>
-              <button
-                class="settings-open"
-                id="caption-settings-open"
-                type="button"
-                aria-label="__MSG_popupCaptionStyleSettings__"
-                title="__MSG_popupCaptionStyleSettings__"
-              >
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 24 24"
-                  width="17"
-                  height="17"
-                >
-                  <use href="assets/settings-icon.svg#settings" />
-                </svg>
-              </button>
-            </div>
-            <label class="toggle-row">
-              <span>__MSG_popupScreenshot__</span>
-              <input type="checkbox" id="screenshot-toggle" checked />
-            </label>
-            <label class="toggle-row">
-              <span>__MSG_popupFloatingComments__</span>
-              <input type="checkbox" id="comments-toggle" checked />
-            </label>
-            <label class="toggle-row">
-              <span>__MSG_popupFollowPlayback__</span>
-              <input type="checkbox" id="follow-playback-pip-toggle" />
-            </label>
-            <label class="language-row" for="language-select">
-              <span>__MSG_popupLanguage__</span>
-              <select id="language-select">
-                <option value="en">English</option>
-                <option value="zh_TW">繁體中文</option>
-                <option value="zh_CN">简体中文</option>
-              </select>
-            </label>
-          </div>
-        </section>
-        <section
-          id="danmaku-settings-view"
-          class="popup-view danmaku-settings-view"
-          aria-labelledby="danmaku-settings-title"
-          hidden
-        >
-          <header class="settings-page-header">
+      <section
+        id="menu-view"
+        class="popup-view"
+        aria-label="__MSG_popupMainMenu__"
+      >
+        <div class="toggle-list">
+          <div class="danmaku-toggle-row">
+            <label class="danmaku-label" for="danmaku-toggle"
+              >__MSG_popupDanmaku__</label
+            >
             <button
-              class="back-button"
-              id="danmaku-settings-back"
+              class="settings-open"
+              id="danmaku-settings-open"
               type="button"
-              aria-label="__MSG_popupBackToMenu__"
+              aria-label="__MSG_popupDanmakuDisplaySettings__"
+              title="__MSG_popupDanmakuDisplaySettings__"
             >
               <svg
                 aria-hidden="true"
                 viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
+                width="17"
+                height="17"
               >
-                <path d="m15 18-6-6 6-6" />
+                <use href="assets/settings-icon.svg#settings" />
               </svg>
             </button>
-            <h1 id="danmaku-settings-title">__MSG_popupDanmakuSettings__</h1>
-          </header>
+            <input
+              class="danmaku-switch"
+              type="checkbox"
+              id="danmaku-toggle"
+              checked
+            />
+          </div>
+          <div class="toggle-row">
+            <span>__MSG_popupCaptionStyle__</span>
+            <button
+              class="settings-open"
+              id="caption-settings-open"
+              type="button"
+              aria-label="__MSG_popupCaptionStyleSettings__"
+              title="__MSG_popupCaptionStyleSettings__"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="17"
+                height="17"
+              >
+                <use href="assets/settings-icon.svg#settings" />
+              </svg>
+            </button>
+          </div>
+          <label class="toggle-row">
+            <span>__MSG_popupScreenshot__</span>
+            <input type="checkbox" id="screenshot-toggle" checked />
+          </label>
+          <label class="toggle-row">
+            <span>__MSG_popupFloatingComments__</span>
+            <input type="checkbox" id="comments-toggle" checked />
+          </label>
+          <label class="toggle-row">
+            <span>__MSG_popupFollowPlayback__</span>
+            <input type="checkbox" id="follow-playback-pip-toggle" />
+          </label>
+        </div>
+        <footer class="menu-footer">
+          <span class="menu-version" id="ext-version"></span>
+          <div class="footer-actions">
+            <a
+              class="settings-icon-btn"
+              href="https://github.com/kir4che/pip-companion/issues/new?template=bug_report.yml"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="__MSG_popupReportIssue__"
+              title="__MSG_popupReportIssue__"
+            >
+              <span class="feedback-icon" aria-hidden="true"></span>
+            </a>
+            <button
+              class="settings-icon-btn"
+              id="open-options-page"
+              type="button"
+              aria-label="__MSG_popupAllSettings__"
+              title="__MSG_popupAllSettings__"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                width="14"
+                height="14"
+              >
+                <use href="assets/settings-icon.svg#settings" />
+              </svg>
+            </button>
+          </div>
+        </footer>
+      </section>
+      <section
+        id="danmaku-settings-view"
+        class="popup-view settings-subview"
+        aria-labelledby="danmaku-settings-title"
+        hidden
+      >
+        <header class="settings-page-header">
+          <button
+            class="back-button"
+            id="danmaku-settings-back"
+            type="button"
+            aria-label="__MSG_popupBackToMenu__"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <h1 id="danmaku-settings-title">__MSG_popupDanmakuStyle__</h1>
+        </header>
+        <div class="settings-content">
           <label class="range-row" for="danmaku-size">
             <span
               >__MSG_popupFontSize__
@@ -312,36 +240,38 @@
           <button id="danmaku-style-reset" class="secondary" type="button">
             __MSG_popupResetDanmakuStyle__
           </button>
-        </section>
-        <section
-          id="caption-settings-view"
-          class="popup-view subtitle-settings-view"
-          aria-labelledby="caption-settings-title"
-          hidden
-        >
-          <header class="settings-page-header">
-            <button
-              class="back-button"
-              id="caption-settings-back"
-              type="button"
-              aria-label="__MSG_popupBackToMenu__"
+        </div>
+      </section>
+      <section
+        id="caption-settings-view"
+        class="popup-view settings-subview"
+        aria-labelledby="caption-settings-title"
+        hidden
+      >
+        <header class="settings-page-header">
+          <button
+            class="back-button"
+            id="caption-settings-back"
+            type="button"
+            aria-label="__MSG_popupBackToMenu__"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                width="16"
-                height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            </button>
-            <h1 id="caption-settings-title">__MSG_popupCaptionStyle__</h1>
-          </header>
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+          <h1 id="caption-settings-title">__MSG_popupCaptionStyle__</h1>
+        </header>
+        <div class="settings-content">
           <div
             class="subtitle-preview"
             aria-label="__MSG_popupCaptionPreview__"
@@ -489,8 +419,8 @@
           <button id="caption-style-reset" class="secondary" type="button">
             __MSG_popupResetCaptionStyle__
           </button>
-        </section>
-      </div>
+        </div>
+      </section>
       <p id="status" role="status"></p>
     </main>
     <script src="shared/locales.js"></script>

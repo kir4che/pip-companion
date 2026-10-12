@@ -57,7 +57,7 @@ globalThis.PipCompanion.ContentBahamutDanmakuSender = (() => {
   }
 
   function getCharacterLimit(): number | null {
-    // Bahamut enforces a UTF-8 byte limit, not a fixed JavaScript character count.
+    // 巴哈的限制依 UTF-8 位元組數計算，並非固定的 JavaScript 字元數。
     return null;
   }
 

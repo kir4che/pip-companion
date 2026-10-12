@@ -1,0 +1,29 @@
+name: Bug report
+description: Report a bug
+title: "[Bug] "
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Describe the problem in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: What were you doing?
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?
+      description: Attach a screenshot if helpful. Hide personal info.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: e.g. Chrome 130 or "Not sure"
