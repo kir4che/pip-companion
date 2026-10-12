@@ -198,6 +198,24 @@ button {
   border-top: 1px solid #27272a;
 }
 
+.language-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 0;
+}
+
+.language-row select {
+  width: 132px;
+  padding: 4px 6px;
+  border: 1px solid #52525b;
+  border-radius: 5px;
+  background: #27272a;
+  color: inherit;
+  font: inherit;
+}
+
 .toggle-row {
   display: flex;
   align-items: center;

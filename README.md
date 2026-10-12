@@ -31,6 +31,7 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 - **Screenshots:** save the video frame as a PNG file.
 - **Follow playback:** when enabled and the PiP source pauses while another page (or the same page) has a playing video, PiP hands off to it. Due to browser restrictions, cross-tab handoff requires a click on that tab.
 - **Feature toggles and keyboard shortcuts:** toggle danmaku, screenshots, floating comments, and follow playback individually; customize shortcuts for PiP, comments, screenshots, and danmaku.
+- **Localized interface:** Available in Traditional Chinese, Simplified Chinese, and English. Change the language in Settings.
 - **Embedded videos:** detect videos in matching iframes. Cross-origin compatibility depends on the website and browser permissions, so not every player is guaranteed to work.
 
 > See [Platform Support and Limitations](docs/platform-support.md) for the platform compatibility matrix.
@@ -43,8 +44,8 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 
 ## Controls and Shortcuts
 
-- Toggle PiP: on a page with a playable video, click the PiP button in the extension popup or press `Shift + Alt/Opt + P` on the video page.
-- Customize shortcuts: click a shortcut button in the popup, then press a new combination when it shows "Press shortcut…"; press `Esc` to cancel.
+- Open PiP: on a page with a playable video, click **Open PiP** in the extension popup, or press `Shift + Alt/Opt + P` on the page to toggle PiP on or off.
+- Customize shortcuts: open the extension’s **All settings** page, select a shortcut in **Shortcuts**, then press a new combination.
 
 Default shortcuts:
 

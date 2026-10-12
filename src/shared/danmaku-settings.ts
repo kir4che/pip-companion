@@ -17,13 +17,32 @@ globalThis.PipCompanion.danmakuSettings = (() => {
       'FangSong, "FangSong_GB2312", STFangsong, "Noto Serif CJK TC", serif',
     kai: '"DFKai-SB", BiauKai, KaiTi, "Noto Serif CJK TC", serif',
   };
-  const SPEED_OPTIONS = [
-    { value: 50, label: "超慢" },
-    { value: 75, label: "較慢" },
-    { value: 100, label: "適中" },
-    { value: 150, label: "較快" },
-    { value: 200, label: "超快" },
-  ] as const;
+
+  function getSpeedOptions() {
+    return [
+      {
+        value: 50,
+        label: globalThis.PipCompanion.util.getMessage("speedVerySlow"),
+      },
+      {
+        value: 75,
+        label: globalThis.PipCompanion.util.getMessage("speedSlow"),
+      },
+      {
+        value: 100,
+        label: globalThis.PipCompanion.util.getMessage("speedNormal"),
+      },
+      {
+        value: 150,
+        label: globalThis.PipCompanion.util.getMessage("speedFast"),
+      },
+      {
+        value: 200,
+        label: globalThis.PipCompanion.util.getMessage("speedVeryFast"),
+      },
+    ] as const;
+  }
+
   const DEFAULTS: DanmakuStyleSettings = {
     fontFamily: "default",
     fontSizeScale: 120,
@@ -62,16 +81,17 @@ globalThis.PipCompanion.danmakuSettings = (() => {
       ? fontFamilyValue
       : DEFAULTS.fontFamily;
     const requestedSpeedScale = settings.speedScale;
+    const speedOptions = getSpeedOptions();
     const speedScale =
       typeof requestedSpeedScale === "number" &&
       Number.isFinite(requestedSpeedScale)
-        ? SPEED_OPTIONS.reduce<number>(
+        ? speedOptions.reduce<number>(
             (nearest, { value: level }) =>
               Math.abs(level - requestedSpeedScale) <
               Math.abs(nearest - requestedSpeedScale)
                 ? level
                 : nearest,
-            SPEED_OPTIONS[0].value,
+            speedOptions[0].value,
           )
         : DEFAULTS.speedScale;
     return {
@@ -103,5 +123,13 @@ globalThis.PipCompanion.danmakuSettings = (() => {
     };
   }
 
-  return { STORAGE_KEY, FONT_FAMILIES, SPEED_OPTIONS, DEFAULTS, normalize };
+  return {
+    STORAGE_KEY,
+    FONT_FAMILIES,
+    get SPEED_OPTIONS() {
+      return getSpeedOptions();
+    },
+    DEFAULTS,
+    normalize,
+  };
 })();

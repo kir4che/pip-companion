@@ -54,25 +54,76 @@ globalThis.PipCompanion.util = (() => {
     return isSeekSeconds(value) ? value : DEFAULT_SEEK_SECONDS;
   }
 
+  type Locale = "en" | "zh_TW" | "zh_CN";
+  type LanguagePreference = "auto" | Locale;
+  let languagePreference: LanguagePreference = "auto";
+
+  function getLocale(): Locale {
+    if (languagePreference !== "auto") return languagePreference;
+    const locale = chrome.i18n.getUILanguage().replaceAll("-", "_");
+    if (
+      locale === "zh_TW" ||
+      locale.startsWith("zh_Hant") ||
+      locale.startsWith("zh_HK") ||
+      locale.startsWith("zh_MO")
+    )
+      return "zh_TW";
+    if (locale === "zh_CN" || locale.startsWith("zh_Hans")) return "zh_CN";
+    return "en";
+  }
+
+  function setLanguagePreference(value: unknown): LanguagePreference {
+    languagePreference =
+      value === "en" || value === "zh_TW" || value === "zh_CN" ? value : "auto";
+    return languagePreference;
+  }
+
+  function getHtmlLanguage() {
+    const locale = getLocale();
+    return locale === "zh_TW"
+      ? "zh-Hant"
+      : locale === "zh_CN"
+        ? "zh-Hans"
+        : "en";
+  }
+
+  function getMessage(key: string, substitutions?: string | string[]) {
+    const message =
+      globalThis.PipCompanion.locales[getLocale()]?.[key]?.message;
+    if (message === undefined)
+      return chrome.i18n.getMessage(key, substitutions);
+    const values = Array.isArray(substitutions)
+      ? substitutions
+      : substitutions === undefined
+        ? []
+        : [substitutions];
+    return message.replace(
+      /\$(\d+)/g,
+      (placeholder, index: string) => values[Number(index) - 1] ?? placeholder,
+    );
+  }
+
   const pin = (label: string, code: string, shift = false) => ({
     label,
     shortcut: { code, ctrl: false, alt: false, shift, meta: false },
   });
 
-  const FIXED_SHORTCUTS: { label: string; shortcut: Shortcut }[] = [
-    pin("播放/暫停", "Space"),
-    pin("字幕", "KeyC"),
-    pin("靜音", "KeyM"),
-    pin("逐格後退", "Comma"),
-    pin("逐格前進", "Period"),
-    pin("降低倍速", "Comma", true),
-    pin("提高倍速", "Period", true),
-    pin("快退", "ArrowLeft"),
-    pin("快轉", "ArrowRight"),
-    pin("音量 +10", "ArrowUp"),
-    pin("音量 -10", "ArrowDown"),
-    pin("自動調整比例", "KeyR"),
-  ];
+  function getFixedShortcuts(): { label: string; shortcut: Shortcut }[] {
+    return [
+      pin(getMessage("shortcutPlayPause"), "Space"),
+      pin(getMessage("shortcutCaptions"), "KeyC"),
+      pin(getMessage("shortcutMute"), "KeyM"),
+      pin(getMessage("shortcutStepBackward"), "Comma"),
+      pin(getMessage("shortcutStepForward"), "Period"),
+      pin(getMessage("shortcutSlower"), "Comma", true),
+      pin(getMessage("shortcutFaster"), "Period", true),
+      pin(getMessage("shortcutRewind"), "ArrowLeft"),
+      pin(getMessage("shortcutForward"), "ArrowRight"),
+      pin(getMessage("shortcutVolumeUp"), "ArrowUp"),
+      pin(getMessage("shortcutVolumeDown"), "ArrowDown"),
+      pin(getMessage("shortcutAutoFit"), "KeyR"),
+    ];
+  }
 
   function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -254,6 +305,11 @@ globalThis.PipCompanion.util = (() => {
   }
 
   return {
+    getMessage,
+    getLocale,
+    getHtmlLanguage,
+    setLanguagePreference,
+    getLanguagePreference: () => languagePreference,
     SHORTCUT_DEFAULTS,
     SHORTCUT_KEYS,
     DEFAULT_SEEK_SECONDS,
@@ -261,7 +317,7 @@ globalThis.PipCompanion.util = (() => {
     normalizeSeekSeconds,
     isRecord,
     isExtensionMessage,
-    FIXED_SHORTCUTS,
+    getFixedShortcuts,
     normalizeShortcut,
     hasMetaModifier,
     matchesShortcut,

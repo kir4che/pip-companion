@@ -1,23 +1,75 @@
 "use strict";
+export {};
 
 const util = globalThis.PipCompanion.util;
+const { uiLanguage } = await chrome.storage.local.get("uiLanguage");
+util.setLanguagePreference(uiLanguage);
 const popupDanmakuSettings = globalThis.PipCompanion.danmakuSettings;
 const popupCaptionSettings = globalThis.PipCompanion.captionSettings;
+const t = util.getMessage;
+const messagePlaceholder = /__MSG_([A-Za-z0-9_@]+)__/g;
+const localizeText = (value: string) =>
+  value.replace(messagePlaceholder, (_, key: string) => t(key));
+const textWalker = document.createTreeWalker(
+  document.documentElement,
+  NodeFilter.SHOW_TEXT,
+);
+const localizedTextNodes: { node: Text; source: string }[] = [];
+while (textWalker.nextNode()) {
+  const node = textWalker.currentNode as Text;
+  const source = node.textContent ?? "";
+  if (source.includes("__MSG_")) localizedTextNodes.push({ node, source });
+}
+const localizedAttributes: { attribute: Attr; source: string }[] = [];
+for (const element of document.querySelectorAll("*")) {
+  for (const attribute of Array.from(element.attributes)) {
+    if (attribute.value.includes("__MSG_"))
+      localizedAttributes.push({ attribute, source: attribute.value });
+  }
+}
+
+function refreshLocalizedMarkup() {
+  for (const { node, source } of localizedTextNodes)
+    node.textContent = localizeText(source);
+  for (const { attribute, source } of localizedAttributes)
+    attribute.value = localizeText(source);
+  document.documentElement.lang = util.getHtmlLanguage();
+}
+
+refreshLocalizedMarkup();
+
 const openButton = document.querySelector("#open-pip") as HTMLButtonElement;
 const statusEl = document.querySelector("#status") as HTMLElement;
 const pipResizeShortcut = document.querySelector(
   "#pip-resize-shortcut",
 ) as HTMLElement;
 pipResizeShortcut.textContent = navigator.platform.includes("Mac")
-  ? "⌘ + 滾輪"
-  : "Ctrl + 滾輪";
+  ? `⌘ + ${t("popupWheel")}`
+  : `Ctrl + ${t("popupWheel")}`;
 const seekSecondsSelect = document.querySelector(
   "#seek-seconds",
 ) as HTMLSelectElement;
+const languageSelect = document.querySelector(
+  "#language-select",
+) as HTMLSelectElement;
+languageSelect.value = util.getLocale();
+languageSelect.addEventListener("change", async () => {
+  const previousLanguage = util.getLanguagePreference();
+  const nextLanguage = util.setLanguagePreference(languageSelect.value);
+  try {
+    await chrome.storage.local.set({ uiLanguage: nextLanguage });
+    refreshPopupLocale();
+  } catch {
+    util.setLanguagePreference(previousLanguage);
+    languageSelect.value = util.getLocale();
+    refreshPopupLocale();
+    showStatus(t("popupLanguageSaveFailed"), true);
+  }
+});
 for (const seconds of util.SEEK_SECONDS_OPTIONS) {
   const option = document.createElement("option");
   option.value = String(seconds);
-  option.textContent = `${seconds} 秒`;
+  option.textContent = t("popupSeconds", String(seconds));
   seekSecondsSelect.append(option);
 }
 const menuView = document.querySelector("#menu-view") as HTMLElement;
@@ -67,7 +119,20 @@ let pipStateSyncPending = false;
 
 function setPipOpen(open: boolean) {
   pipOpen = open;
-  openButton.textContent = open ? "關閉子母畫面" : "開啟子母畫面";
+  openButton.textContent = open ? t("popupClosePip") : t("popupOpenPip");
+}
+
+function refreshPopupLocale() {
+  refreshLocalizedMarkup();
+  pipResizeShortcut.textContent = navigator.platform.includes("Mac")
+    ? `⌘ + ${t("popupWheel")}`
+    : `Ctrl + ${t("popupWheel")}`;
+  for (const option of seekSecondsSelect.options)
+    option.textContent = t("popupSeconds", option.value);
+  setPipOpen(pipOpen);
+  renderShortcuts();
+  renderDanmakuStyle();
+  showStatus("");
 }
 
 async function syncPipState() {
@@ -186,7 +251,7 @@ async function saveToggle(
   try {
     await chrome.storage.local.set({ [key]: toggle.checked });
   } catch {
-    showStatus("無法儲存功能開關，請重新嘗試。", true);
+    showStatus(t("popupCannotSaveToggle"), true);
     try {
       const stored = await chrome.storage.local.get(key);
       toggle.checked = stored[key] !== false;
@@ -247,7 +312,7 @@ async function saveDanmakuStyle() {
     if (revision === popupDanmakuStyleRevision) popupDanmakuStyleDirty = false;
     showStatus("");
   } catch {
-    showStatus("無法儲存彈幕設定，請重新嘗試。", true);
+    showStatus(t("popupCannotSaveDanmaku"), true);
   }
 }
 
@@ -413,7 +478,7 @@ async function saveCaptionStyle() {
     if (revision === popupCaptionStyleRevision) popupCaptionStyleDirty = false;
     showStatus("");
   } catch {
-    showStatus("無法儲存字幕設定，請重新嘗試。", true);
+    showStatus(t("popupCannotSaveCaption"), true);
   }
 }
 
@@ -515,7 +580,9 @@ function renderShortcut(key: ShortcutKey) {
   if (!button) return;
   const value = shortcuts.get(key) ?? util.SHORTCUT_DEFAULTS[key];
   button.textContent =
-    recordingKey === key ? "按下快捷鍵…" : util.formatShortcut(value);
+    recordingKey === key
+      ? t("popupRecordingShortcut")
+      : util.formatShortcut(value);
 }
 
 function renderShortcuts() {
@@ -564,7 +631,7 @@ async function saveSeekSeconds() {
     await chrome.storage.local.set({ seekSeconds });
     showStatus("");
   } catch {
-    showStatus("無法儲存跳轉秒數，請重新嘗試。", true);
+    showStatus(t("popupCannotSaveSeek"), true);
     await loadSeekSeconds();
   }
 }
@@ -692,7 +759,7 @@ followPlaybackPipToggle.addEventListener("change", () => {
 
 openButton.addEventListener("click", async () => {
   openButton.disabled = true;
-  showStatus("正在確認子母畫面狀態…");
+  showStatus(t("popupCheckingPip"));
 
   try {
     const globalState = await chrome.runtime.sendMessage({
@@ -700,12 +767,12 @@ openButton.addEventListener("click", async () => {
     } satisfies ExtensionMessage);
     setPipOpen(globalState?.pipOpen === true);
     if (pipOpen) {
-      showStatus("正在關閉子母畫面…");
+      showStatus(t("popupClosingPip"));
       const result = await chrome.runtime.sendMessage({
         type: "CLOSE_ALL_PIP",
       } satisfies ExtensionMessage);
       if (!result?.ok) {
-        showStatus("無法關閉子母畫面。", true);
+        showStatus(t("popupCannotClosePip"), true);
         return;
       }
       setPipOpen(false);
@@ -720,7 +787,7 @@ openButton.addEventListener("click", async () => {
     if (tab?.id === undefined) throw new Error("No active tab");
 
     if (!tab.url || !/^https?:\/\//.test(tab.url)) {
-      showStatus("請在可存取的網頁上開啟影片。", true);
+      showStatus(t("popupOpenOnWebpage"), true);
       return;
     }
     let pipState;
@@ -750,7 +817,7 @@ openButton.addEventListener("click", async () => {
         type: "CLOSE_ALL_PIP",
       } satisfies ExtensionMessage);
       if (!result?.ok) {
-        showStatus("無法關閉子母畫面。", true);
+        showStatus(t("popupCannotClosePip"), true);
         return;
       }
       setPipOpen(false);
@@ -758,7 +825,7 @@ openButton.addEventListener("click", async () => {
       return;
     }
 
-    showStatus("正在開啟…");
+    showStatus(t("popupOpeningPip"));
     let result;
     try {
       result = await chrome.tabs.sendMessage(tab.id, {
@@ -768,7 +835,7 @@ openButton.addEventListener("click", async () => {
       result = null;
     }
 
-    if (result && !result.ok && /請先開啟/.test(result.message ?? "")) {
+    if (result && !result.ok && result.code === "GESTURE_REQUIRED") {
       await new Promise((resolve) => setTimeout(resolve, 400));
       result = await chrome.tabs.sendMessage(tab.id, {
         type: "OPEN_PIP",
@@ -776,17 +843,14 @@ openButton.addEventListener("click", async () => {
     }
 
     if (!result?.ok) {
-      showStatus(
-        result?.message ?? "無法開啟子母畫面，請確認頁面中有可播放的影片。",
-        true,
-      );
+      showStatus(result?.message ?? t("popupCannotOpenPip"), true);
       return;
     }
 
     setPipOpen(true);
     showStatus("");
   } catch {
-    showStatus("無法操作子母畫面，請確認目前頁面允許擴充功能存取。", true);
+    showStatus(t("popupCannotOperatePip"), true);
   } finally {
     openButton.disabled = false;
   }
@@ -805,7 +869,7 @@ function sameShortcut(a: Shortcut, b: Shortcut) {
 function shortcutName(key: ShortcutKey) {
   return (
     shortcutButtons.get(key)?.closest(".shortcut-row")?.querySelector("span")
-      ?.textContent ?? "其他快捷鍵"
+      ?.textContent ?? t("popupOtherShortcut")
   );
 }
 
@@ -818,8 +882,9 @@ function findConflict(shortcut: Shortcut, self: ShortcutKey) {
 
   if (other) return shortcutName(other);
   return (
-    util.FIXED_SHORTCUTS.find((entry) => sameShortcut(entry.shortcut, shortcut))
-      ?.label ?? null
+    util
+      .getFixedShortcuts()
+      .find((entry) => sameShortcut(entry.shortcut, shortcut))?.label ?? null
   );
 }
 
@@ -853,7 +918,7 @@ document.addEventListener(
       navigator.platform.includes("Win") &&
       (util.hasMetaModifier(e) || isMetaKey)
     ) {
-      showStatus("不支援使用 Win 鍵設定快捷鍵", true);
+      showStatus(t("popupWinKeyUnsupported"), true);
       return;
     }
 
@@ -862,12 +927,12 @@ document.addEventListener(
       const modifierName = navigator.platform.includes("Mac")
         ? "Command"
         : "Meta";
-      showStatus(`${modifierName} 是修飾鍵，請按住後再按另一個按鍵。`);
+      showStatus(t("popupModifierKey", modifierName));
       return;
     }
 
     if (e.code === "Unidentified") {
-      showStatus("無法辨識此按鍵，請換一組！", true);
+      showStatus(t("popupUnrecognizedKey"), true);
       return;
     }
 
@@ -885,7 +950,7 @@ document.addEventListener(
       !e.shiftKey &&
       isNavigationKey
     ) {
-      showStatus("系統導航鍵（Tab、Enter 等）不可作為單鍵！", true);
+      showStatus(t("popupNavigationKey"), true);
       return;
     }
 
@@ -899,7 +964,7 @@ document.addEventListener(
     };
     const conflict = findConflict(shortcut, key);
     if (conflict) {
-      showStatus(`與「${conflict}」重複，請換一組！`, true);
+      showStatus(t("popupShortcutConflict", conflict), true);
       return;
     }
 
@@ -912,7 +977,7 @@ document.addEventListener(
       renderShortcut(key);
       showStatus("");
     } catch {
-      showStatus("無法儲存快捷鍵，請重新嘗試。", true);
+      showStatus(t("popupCannotSaveShortcut"), true);
     }
   },
   true,

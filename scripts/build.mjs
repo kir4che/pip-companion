@@ -1,4 +1,10 @@
-import { cpSync, mkdirSync, rmSync } from "node:fs";
+import {
+  cpSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname } from "node:path";
 
 const staticFiles = [
@@ -21,5 +27,17 @@ for (const [from, to] of staticFiles) {
   cpSync(from, destination);
 }
 cpSync("assets", `${out}/assets`, { recursive: true });
+cpSync("_locales", `${out}/_locales`, { recursive: true });
+const locales = Object.fromEntries(
+  ["en", "zh_TW", "zh_CN"].map((locale) => [
+    locale,
+    JSON.parse(readFileSync(`_locales/${locale}/messages.json`, "utf8")),
+  ]),
+);
+mkdirSync(`${out}/shared`, { recursive: true });
+writeFileSync(
+  `${out}/shared/locales.js`,
+  `globalThis.PipCompanion = globalThis.PipCompanion || {};\nglobalThis.PipCompanion.locales = ${JSON.stringify(locales)};\n`,
+);
 
 console.log(`copied static files to ${out}/`);

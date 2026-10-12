@@ -1,6 +1,7 @@
 "use strict";
 
 globalThis.PipCompanion.ContentPlaylist = (() => {
+  const t = globalThis.PipCompanion.util.getMessage;
   const BILIBILI_EPISODE_LIST_SELECTORS = [
     ".video-pod__list",
     ".video-pod__item",
@@ -92,7 +93,7 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
       item?.querySelector("#video-title")?.textContent?.trim() ||
       item?.querySelector("[title]")?.getAttribute("title")?.trim() ||
       item?.getAttribute("title")?.trim() ||
-      `影片 ${index + 1}`
+      t("playlistVideo", String(index + 1))
     );
   }
 
@@ -164,7 +165,7 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
         ? [
             {
               id,
-              title: title || `影片 ${id}`,
+              title: title || t("playlistVideo", id),
               ...(duration ? { duration } : {}),
             },
           ]
@@ -274,7 +275,7 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
               index,
               title:
                 element.querySelector("#video-title")?.textContent?.trim() ||
-                `影片 ${index + 1}`,
+                t("playlistVideo", String(index + 1)),
               ...(duration ? { duration } : {}),
             };
           }),
@@ -342,7 +343,7 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
         );
         const rawTitle =
           element.textContent?.replace(/\s+/g, " ").trim() ||
-          `第 ${index + 1} 集`;
+          t("playlistEpisode", String(index + 1));
         return {
           index,
           title: removeDurationSuffix(rawTitle, duration),
@@ -385,7 +386,9 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
         const episode = removeDurationSuffix(rawEpisode, duration);
         return {
           index,
-          title: /^第/.test(episode) ? episode : `第 ${episode} 集`,
+          title: /^(?:第|Episode\b)/i.test(episode)
+            ? episode
+            : t("playlistEpisode", episode),
           ...(duration ? { duration } : {}),
           ...(element.dataset.aniVideoSn
             ? { videoId: element.dataset.aniVideoSn }

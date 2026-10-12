@@ -1,6 +1,7 @@
 "use strict";
 
 globalThis.PipCompanion.ContentPlayback = (() => {
+  const t = globalThis.PipCompanion.util.getMessage;
   const VOLUME_ICON_PATH =
     "M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-3-4.24v8.47a4.5 4.5 0 0 0 3-4.23z";
   const MUTED_VOLUME_ICON_PATH =
@@ -335,20 +336,20 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     state.pipUi.playButton.textContent = state.sourceVideo.paused ? "▶" : "Ⅱ";
     state.pipUi.playButton.setAttribute(
       "aria-label",
-      state.sourceVideo.paused ? "播放影片" : "暫停影片",
+      state.sourceVideo.paused ? t("pipPlayVideo") : t("pipPauseVideo"),
     );
     const playbackRate = Math.round(state.sourceVideo.playbackRate * 100) / 100;
     const speedLabel = `${playbackRate}×`;
     state.pipUi.speedButton.textContent = speedLabel;
     state.pipUi.speedButton.setAttribute(
       "aria-label",
-      `播放速度 ${speedLabel}`,
+      t("pipPlaybackSpeed", speedLabel),
     );
     state.pipUi.speedSlider.value = String(playbackRate);
 
     state.pipUi.volumeButton.setAttribute(
       "aria-label",
-      muted ? "取消靜音" : "靜音",
+      muted ? t("pipUnmute") : t("pipMute"),
     );
     state.pipUi.volumePath.setAttribute(
       "d",
@@ -502,7 +503,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     }
     globalThis.PipCompanion.ContentCaptions.renderSubtitle();
     globalThis.PipCompanion.ContentFeedback.showFeedback(
-      state.captionsOn ? "字幕: 開" : "字幕: 關",
+      state.captionsOn ? t("pipCaptionsOn") : t("pipCaptionsOff"),
     );
   }
 

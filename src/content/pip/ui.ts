@@ -2,6 +2,8 @@
 
 globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.PipUI = (() => {
+  const t = globalThis.PipCompanion.util.getMessage;
+
   function create(win: Window, actions: PipUiActions, video: HTMLVideoElement) {
     const doc = win.document;
     const seekVideo = (
@@ -17,7 +19,7 @@ globalThis.PipCompanion.PipUI = (() => {
       }
       videoSource.currentTime = targetSeconds;
     };
-    doc.documentElement.lang = "zh-Hant";
+    doc.documentElement.lang = globalThis.PipCompanion.util.getHtmlLanguage();
 
     const style = doc.createElement("style");
     const baseCss = `
@@ -627,7 +629,7 @@ globalThis.PipCompanion.PipUI = (() => {
     const miniProgress = doc.createElement("div");
     miniProgress.className = "mini-progress";
     miniProgress.setAttribute("role", "progressbar");
-    miniProgress.setAttribute("aria-label", "播放進度");
+    miniProgress.setAttribute("aria-label", t("pipProgress"));
     miniProgress.setAttribute("aria-valuemin", "0");
     miniProgress.setAttribute("aria-valuemax", "100");
     miniProgress.setAttribute("aria-valuenow", "0");
@@ -659,9 +661,9 @@ globalThis.PipCompanion.PipUI = (() => {
     const danmakuSendToggle = makeButton(
       "danmaku-send-toggle",
       "",
-      "開啟聊天室輸入",
+      t("pipDanmakuInputOpen"),
     );
-    danmakuSendToggle.title = "開啟聊天室輸入";
+    danmakuSendToggle.title = t("pipDanmakuInputOpen");
     const danmakuSendIcon = doc.createElementNS(
       "http://www.w3.org/2000/svg",
       "svg",
@@ -699,7 +701,7 @@ globalThis.PipCompanion.PipUI = (() => {
     danmakuSendInput.className = "danmaku-send-input";
     danmakuSendInput.type = "text";
     danmakuSendInput.autocomplete = "off";
-    danmakuSendInput.setAttribute("aria-label", "聊天室訊息內容");
+    danmakuSendInput.setAttribute("aria-label", t("pipChatMessage"));
     const danmakuSendCount = doc.createElement("span");
     danmakuSendCount.className = "danmaku-send-count";
     danmakuSendCount.id = "danmaku-send-count";
@@ -708,7 +710,7 @@ globalThis.PipCompanion.PipUI = (() => {
     const danmakuSendSubmit = doc.createElement("button");
     danmakuSendSubmit.className = "danmaku-send-submit";
     danmakuSendSubmit.type = "submit";
-    danmakuSendSubmit.textContent = "送出";
+    danmakuSendSubmit.textContent = t("pipSend");
     danmakuSendPanel.append(danmakuSendField, danmakuSendSubmit);
     const danmakuSendStatus = doc.createElement("div");
     danmakuSendStatus.className = "danmaku-send-status";
@@ -716,11 +718,11 @@ globalThis.PipCompanion.PipUI = (() => {
     danmakuSendStatus.setAttribute("aria-live", "polite");
     danmakuSendStatus.hidden = true;
 
-    const playButton = makeButton("play", "▶", "播放影片");
+    const playButton = makeButton("play", "▶", t("pipPlayVideo"));
     playButton.setAttribute("aria-keyshortcuts", "Space");
-    const nextButton = makeButton("next", "", "下一集影片");
+    const nextButton = makeButton("next", "", t("pipNextEpisode"));
     nextButton.hidden = true;
-    const playlistButton = makeButton("playlist", "", "播放清單");
+    const playlistButton = makeButton("playlist", "", t("pipPlaylist"));
     playlistButton.className = "playlist-button";
     playlistButton.hidden = true;
     playlistButton.setAttribute("aria-expanded", "false");
@@ -734,7 +736,7 @@ globalThis.PipCompanion.PipUI = (() => {
     playlistPanel.className = "playlist-panel";
     playlistButton.setAttribute("aria-controls", playlistPanel.id);
     playlistPanel.hidden = true;
-    playlistPanel.setAttribute("aria-label", "播放清單");
+    playlistPanel.setAttribute("aria-label", t("pipPlaylist"));
     const nextIcon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
     nextIcon.setAttribute("viewBox", "0 0 24 24");
     nextIcon.setAttribute("aria-hidden", "true");
@@ -743,7 +745,7 @@ globalThis.PipCompanion.PipUI = (() => {
     nextIcon.append(nextPath);
     nextButton.append(nextIcon);
 
-    const speedButton = makeButton("speed", "1×", "播放速度 1×");
+    const speedButton = makeButton("speed", "1×", t("pipPlaybackSpeed", "1×"));
     speedButton.className = "speed-button";
     speedButton.setAttribute("aria-keyshortcuts", "Shift+, Shift+.");
     const timeGroup = doc.createElement("span");
@@ -755,7 +757,7 @@ globalThis.PipCompanion.PipUI = (() => {
     timeCurrent.size = 4;
     timeCurrent.maxLength = 12;
     timeCurrent.setAttribute("inputmode", "numeric");
-    timeCurrent.setAttribute("aria-label", "目前時間，輸入後按 Enter 跳轉");
+    timeCurrent.setAttribute("aria-label", t("pipCurrentTime"));
     const timeDuration = doc.createElement("span");
     timeDuration.className = "time-duration";
     timeDuration.textContent = "/ 0:00";
@@ -767,10 +769,10 @@ globalThis.PipCompanion.PipUI = (() => {
     progress.max = "1000";
     const progressMax = Number(progress.max);
     progress.value = "0";
-    progress.setAttribute("aria-label", "播放進度");
+    progress.setAttribute("aria-label", t("pipProgress"));
     const volumeControl = doc.createElement("div");
     volumeControl.className = "volume-control";
-    const volumeButton = makeButton("volume", "", "音量控制");
+    const volumeButton = makeButton("volume", "", t("pipVolumeControl"));
     const volumeIcon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
     volumeIcon.setAttribute("viewBox", "0 0 24 24");
     volumeIcon.setAttribute("aria-hidden", "true");
@@ -788,7 +790,7 @@ globalThis.PipCompanion.PipUI = (() => {
     volumeValue.type = "text";
     volumeValue.className = "volume-value";
     volumeValue.value = "100";
-    volumeValue.setAttribute("aria-label", "音量數值");
+    volumeValue.setAttribute("aria-label", t("pipVolumeValue"));
     volumeValue.setAttribute("inputmode", "numeric");
     volumeValue.maxLength = 3;
     const volumeSlider = doc.createElement("input");
@@ -798,7 +800,7 @@ globalThis.PipCompanion.PipUI = (() => {
     volumeSlider.max = "300";
     volumeSlider.step = "1";
     volumeSlider.value = "100";
-    volumeSlider.setAttribute("aria-label", "音量");
+    volumeSlider.setAttribute("aria-label", t("pipVolume"));
     volumePopover.append(volumeValue, volumeSlider);
     volumeControl.append(volumeButton, volumePopover);
     const speedControl = doc.createElement("div");
@@ -812,7 +814,7 @@ globalThis.PipCompanion.PipUI = (() => {
     speedSlider.max = "5";
     speedSlider.step = "0.05";
     speedSlider.value = "1";
-    speedSlider.setAttribute("aria-label", "播放速度");
+    speedSlider.setAttribute("aria-label", t("pipSpeed"));
     speedPopover.append(speedSlider);
     speedControl.append(speedButton, speedPopover);
     controls.append(
@@ -838,7 +840,42 @@ globalThis.PipCompanion.PipUI = (() => {
     app.append(screen);
     doc.head.replaceChildren(style);
     doc.body.replaceChildren(app);
-    doc.title = "幕伴 PiP";
+    doc.title = t("pipTitle");
+
+    const refreshLocale = () => {
+      doc.documentElement.lang = globalThis.PipCompanion.util.getHtmlLanguage();
+      doc.title = t("pipTitle");
+      miniProgress.setAttribute("aria-label", t("pipProgress"));
+      const danmakuInputLabel = t(
+        danmakuSendPanel.hidden
+          ? "pipDanmakuInputOpen"
+          : "pipDanmakuInputClose",
+      );
+      danmakuSendToggle.setAttribute("aria-label", danmakuInputLabel);
+      danmakuSendToggle.title = danmakuInputLabel;
+      danmakuSendInput.setAttribute("aria-label", t("pipChatMessage"));
+      danmakuSendSubmit.textContent =
+        danmakuCooldownUntil > Date.now()
+          ? t(
+              "pipCooldownSeconds",
+              String(Math.ceil((danmakuCooldownUntil - Date.now()) / 1000)),
+            )
+          : t("pipSend");
+      nextButton.setAttribute("aria-label", t("pipNextEpisode"));
+      playlistButton.setAttribute("aria-label", t("pipPlaylist"));
+      playlistPanel.setAttribute("aria-label", t("pipPlaylist"));
+      speedButton.setAttribute(
+        "aria-label",
+        t("pipPlaybackSpeed", speedButton.textContent ?? "1×"),
+      );
+      timeCurrent.setAttribute("aria-label", t("pipCurrentTime"));
+      progress.setAttribute("aria-label", t("pipProgress"));
+      volumeButton.setAttribute("aria-label", t("pipVolumeControl"));
+      volumeValue.setAttribute("aria-label", t("pipVolumeValue"));
+      volumeSlider.setAttribute("aria-label", t("pipVolume"));
+      speedSlider.setAttribute("aria-label", t("pipSpeed"));
+      actions.updatePlaybackUi();
+    };
 
     const ui = {
       video,
@@ -864,6 +901,7 @@ globalThis.PipCompanion.PipUI = (() => {
       timeTooltip,
       timeTooltipThumb,
       timeTooltipText,
+      refreshLocale,
       setDanmakuEnabled: (enabled: boolean) => setDanmakuEnabled(enabled),
     };
 
@@ -891,7 +929,7 @@ globalThis.PipCompanion.PipUI = (() => {
     const setDanmakuSendPanelOpen = (open: boolean) => {
       danmakuSendPanel.hidden = !open;
       danmakuSendToggle.setAttribute("aria-expanded", String(open));
-      const label = open ? "關閉聊天室輸入" : "開啟聊天室輸入";
+      const label = open ? t("pipDanmakuInputClose") : t("pipDanmakuInputOpen");
       danmakuSendToggle.setAttribute("aria-label", label);
       danmakuSendToggle.title = label;
     };
@@ -948,13 +986,16 @@ globalThis.PipCompanion.PipUI = (() => {
       if (remaining <= 0) {
         danmakuCooldownUntil = 0;
         danmakuCooldownTimer = undefined;
-        danmakuSendSubmit.textContent = "送出";
+        danmakuSendSubmit.textContent = t("pipSend");
         danmakuSendSubmit.disabled =
           !danmakuEnabled || !actions.canSendDanmaku || sendingDanmaku;
         return;
       }
       danmakuSendSubmit.disabled = true;
-      danmakuSendSubmit.textContent = `${Math.ceil(remaining / 1000)} 秒`;
+      danmakuSendSubmit.textContent = t(
+        "pipCooldownSeconds",
+        String(Math.ceil(remaining / 1000)),
+      );
       danmakuCooldownTimer = win.setTimeout(
         updateDanmakuCooldown,
         Math.min(1000, remaining),
@@ -964,19 +1005,19 @@ globalThis.PipCompanion.PipUI = (() => {
       if (!danmakuEnabled || !actions.canSendDanmaku || sendingDanmaku) return;
       if (danmakuCooldownUntil > Date.now()) {
         const seconds = Math.ceil((danmakuCooldownUntil - Date.now()) / 1000);
-        setDanmakuSendStatus(`請稍候 ${seconds} 秒再發送。`);
+        setDanmakuSendStatus(t("pipWaitToSend", String(seconds)));
         return;
       }
       if (danmakuCooldownTimer !== undefined)
         win.clearTimeout(danmakuCooldownTimer);
       danmakuCooldownTimer = undefined;
       danmakuCooldownUntil = 0;
-      danmakuSendSubmit.textContent = "送出";
+      danmakuSendSubmit.textContent = t("pipSend");
       danmakuSendSubmit.disabled = false;
 
       refreshDanmakuCharacterLimit();
       if (!danmakuSendInput.value.trim()) {
-        setDanmakuSendStatus("請先輸入彈幕內容。");
+        setDanmakuSendStatus(t("pipEnterDanmaku"));
         return;
       }
       if (
@@ -984,7 +1025,7 @@ globalThis.PipCompanion.PipUI = (() => {
         danmakuSendInput.value.length > danmakuCharacterLimit
       ) {
         setDanmakuSendStatus(
-          `彈幕超過平台字數限制（${danmakuCharacterLimit} 字）。`,
+          t("pipDanmakuTooLong", String(danmakuCharacterLimit)),
         );
         return;
       }
@@ -1006,15 +1047,15 @@ globalThis.PipCompanion.PipUI = (() => {
             updateDanmakuCharacterCount();
           }
           updateDanmakuCooldown();
-        } else setDanmakuSendStatus("無法發送，請確認聊天室狀態。");
+        } else setDanmakuSendStatus(t("pipSendUnavailable"));
       } catch {
-        setDanmakuSendStatus("發送失敗，請稍後再試。");
+        setDanmakuSendStatus(t("pipSendFailed"));
       } finally {
         sendingDanmaku = false;
         if (danmakuCooldownUntil === 0) {
           danmakuSendSubmit.disabled =
             !danmakuEnabled || !actions.canSendDanmaku;
-          danmakuSendSubmit.textContent = "送出";
+          danmakuSendSubmit.textContent = t("pipSend");
         }
       }
     };
@@ -1248,7 +1289,7 @@ globalThis.PipCompanion.PipUI = (() => {
       const videoSource = actions.getVideo();
       const seconds = parseTime(timeCurrent.value);
       if (!videoSource || seconds === null) {
-        actions.showFeedback("時間格式錯誤");
+        actions.showFeedback(t("pipTimeInvalid"));
         return false;
       }
       const duration = videoSource.duration;

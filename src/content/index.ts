@@ -91,6 +91,13 @@ let captionStyleRevision = 0;
 void loadSettings();
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== "local") return;
+  if (changes.uiLanguage) {
+    globalThis.PipCompanion.util.setLanguagePreference(
+      changes.uiLanguage.newValue,
+    );
+    state.pipUi?.refreshLocale();
+    nudgeScan();
+  }
   let shortcutChanged = false;
   for (const key of SHORTCUT_KEYS) {
     if (!changes[key]) continue;
@@ -135,8 +142,10 @@ async function loadSettings() {
       danmakuEnabled: true,
       followPlaybackPip: false,
       seekSeconds: DEFAULT_SEEK_SECONDS,
+      uiLanguage: "auto",
       [captionSettings.STORAGE_KEY]: captionSettings.DEFAULTS,
     });
+    globalThis.PipCompanion.util.setLanguagePreference(stored.uiLanguage);
     for (const key of SHORTCUT_KEYS) {
       state[key] = normalizeShortcut(stored[key], SHORTCUT_DEFAULTS[key]);
     }
@@ -453,7 +462,7 @@ async function requestPipHandoff() {
       pipHandoffRetryAfter = Date.now() + PIP_HANDOFF_RETRY_DELAY_MS;
       if (state.sourceVideo && !state.sourceVideo.paused)
         globalThis.PipCompanion.ContentFeedback.showPageToast(
-          "無法自動切換 PiP，請在此頁按 PiP 快捷鍵重新開啟。",
+          globalThis.PipCompanion.util.getMessage("contentHandoffFailed"),
         );
     }
   } catch {

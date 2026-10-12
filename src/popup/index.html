@@ -1,62 +1,74 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>幕伴 PiP · PiP Companion</title>
+    <title>__MSG_extName__</title>
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
     <main>
-      <button class="primary" id="open-pip" type="button">開啟子母畫面</button>
+      <button class="primary" id="open-pip" type="button">
+        __MSG_popupOpenPip__
+      </button>
       <div class="popup-views">
-        <section id="menu-view" class="popup-view" aria-label="主選單">
+        <section
+          id="menu-view"
+          class="popup-view"
+          aria-label="__MSG_popupMainMenu__"
+        >
           <div class="shortcut-list">
             <p class="list-title">
-              快捷鍵
+              __MSG_popupShortcuts__
               <button
                 class="help"
                 type="button"
-                aria-label="固定快捷鍵"
+                aria-label="__MSG_popupFixedShortcuts__"
                 aria-describedby="fixed-shortcut"
               >
                 <span class="help-icon" aria-hidden="true">?</span>
                 <span class="help-tip" id="fixed-shortcut">
-                  <span class="help-title">固定快捷鍵</span>
+                  <span class="help-title">__MSG_popupFixedShortcuts__</span>
                   <span class="help-row"
-                    ><span>播放 / 暫停</span><kbd>Space</kbd></span
+                    ><span>__MSG_shortcutPlayPause__</span
+                    ><kbd>Space</kbd></span
                   >
                   <span class="help-row"
-                    ><span>左右跳轉（秒數可調）</span><kbd>← / →</kbd></span
+                    ><span>__MSG_shortcutSeek__</span><kbd>← / →</kbd></span
                   >
                   <span class="help-row"
-                    ><span>音量控制</span><kbd>↓ / ↑</kbd></span
+                    ><span>__MSG_shortcutVolume__</span><kbd>↓ / ↑</kbd></span
                   >
                   <span class="help-row"
-                    ><span>字幕開關</span><kbd>C</kbd></span
-                  >
-                  <span class="help-row"><span>靜音</span><kbd>M</kbd></span>
-                  <span class="help-row"
-                    ><span>逐格後退 / 前進</span><kbd>, / .</kbd></span
+                    ><span>__MSG_shortcutCaptions__</span><kbd>C</kbd></span
                   >
                   <span class="help-row"
-                    ><span>倍速控制</span><kbd>Shift + , / Shift + .</kbd></span
+                    ><span>__MSG_shortcutMute__</span><kbd>M</kbd></span
                   >
                   <span class="help-row"
-                    ><span>彈幕輸入</span><kbd>Enter</kbd></span
+                    ><span>__MSG_shortcutFrameStep__</span
+                    ><kbd>, / .</kbd></span
                   >
                   <span class="help-row"
-                    ><span>自動調整比例</span><kbd>R</kbd></span
+                    ><span>__MSG_shortcutPlaybackSpeed__</span
+                    ><kbd>Shift + , / Shift + .</kbd></span
                   >
                   <span class="help-row"
-                    ><span>調整 PiP 大小</span
-                    ><kbd id="pip-resize-shortcut">Ctrl + 滾輪</kbd></span
+                    ><span>__MSG_shortcutDanmakuInput__</span
+                    ><kbd>Enter</kbd></span
+                  >
+                  <span class="help-row"
+                    ><span>__MSG_shortcutAspectRatio__</span><kbd>R</kbd></span
+                  >
+                  <span class="help-row"
+                    ><span>__MSG_shortcutResizePip__</span
+                    ><kbd id="pip-resize-shortcut">Ctrl + wheel</kbd></span
                   >
                 </span>
               </button>
             </p>
             <div class="shortcut-row">
-              <span>子母畫面</span>
+              <span>__MSG_popupPip__</span>
               <button
                 class="shortcut"
                 data-shortcut="launchShortcut"
@@ -66,7 +78,7 @@
               </button>
             </div>
             <div class="shortcut-row">
-              <span>彈幕</span>
+              <span>__MSG_popupDanmaku__</span>
               <button
                 class="shortcut"
                 data-shortcut="danmakuShortcut"
@@ -76,7 +88,7 @@
               </button>
             </div>
             <div class="shortcut-row">
-              <span>截圖</span>
+              <span>__MSG_popupScreenshot__</span>
               <button
                 class="shortcut"
                 data-shortcut="screenshotShortcut"
@@ -86,7 +98,7 @@
               </button>
             </div>
             <div class="shortcut-row">
-              <span>浮動留言區</span>
+              <span>__MSG_popupFloatingComments__</span>
               <button
                 class="shortcut"
                 data-shortcut="commentsShortcut"
@@ -96,20 +108,22 @@
               </button>
             </div>
             <label class="shortcut-row seek-seconds-row" for="seek-seconds">
-              <span>跳轉秒數</span>
+              <span>__MSG_popupSeekInterval__</span>
               <select id="seek-seconds" disabled></select>
             </label>
           </div>
           <div class="toggle-list">
-            <p class="list-title">功能設定</p>
+            <p class="list-title">__MSG_popupFeatureSettings__</p>
             <div class="danmaku-toggle-row">
-              <label class="danmaku-label" for="danmaku-toggle">彈幕</label>
+              <label class="danmaku-label" for="danmaku-toggle"
+                >__MSG_popupDanmaku__</label
+              >
               <button
                 class="settings-open"
                 id="danmaku-settings-open"
                 type="button"
-                aria-label="彈幕顯示設定"
-                title="彈幕顯示設定"
+                aria-label="__MSG_popupDanmakuDisplaySettings__"
+                title="__MSG_popupDanmakuDisplaySettings__"
               >
                 <svg
                   aria-hidden="true"
@@ -128,13 +142,13 @@
               />
             </div>
             <div class="toggle-row">
-              <span>字幕樣式</span>
+              <span>__MSG_popupCaptionStyle__</span>
               <button
                 class="settings-open"
                 id="caption-settings-open"
                 type="button"
-                aria-label="字幕樣式設定"
-                title="字幕樣式設定"
+                aria-label="__MSG_popupCaptionStyleSettings__"
+                title="__MSG_popupCaptionStyleSettings__"
               >
                 <svg
                   aria-hidden="true"
@@ -147,16 +161,24 @@
               </button>
             </div>
             <label class="toggle-row">
-              <span>截圖</span>
+              <span>__MSG_popupScreenshot__</span>
               <input type="checkbox" id="screenshot-toggle" checked />
             </label>
             <label class="toggle-row">
-              <span>浮動留言區</span>
+              <span>__MSG_popupFloatingComments__</span>
               <input type="checkbox" id="comments-toggle" checked />
             </label>
             <label class="toggle-row">
-              <span>影片跟隨</span>
+              <span>__MSG_popupFollowPlayback__</span>
               <input type="checkbox" id="follow-playback-pip-toggle" />
+            </label>
+            <label class="language-row" for="language-select">
+              <span>__MSG_popupLanguage__</span>
+              <select id="language-select">
+                <option value="en">English</option>
+                <option value="zh_TW">繁體中文</option>
+                <option value="zh_CN">简体中文</option>
+              </select>
             </label>
           </div>
         </section>
@@ -171,7 +193,7 @@
               class="back-button"
               id="danmaku-settings-back"
               type="button"
-              aria-label="返回主選單"
+              aria-label="__MSG_popupBackToMenu__"
             >
               <svg
                 aria-hidden="true"
@@ -187,14 +209,22 @@
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
-            <h1 id="danmaku-settings-title">彈幕設定</h1>
+            <h1 id="danmaku-settings-title">__MSG_popupDanmakuSettings__</h1>
           </header>
           <label class="range-row" for="danmaku-size">
-            <span>字體大小 <output id="danmaku-size-value">120%</output></span>
+            <span
+              >__MSG_popupFontSize__
+              <output id="danmaku-size-value">120%</output></span
+            >
             <input id="danmaku-size" type="range" min="50" max="400" step="5" />
           </label>
           <label class="range-row" for="danmaku-speed">
-            <span>滾動速度 <output id="danmaku-speed-value">適中</output></span>
+            <span
+              >__MSG_popupScrollSpeed__
+              <output id="danmaku-speed-value"
+                >__MSG_speedNormal__</output
+              ></span
+            >
             <input
               id="danmaku-speed"
               type="range"
@@ -202,7 +232,7 @@
               max="4"
               step="1"
               list="danmaku-speed-levels"
-              aria-valuetext="適中"
+              aria-valuetext="__MSG_speedNormal__"
             />
             <datalist id="danmaku-speed-levels">
               <option value="0"></option>
@@ -214,7 +244,8 @@
           </label>
           <label class="range-row" for="danmaku-opacity">
             <span
-              >不透明度 <output id="danmaku-opacity-value">85%</output></span
+              >__MSG_popupOpacity__
+              <output id="danmaku-opacity-value">85%</output></span
             >
             <input
               id="danmaku-opacity"
@@ -225,30 +256,38 @@
             />
           </label>
           <label class="range-row" for="danmaku-area">
-            <span>顯示區域 <output id="danmaku-area-value">50%</output></span>
+            <span
+              >__MSG_popupDisplayArea__
+              <output id="danmaku-area-value">50%</output></span
+            >
             <input id="danmaku-area" type="range" min="10" max="100" step="1" />
           </label>
           <label class="range-row" for="danmaku-font-family">
-            <span>字體</span>
+            <span>__MSG_popupFont__</span>
             <select id="danmaku-font-family">
-              <optgroup label="通用">
-                <option value="default">系統預設</option>
-                <option value="sansSerif">無襯線</option>
-                <option value="serif">襯線</option>
-                <option value="monospace">等寬</option>
+              <optgroup label="__MSG_popupFontGeneral__">
+                <option value="default">__MSG_popupSystemDefault__</option>
+                <option value="sansSerif">__MSG_popupSansSerif__</option>
+                <option value="serif">__MSG_popupSerif__</option>
+                <option value="monospace">__MSG_popupMonospace__</option>
               </optgroup>
-              <optgroup label="進階字體（依裝置支援）">
-                <option value="arial">Arial（拉丁字母）</option>
+              <optgroup label="__MSG_popupFontAdvanced__">
+                <option value="arial">__MSG_popupArialLatin__</option>
                 <option value="notoSansTC">Noto Sans TC</option>
-                <option value="microsoftJhengHei">黑體</option>
-                <option value="song">宋體／明體</option>
-                <option value="fangSong">仿宋</option>
-                <option value="kai">標楷體</option>
+                <option value="microsoftJhengHei">
+                  __MSG_popupBlackFont__
+                </option>
+                <option value="song">__MSG_popupSongFont__</option>
+                <option value="fangSong">__MSG_popupFangSongFont__</option>
+                <option value="kai">__MSG_popupKaiFont__</option>
               </optgroup>
             </select>
           </label>
           <label class="range-row" for="danmaku-weight">
-            <span>字重 <output id="danmaku-weight-value">500</output></span>
+            <span
+              >__MSG_popupFontWeight__
+              <output id="danmaku-weight-value">500</output></span
+            >
             <input
               id="danmaku-weight"
               type="range"
@@ -259,7 +298,7 @@
           </label>
           <label class="range-row" for="danmaku-max-size">
             <span
-              >最大字體大小
+              >__MSG_popupMaxFontSize__
               <output id="danmaku-max-size-value">40px</output></span
             >
             <input
@@ -271,7 +310,7 @@
             />
           </label>
           <button id="danmaku-style-reset" class="secondary" type="button">
-            重設彈幕樣式
+            __MSG_popupResetDanmakuStyle__
           </button>
         </section>
         <section
@@ -285,7 +324,7 @@
               class="back-button"
               id="caption-settings-back"
               type="button"
-              aria-label="返回主選單"
+              aria-label="__MSG_popupBackToMenu__"
             >
               <svg
                 aria-hidden="true"
@@ -301,33 +340,47 @@
                 <path d="m15 18-6-6 6-6" />
               </svg>
             </button>
-            <h1 id="caption-settings-title">字幕樣式</h1>
+            <h1 id="caption-settings-title">__MSG_popupCaptionStyle__</h1>
           </header>
-          <div class="subtitle-preview" aria-label="字幕樣式預覽">
+          <div
+            class="subtitle-preview"
+            aria-label="__MSG_popupCaptionPreview__"
+          >
             <div class="subtitle-preview-caption" id="caption-preview">
-              <span class="subtitle-preview-segment">字幕預覽 Sample</span>
-              <span class="subtitle-preview-segment">第二行字幕</span>
+              <span class="subtitle-preview-segment"
+                >__MSG_popupCaptionPreviewText__</span
+              >
+              <span class="subtitle-preview-segment"
+                >__MSG_popupCaptionPreviewSecondLine__</span
+              >
             </div>
           </div>
           <label class="range-row" for="caption-size">
-            <span>字體大小 <output id="caption-size-value">100%</output></span>
+            <span
+              >__MSG_popupFontSize__
+              <output id="caption-size-value">100%</output></span
+            >
             <input id="caption-size" type="range" min="50" max="200" step="5" />
           </label>
           <label class="color-row" for="caption-text-color">
-            <span>文字顏色</span>
-            <input id="caption-text-color" type="color" aria-label="文字顏色" />
+            <span>__MSG_popupTextColor__</span>
+            <input
+              id="caption-text-color"
+              type="color"
+              aria-label="__MSG_popupTextColor__"
+            />
           </label>
           <label class="color-row" for="caption-background-color">
-            <span>背景顏色</span>
+            <span>__MSG_popupBackgroundColor__</span>
             <input
               id="caption-background-color"
               type="color"
-              aria-label="背景顏色"
+              aria-label="__MSG_popupBackgroundColor__"
             />
           </label>
           <label class="range-row" for="caption-background-opacity">
             <span
-              >背景不透明度
+              >__MSG_popupBackgroundOpacity__
               <output id="caption-background-opacity-value">75%</output></span
             >
             <input
@@ -340,7 +393,8 @@
           </label>
           <label class="range-row" for="caption-position">
             <span
-              >上下位置 <output id="caption-position-value">10%</output></span
+              >__MSG_popupVerticalPosition__
+              <output id="caption-position-value">10%</output></span
             >
             <input
               id="caption-position"
@@ -351,37 +405,43 @@
             />
           </label>
           <label class="range-row" for="caption-font-family">
-            <span>字體</span>
+            <span>__MSG_popupFont__</span>
             <select id="caption-font-family">
-              <optgroup label="通用">
-                <option value="default">系統預設</option>
-                <option value="sansSerif">無襯線</option>
-                <option value="serif">襯線</option>
-                <option value="monospace">等寬</option>
+              <optgroup label="__MSG_popupFontGeneral__">
+                <option value="default">__MSG_popupSystemDefault__</option>
+                <option value="sansSerif">__MSG_popupSansSerif__</option>
+                <option value="serif">__MSG_popupSerif__</option>
+                <option value="monospace">__MSG_popupMonospace__</option>
               </optgroup>
-              <optgroup label="進階字體（依裝置支援）">
-                <option value="arial">Arial（拉丁字母）</option>
+              <optgroup label="__MSG_popupFontAdvanced__">
+                <option value="arial">__MSG_popupArialLatin__</option>
                 <option value="notoSansTC">Noto Sans TC</option>
-                <option value="microsoftJhengHei">黑體</option>
-                <option value="song">宋體／明體</option>
-                <option value="fangSong">仿宋</option>
-                <option value="kai">標楷體</option>
+                <option value="microsoftJhengHei">
+                  __MSG_popupBlackFont__
+                </option>
+                <option value="song">__MSG_popupSongFont__</option>
+                <option value="fangSong">__MSG_popupFangSongFont__</option>
+                <option value="kai">__MSG_popupKaiFont__</option>
               </optgroup>
             </select>
           </label>
           <label class="range-row" for="caption-edge-style">
-            <span>文字邊緣</span>
+            <span>__MSG_popupTextEdge__</span>
             <select id="caption-edge-style">
-              <option value="none">無</option>
-              <option value="shadow">陰影</option>
-              <option value="raised">浮凸</option>
-              <option value="depressed">內凹</option>
-              <option value="outline">描邊</option>
+              <option value="none">__MSG_popupNone__</option>
+              <option value="shadow">__MSG_popupShadow__</option>
+              <option value="raised">__MSG_popupRaised__</option>
+              <option value="depressed">__MSG_popupDepressed__</option>
+              <option value="outline">__MSG_popupOutline__</option>
             </select>
           </label>
           <label class="color-row" for="caption-edge-color">
-            <span>邊緣顏色</span>
-            <input id="caption-edge-color" type="color" aria-label="邊緣顏色" />
+            <span>__MSG_popupEdgeColor__</span>
+            <input
+              id="caption-edge-color"
+              type="color"
+              aria-label="__MSG_popupEdgeColor__"
+            />
           </label>
           <label
             id="caption-outline-width-row"
@@ -389,7 +449,7 @@
             for="caption-outline-width"
           >
             <span
-              >描邊粗細
+              >__MSG_popupOutlineWidth__
               <output id="caption-outline-width-value">1px</output></span
             >
             <input
@@ -402,7 +462,8 @@
           </label>
           <label class="range-row" for="caption-font-weight">
             <span
-              >字重 <output id="caption-font-weight-value">400</output></span
+              >__MSG_popupFontWeight__
+              <output id="caption-font-weight-value">400</output></span
             >
             <input
               id="caption-font-weight"
@@ -414,7 +475,8 @@
           </label>
           <label class="range-row" for="caption-line-height">
             <span
-              >行高 <output id="caption-line-height-value">100%</output></span
+              >__MSG_popupLineHeight__
+              <output id="caption-line-height-value">100%</output></span
             >
             <input
               id="caption-line-height"
@@ -425,15 +487,16 @@
             />
           </label>
           <button id="caption-style-reset" class="secondary" type="button">
-            重設字幕樣式
+            __MSG_popupResetCaptionStyle__
           </button>
         </section>
       </div>
       <p id="status" role="status"></p>
     </main>
+    <script src="shared/locales.js"></script>
     <script src="shared/utils.js"></script>
     <script src="shared/danmaku-settings.js"></script>
     <script src="shared/caption-settings.js"></script>
-    <script src="popup/index.js"></script>
+    <script type="module" src="popup/index.js"></script>
   </body>
 </html>

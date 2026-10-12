@@ -1,6 +1,7 @@
 "use strict";
 
 globalThis.PipCompanion.ContentPipLifecycle = (() => {
+  const t = globalThis.PipCompanion.util.getMessage;
   let boundsTimer = 0;
   let boundsDebounceTimer = 0;
   let boundsSavePromise: Promise<void> | null = null;
@@ -323,7 +324,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
   function showPipWaiting(win: Window) {
     const doc = win.document;
-    doc.title = "正在尋找影片 · 幕伴 PiP";
+    doc.title = t("pipSearchingTitle");
     const style = doc.createElement("style");
     style.textContent =
       "html,body{width:100%;height:100%;margin:0;background:#111;color:#fff;font:16px system-ui,sans-serif}body{display:grid;place-items:center}";
@@ -331,7 +332,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     const root = doc.body ?? doc.documentElement;
     const message = doc.createElement("div");
     message.setAttribute("role", "status");
-    message.textContent = "正在尋找影片，請稍候…";
+    message.textContent = t("pipSearching");
     root.append(message);
   }
 
@@ -564,7 +565,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
   async function openPiP(): Promise<PipOperationResult> {
     if (state.pipSession.phase === "opening")
-      return { ok: false, message: "子母畫面正在開啟" };
+      return { ok: false, message: t("pipOpening") };
     if (state.pipWindow && !state.pipWindow.closed) {
       try {
         state.pipWindow.focus();
@@ -572,7 +573,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       } catch {
         return {
           ok: false,
-          message: "無法切換至子母畫面，請稍後再試。",
+          message: t("pipCannotFocus"),
         };
       }
     }
@@ -619,7 +620,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
             return;
           closePiP(true);
           globalThis.PipCompanion.ContentFeedback.showPageToast(
-            "尚未找到影片，請確認播放器載入後再試一次。",
+            t("pipVideoNotFound"),
           );
         }, 10000);
         state.pipSession = {
@@ -642,9 +643,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         console.warn("[Caption PiP] Could not open PiP:", error);
       return {
         ok: false,
-        message: gestureRequired
-          ? "Chrome 要求在頁面上操作；請關閉選單後按設定的快捷鍵。"
-          : "此影片目前無法開啟子母畫面，請稍後再試。",
+        message: gestureRequired ? t("pipGestureRequired") : t("pipCannotOpen"),
+        ...(gestureRequired ? { code: "GESTURE_REQUIRED" as const } : {}),
       };
     } finally {
       if (state.pipSession.phase === "opening")

@@ -1,4 +1,5 @@
-type PipOperationResult = { ok: true } | { ok: false; message: string };
+type PipOperationResult =
+  { ok: true } | { ok: false; message: string; code?: "GESTURE_REQUIRED" };
 
 type ResizePipResult = { ok: true } | { ok: false };
 
@@ -137,6 +138,7 @@ interface PipUiHandle {
   readonly timeTooltip: HTMLElement;
   readonly timeTooltipThumb: HTMLElement;
   readonly timeTooltipText: HTMLElement;
+  refreshLocale(): void;
   setDanmakuEnabled(enabled: boolean): void;
 }
 
@@ -199,9 +201,14 @@ interface ContentBilibiliDanmakuApi {
 }
 
 interface PipCompanionUtil {
+  getMessage(key: string, substitutions?: string | string[]): string;
+  getLocale(): "en" | "zh_TW" | "zh_CN";
+  getHtmlLanguage(): "en" | "zh-Hant" | "zh-Hans";
+  setLanguagePreference(value: unknown): "auto" | "en" | "zh_TW" | "zh_CN";
+  getLanguagePreference(): "auto" | "en" | "zh_TW" | "zh_CN";
   SHORTCUT_DEFAULTS: Record<ShortcutKey, Shortcut>;
   SHORTCUT_KEYS: ShortcutKey[];
-  FIXED_SHORTCUTS: { label: string; shortcut: Shortcut }[];
+  getFixedShortcuts(): { label: string; shortcut: Shortcut }[];
   DEFAULT_SEEK_SECONDS: SeekSeconds;
   SEEK_SECONDS_OPTIONS: readonly SeekSeconds[];
   normalizeSeekSeconds(value: unknown): SeekSeconds;
@@ -333,7 +340,12 @@ interface PipCompanionSiteUtils {
   parseBilibiliVideoPath(pathname: string): BilibiliVideoPath | null;
 }
 
+interface LocaleMessage {
+  message: string;
+}
+
 interface PipCompanionGlobal {
+  locales: Record<"en" | "zh_TW" | "zh_CN", Record<string, LocaleMessage>>;
   PipAudio: PipAudioApi;
   PipUI: PipUiApi;
   ContentVideo: ContentVideoApi;

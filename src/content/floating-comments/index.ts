@@ -83,6 +83,13 @@ function updateFloatingCommentsDimensions() {
 }
 
 function ensureFloatingCommentsButton(shortcut: Shortcut) {
+  const comments = getFloatingCommentsRoot();
+  if (
+    comments &&
+    document.body.classList.contains(FLOATING_COMMENTS_BODY_CLASS)
+  )
+    ensureFloatingCommentsCloseButton(comments);
+
   const isBilibili = globalThis.PipCompanion.site.isBilibiliHost(
     location.hostname,
   );
@@ -93,7 +100,10 @@ function ensureFloatingCommentsButton(shortcut: Shortcut) {
   if (!rightControls) return;
 
   const shortcutText = globalThis.PipCompanion.util.formatShortcut(shortcut);
-  const tooltipText = `留言區 (${shortcutText})`;
+  const tooltipText = globalThis.PipCompanion.util.getMessage(
+    "commentsTooltip",
+    shortcutText,
+  );
   const isExpanded = document.body.classList.contains(
     FLOATING_COMMENTS_BODY_CLASS,
   );
@@ -104,6 +114,14 @@ function ensureFloatingCommentsButton(shortcut: Shortcut) {
   if (existing) {
     if (existing.getAttribute("data-shortcut") === shortcutText) {
       existing.setAttribute("aria-expanded", String(isExpanded));
+      existing.setAttribute("aria-label", tooltipText);
+      existing.setAttribute("data-tooltip-title", tooltipText);
+      existing.setAttribute(
+        "data-title-no-tooltip",
+        globalThis.PipCompanion.util.getMessage("popupFloatingComments"),
+      );
+      const tooltip = existing.querySelector(".yt-floating-comments-tooltip");
+      if (tooltip) tooltip.textContent = tooltipText;
       return;
     }
     existing.remove();
@@ -117,7 +135,10 @@ function ensureFloatingCommentsButton(shortcut: Shortcut) {
   button.setAttribute("aria-label", tooltipText);
   button.setAttribute("aria-expanded", String(isExpanded));
   button.setAttribute("data-tooltip-title", tooltipText);
-  button.setAttribute("data-title-no-tooltip", "留言區");
+  button.setAttribute(
+    "data-title-no-tooltip",
+    globalThis.PipCompanion.util.getMessage("popupFloatingComments"),
+  );
   button.setAttribute(
     "aria-keyshortcuts",
     globalThis.PipCompanion.util.formatShortcut(shortcut, true),
@@ -162,13 +183,19 @@ function ensureFloatingCommentsCloseButton(comments: Element) {
     closeBtn.className = "yt-floating-comments-close-btn";
     closeBtn.textContent = "✕";
     closeBtn.type = "button";
-    closeBtn.setAttribute("title", "關閉留言區");
-    closeBtn.setAttribute("aria-label", "關閉留言區");
     closeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       toggleFloatingComments(false);
     });
   }
+  closeBtn.setAttribute(
+    "title",
+    globalThis.PipCompanion.util.getMessage("commentsClose"),
+  );
+  closeBtn.setAttribute(
+    "aria-label",
+    globalThis.PipCompanion.util.getMessage("commentsClose"),
+  );
 
   const titleRow = comments.querySelector(
     "ytd-comments-header-renderer #title, .reply-header",

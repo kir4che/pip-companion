@@ -415,7 +415,9 @@
       removeBackgroundChatFrame();
 
       const frame = document.createElement("iframe");
-      frame.title = "YouTube 聊天室訊息來源";
+      frame.title = globalThis.PipCompanion.util.getMessage(
+        "youtubeChatFrameTitle",
+      );
       frame.setAttribute("aria-hidden", "true");
       frame.tabIndex = -1;
       frame.src = chatUrl.href;

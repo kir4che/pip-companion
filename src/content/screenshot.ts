@@ -79,12 +79,14 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
     try {
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       downloadViaAnchor(canvas.toDataURL("image/png"), screenshotFilename());
-      globalThis.PipCompanion.ContentFeedback.showFeedback("已截圖");
+      globalThis.PipCompanion.ContentFeedback.showFeedback(
+        globalThis.PipCompanion.util.getMessage("screenshotSaved"),
+      );
     } catch (error) {
       globalThis.PipCompanion.ContentFeedback.showFeedback(
         error instanceof Error && error.name === "SecurityError"
-          ? "跨來源影片無法截圖"
-          : "截圖失敗",
+          ? globalThis.PipCompanion.util.getMessage("screenshotCrossOrigin")
+          : globalThis.PipCompanion.util.getMessage("screenshotFailed"),
       );
     }
   }
@@ -94,10 +96,23 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
     if (!rightControls) return;
 
     const shortcutText = globalThis.PipCompanion.util.formatShortcut(shortcut);
-    const tooltipText = `截圖 (${shortcutText})`;
+    const tooltipText = globalThis.PipCompanion.util.getMessage(
+      "screenshotTooltip",
+      shortcutText,
+    );
     const existing = rightControls.querySelector(".yt-pip-screenshot-btn");
     if (existing) {
-      if (existing.getAttribute("data-shortcut") === shortcutText) return;
+      if (existing.getAttribute("data-shortcut") === shortcutText) {
+        existing.setAttribute("aria-label", tooltipText);
+        existing.setAttribute("data-tooltip-title", tooltipText);
+        existing.setAttribute(
+          "data-title-no-tooltip",
+          globalThis.PipCompanion.util.getMessage("screenshot"),
+        );
+        const tooltip = existing.querySelector(".yt-pip-screenshot-tooltip");
+        if (tooltip) tooltip.textContent = tooltipText;
+        return;
+      }
       existing.remove();
     }
 
@@ -106,7 +121,10 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
     btn.type = "button";
     btn.setAttribute("aria-label", tooltipText);
     btn.setAttribute("data-tooltip-title", tooltipText);
-    btn.setAttribute("data-title-no-tooltip", "截圖");
+    btn.setAttribute(
+      "data-title-no-tooltip",
+      globalThis.PipCompanion.util.getMessage("screenshot"),
+    );
     btn.setAttribute(
       "aria-keyshortcuts",
       globalThis.PipCompanion.util.formatShortcut(shortcut, true),
