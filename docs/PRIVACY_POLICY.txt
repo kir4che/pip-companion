@@ -1,19 +1,19 @@
 PiP Companion Privacy Policy
 
-Last updated: 2026-10-09
+Last updated: 2026-10-13
 
 1. Data processing
 The extension has no accounts, advertising, analytics, or tracking, and the developer operates no server to collect user data. Content scripts run on regular webpages to find videos and process video, captions, chat/danmaku, and player state locally. Page content is not sent to the developer.
 
-Shortcuts, feature toggles, caption and danmaku appearance settings are stored in the browser's local extension storage. The source-tab identifier is kept temporarily in session storage while PiP is in use. Screenshots are downloaded to the user's device when requested.
+Shortcuts, feature toggles, seek interval, UI language, and caption and danmaku appearance settings are stored in the browser's local extension storage. The source-tab identifier, playback state, and PiP window size and position are kept temporarily in session storage while PiP is in use. Screenshots are downloaded to the user's device when requested.
 
 2. Third-party services
-When danmaku or thumbnail preview features are used, the extension requests the necessary data directly from relevant platform APIs or image hosts. Requests may include video identifiers, danmaku-segment information, and cookies, depending on the request and browser settings. When sending danmaku from PiP, the message is sent to Bahamut Anime Crazy, Bilibili, or YouTube through the site's native composer and the user's signed-in session; it is not sent to the developer. Each service handles and retains data under its own privacy policy.
+When danmaku features are used, the extension reads chat/danmaku content from supported site pages. For some sources (such as Bilibili), and for thumbnail previews, it also makes direct requests to relevant platform APIs or image hosts. These requests may include video identifiers, danmaku-segment information, and cookies, depending on the feature, request, and browser settings. When sending danmaku from PiP, the message is sent to Bahamut Anime Crazy, Bilibili, or YouTube through the site's native composer and the user's signed-in session; it is not sent to the developer. Each service handles and retains data under its own privacy policy.
 
 The extension does not send data to the developer and contains no analytics or tracking.
 
 3. Retention and deletion
-Removing the extension or clearing its browser data deletes local settings. The source-tab identifier is cleared when the browser session ends. Users manage downloaded screenshots themselves. Each third-party service determines how long it retains its request data.
+Removing the extension or clearing its browser data deletes local settings. Session data is cleared when the browser session ends. Users manage downloaded screenshots themselves. Each third-party service determines how long it retains its request data.
 
 4. Policy and contact
 Updates to this policy will be published here. For privacy questions, contact the project through GitHub Issues:
