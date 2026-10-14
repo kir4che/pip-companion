@@ -1,3 +1,9 @@
+## 0.4.0
+
+- Added a localized interface in English, Traditional Chinese, and Simplified Chinese, with a language selector
+- Added a dedicated settings page to customize shortcuts, seek interval, feature toggles, and caption and danmaku appearance
+- Added a toggle for seek thumbnail previews, available in the popup and settings page
+
 ## 0.3.1
 
 - Fixed Bilibili storyboard thumbnails loading for the wrong video part or failing to load reliably
