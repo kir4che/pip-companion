@@ -695,6 +695,13 @@ openButton.addEventListener("click", async () => {
         type: "PING",
       } satisfies ExtensionMessage);
     } catch {
+      const [injectionState] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => Boolean(globalThis.PipCompanion?.locales),
+      });
+      if (injectionState?.result)
+        throw new Error("Content scripts already started");
+
       const contentScripts = chrome.runtime
         .getManifest()
         .content_scripts?.find((entry) =>
