@@ -82,38 +82,62 @@ globalThis.PipCompanion.PipUI = (() => {
       }
       .subtitle {
         position: absolute;
-        left: 4%;
-        right: 4%;
+        left: 50%;
+        width: fit-content;
+        max-width: 92%;
         bottom: var(--subtitle-bottom-offset, 10%);
-        transform: translateY(var(--subtitle-bottom-offset, 10%));
+        transform: translate(-50%, var(--subtitle-bottom-offset, 10%));
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: flex-end;
         gap: 0.35em;
+        padding: 0.55em 1.1em 0.62em;
+        border-radius: 0.35em;
+        background: var(--subtitle-background, rgba(48, 50, 52, 0.8));
         pointer-events: none;
       }
       .subtitle-line {
         display: block;
         text-align: center;
-        max-width: 94%;
-        white-space: pre-wrap;
-        overflow-wrap: break-word;
+        width: max-content;
+        max-width: 100%;
+        white-space: nowrap;
         line-height: var(--subtitle-line-height, 1.35);
       }
+      .subtitle-pair {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: max-content;
+        max-width: 100%;
+        gap: var(--subtitle-pair-gap, 0.35em);
+      }
+      .subtitle-pair--wrapped {
+        width: 100%;
+      }
+      .subtitle-line--wrapped {
+        width: 100%;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
       .subtitle-segment {
-        display: inline-block;
-        padding: 0.12em 0.35em;
-        background: var(--subtitle-background, rgba(8, 8, 8, 0.75));
+        display: inline;
+        padding: 0;
+        background: transparent;
         color: var(--subtitle-text-color, #fff);
         font-family: var(
           --subtitle-font-family,
           "YouTube Noto", Roboto, Arial, sans-serif
         );
-        font-size: clamp(12px, var(--subtitle-font-size, 4.8cqh), 64px);
+        font-size: clamp(
+          12px,
+          var(--subtitle-fit-font-size, var(--subtitle-font-size, 4.8cqh)),
+          64px
+        );
         font-weight: var(--subtitle-font-weight, 400);
-        -webkit-text-stroke: min(var(--subtitle-outline-width, 0px), 0.06em)
-          var(--subtitle-outline-color, #000);
+        letter-spacing: var(--subtitle-letter-spacing, 0em);
+        -webkit-text-stroke: 0 transparent;
         text-shadow: var(--subtitle-text-shadow, none);
         border-radius: 2px;
         box-decoration-break: clone;
@@ -365,6 +389,119 @@ globalThis.PipCompanion.PipUI = (() => {
       .playlist-button {
         line-height: 0;
       }
+      .custom-select {
+        position: relative;
+        display: block;
+        min-width: 0;
+        max-width: 100%;
+        font: inherit;
+      }
+      .custom-select-source {
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        overflow: hidden !important;
+        clip-path: inset(50%) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+      .custom-select-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        width: 100%;
+        min-width: 0;
+        min-height: 32px;
+        padding: 5px 9px;
+        border: 1px solid #ffffff2e;
+        border-radius: 7px;
+        background: #ffffff0d;
+        color: #f4f4f5;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: border-color 0.14s ease, background 0.14s ease;
+      }
+      .custom-select-trigger:hover:not(:disabled) {
+        border-color: #ffffff5c;
+        background: #ffffff17;
+      }
+      .custom-select-trigger:focus-visible {
+        outline: 2px solid #3ea6ff;
+        outline-offset: 2px;
+      }
+      .custom-select-trigger:disabled {
+        opacity: 0.48;
+        cursor: not-allowed;
+      }
+      .custom-select-value {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .custom-select-chevron {
+        flex: 0 0 7px;
+        width: 7px;
+        height: 7px;
+        border-right: 1.5px solid currentColor;
+        border-bottom: 1.5px solid currentColor;
+        opacity: 0.68;
+        transform: rotate(45deg) translateY(-2px);
+        transition: transform 0.14s ease;
+      }
+      .custom-select[data-open="true"] .custom-select-chevron {
+        transform: rotate(225deg) translate(-1px, -1px);
+      }
+      .custom-select-menu {
+        position: fixed;
+        z-index: 10000;
+        overflow: auto;
+        padding: 5px;
+        border: 1px solid #ffffff24;
+        border-radius: 9px;
+        background: #171719;
+        box-shadow: 0 12px 32px #000b;
+        color: #f4f4f5;
+        scrollbar-color: #ffffff38 transparent;
+        scrollbar-width: thin;
+      }
+      .custom-select-option {
+        display: block;
+        width: 100%;
+        min-height: 30px;
+        padding: 6px 9px;
+        border: 0;
+        border-radius: 5px;
+        background: transparent;
+        overflow: hidden;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .custom-select-option:hover,
+      .custom-select-option.is-active {
+        background: #ffffff13;
+      }
+      .custom-select-option[aria-selected="true"] {
+        background: #3ea6ff22;
+        color: #9bd2ff;
+      }
+      .custom-select-option:disabled {
+        color: #ffffff52;
+        cursor: not-allowed;
+      }
+      .custom-select-group-label {
+        padding: 8px 9px 4px;
+        color: #a1a1aa;
+        font-size: 10px;
+        font-weight: 650;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
       .playlist-button img {
         display: block;
         width: 17px;
@@ -403,6 +540,140 @@ globalThis.PipCompanion.PipUI = (() => {
       .playlist-panel::-webkit-scrollbar-thumb:hover {
         background: #ffffff88;
         background-clip: padding-box;
+      }
+      .subtitle-translation-panel {
+        position: absolute;
+        z-index: 80;
+        right: 8px;
+        bottom: 48px;
+        width: min(280px, calc(100% - 16px));
+        max-height: min(75%, 360px);
+        overflow: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid #ffffff22;
+        border-radius: 10px;
+        background: #111f;
+        box-shadow: 0 8px 28px #000b;
+        font-size: 12px;
+      }
+      .subtitle-translation-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        min-height: 28px;
+      }
+      .subtitle-translation-row > span,
+      .subtitle-translation-row > label {
+        min-width: 0;
+      }
+      .subtitle-translation-panel .custom-select {
+        flex: 0 1 58%;
+        width: 58%;
+      }
+      .subtitle-translation-panel .custom-select-trigger {
+        min-height: 30px;
+        padding: 4px 8px;
+        border-color: #ffffff2e;
+        border-radius: 6px;
+        background: #ffffff0d;
+        font-size: 11px;
+      }
+      .subtitle-translation-panel .custom-select-menu {
+        z-index: 10001;
+        font-size: 11px;
+      }
+      .subtitle-translation-panel input[type="checkbox"] {
+        accent-color: #3ea6ff;
+      }
+      .subtitle-translation-toggle {
+        position: relative;
+        flex: none;
+        width: 34px;
+        height: 20px;
+        margin: 0;
+        appearance: none;
+        border: 1px solid #ffffff50;
+        border-radius: 999px;
+        background: #ffffff2a;
+        cursor: pointer;
+        transition:
+          background-color 120ms ease,
+          border-color 120ms ease;
+      }
+      .subtitle-translation-toggle::before {
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #fff;
+        content: "";
+        transition: transform 120ms ease;
+      }
+      .subtitle-translation-toggle:checked {
+        border-color: #3ea6ff;
+        background: #3ea6ff;
+      }
+      .subtitle-translation-toggle:checked::before {
+        transform: translateX(14px);
+      }
+      .subtitle-translation-toggle:focus-visible {
+        outline: 2px solid #fff;
+        outline-offset: 2px;
+      }
+      .subtitle-translation-toggle:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+      .subtitle-translation-hint-icon {
+        position: relative;
+        display: inline-grid;
+        place-items: center;
+        width: 14px;
+        height: 14px;
+        margin-left: 6px;
+        border: 1px solid #ffffff50;
+        border-radius: 50%;
+        color: #a1a1aa;
+        font-size: 10px;
+        line-height: 1;
+        vertical-align: 1px;
+        cursor: help;
+      }
+      .subtitle-translation-hint-tooltip {
+        position: absolute;
+        z-index: 1000;
+        width: max-content;
+        max-width: min(280px, calc(100% - 16px));
+        padding: 6px 8px;
+        border: 1px solid #ffffff24;
+        border-radius: 6px;
+        background: #171719;
+        color: #f4f4f5;
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.5;
+        white-space: normal;
+        text-align: left;
+        pointer-events: none;
+      }
+      .subtitle-translation-hint-icon:focus {
+        outline: none;
+      }
+      .subtitle-translation-hint-icon:focus-visible {
+        outline: 2px solid #3ea6ff;
+        outline-offset: 1px;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .subtitle-translation-toggle,
+        .subtitle-translation-toggle::before {
+          transition: none;
+        }
       }
       .playlist-item {
         display: flex;
@@ -561,6 +832,10 @@ globalThis.PipCompanion.PipUI = (() => {
         }
         .controls .speed-button {
           width: 34px;
+        }
+        .translation-button {
+          width: 28px;
+          height: 28px;
         }
         .time {
           min-width: 55px;
@@ -736,6 +1011,184 @@ globalThis.PipCompanion.PipUI = (() => {
     playlistIcon.alt = "";
     playlistIcon.setAttribute("aria-hidden", "true");
     playlistButton.append(playlistIcon);
+    const translationButton = doc.createElement("button");
+    translationButton.type = "button";
+    translationButton.className = "translation-button";
+    translationButton.setAttribute("aria-expanded", "false");
+    translationButton.setAttribute("aria-haspopup", "true");
+    const translationIcon = doc.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "svg",
+    );
+    translationIcon.setAttribute("viewBox", "0 0 24 24");
+    translationIcon.setAttribute("aria-hidden", "true");
+    const translationPath = doc.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path",
+    );
+    translationPath.setAttribute(
+      "d",
+      "M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-11 7H8.5v-1H7v4h1.5v-1H10v1c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V9c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v2zm9 0h-1.5v-1H16v4h1.5v-1H19v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1V9c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v2z",
+    );
+    translationIcon.append(translationPath);
+    translationButton.append(translationIcon);
+    const translationPanel = doc.createElement("section");
+    translationPanel.id = "pip-subtitle-translation-panel";
+    translationPanel.className = "subtitle-translation-panel";
+    translationPanel.hidden = true;
+    translationPanel.setAttribute("aria-label", t("pipTranslationSettings"));
+    translationButton.setAttribute("aria-controls", translationPanel.id);
+    const subtitlePrimaryRow = doc.createElement("label");
+    subtitlePrimaryRow.className = "subtitle-translation-row";
+    const subtitlePrimaryText = doc.createElement("span");
+    subtitlePrimaryText.textContent = t("pipSubtitleTrack");
+    const subtitlePrimaryTrack = doc.createElement("select");
+    subtitlePrimaryTrack.setAttribute("aria-label", t("pipSubtitleTrack"));
+    subtitlePrimaryRow.append(subtitlePrimaryText, subtitlePrimaryTrack);
+    const translationServiceRow = doc.createElement("label");
+    translationServiceRow.className = "subtitle-translation-row";
+    const translationServiceText = doc.createElement("span");
+    const translationServiceLabel = doc.createTextNode(
+      t("pipTranslationSource"),
+    );
+    const translationServiceHintIcon = doc.createElement("span");
+    translationServiceHintIcon.className = "subtitle-translation-hint-icon";
+    translationServiceHintIcon.textContent = "?";
+    translationServiceHintIcon.setAttribute(
+      "data-tip",
+      t("pipTranslationServiceUnavailable"),
+    );
+    translationServiceHintIcon.tabIndex = 0;
+    translationServiceHintIcon.setAttribute("role", "img");
+    translationServiceHintIcon.setAttribute(
+      "aria-label",
+      t("pipTranslationServiceUnavailable"),
+    );
+    const translationServiceHintTooltip = doc.createElement("div");
+    translationServiceHintTooltip.id = "pip-subtitle-translation-hint";
+    translationServiceHintTooltip.className =
+      "subtitle-translation-hint-tooltip";
+    translationServiceHintTooltip.setAttribute("role", "tooltip");
+    translationServiceHintTooltip.hidden = true;
+    translationServiceHintTooltip.textContent = t(
+      "pipTranslationServiceUnavailable",
+    );
+    translationServiceHintIcon.setAttribute(
+      "aria-describedby",
+      translationServiceHintTooltip.id,
+    );
+    translationServiceText.append(
+      translationServiceLabel,
+      translationServiceHintIcon,
+    );
+    const translationService = doc.createElement("select");
+    translationService.setAttribute("aria-label", t("pipTranslationSource"));
+    const nativeSubtitleOption = doc.createElement("option");
+    nativeSubtitleOption.value = "none";
+    nativeSubtitleOption.textContent = t("pipTranslationNoService");
+    translationService.append(nativeSubtitleOption);
+    const translationProviders: {
+      provider: SubtitleTranslationProvider;
+      label: string;
+    }[] = [
+      { provider: "microsoft", label: "Microsoft Translator" },
+      { provider: "google", label: "Google Cloud Translation" },
+      { provider: "deepl", label: "DeepL API" },
+    ];
+    for (const { provider, label } of translationProviders) {
+      const option = doc.createElement("option");
+      option.value = provider;
+      option.textContent = label;
+      option.disabled = true;
+      translationService.append(option);
+    }
+    translationServiceRow.append(translationServiceText, translationService);
+    const translationEnabledRow = doc.createElement("label");
+    translationEnabledRow.className = "subtitle-translation-row";
+    const translationEnabledText = doc.createElement("span");
+    translationEnabledText.textContent = t("pipTranslationEnable");
+    const translationEnabled = doc.createElement("input");
+    translationEnabled.type = "checkbox";
+    translationEnabled.className = "subtitle-translation-toggle";
+    translationEnabled.setAttribute("role", "switch");
+    translationEnabled.setAttribute("aria-label", t("pipTranslationEnable"));
+    translationEnabledRow.append(translationEnabledText, translationEnabled);
+    const subtitlesEnabledRow = doc.createElement("label");
+    subtitlesEnabledRow.className = "subtitle-translation-row";
+    const subtitlesEnabledText = doc.createElement("span");
+    subtitlesEnabledText.textContent = t("pipSubtitlesToggle");
+    const subtitlesEnabled = doc.createElement("input");
+    subtitlesEnabled.type = "checkbox";
+    subtitlesEnabled.className = "subtitle-translation-toggle";
+    subtitlesEnabled.setAttribute("role", "switch");
+    subtitlesEnabled.setAttribute("aria-label", t("pipSubtitlesToggle"));
+    subtitlesEnabledRow.append(subtitlesEnabledText, subtitlesEnabled);
+    const translationModeRow = doc.createElement("label");
+    translationModeRow.className = "subtitle-translation-row";
+    const translationModeText = doc.createElement("span");
+    translationModeText.textContent = t("pipTranslationDisplayMode");
+    const translationMode = doc.createElement("select");
+    translationMode.setAttribute("aria-label", t("pipTranslationDisplayMode"));
+    for (const [value, key] of [
+      ["bilingual", "pipTranslationBilingual"],
+      ["translation-only", "pipTranslationOnly"],
+    ] as const) {
+      const option = doc.createElement("option");
+      option.value = value;
+      option.textContent = t(key);
+      translationMode.append(option);
+    }
+    translationModeRow.append(translationModeText, translationMode);
+    const translationLanguageRow = doc.createElement("label");
+    translationLanguageRow.className = "subtitle-translation-row";
+    const translationLanguageText = doc.createElement("span");
+    translationLanguageText.textContent = t("pipTranslationLanguage");
+    const translationLanguage = doc.createElement("select");
+    translationLanguage.setAttribute("aria-label", t("pipTranslationLanguage"));
+    let subtitleTranslationLanguages =
+      globalThis.PipCompanion.subtitleTranslationSettings.LANGUAGES.map(
+        (code) => ({
+          code,
+          label:
+            globalThis.PipCompanion.subtitleTranslationSettings.getLanguageLabel(
+              code,
+            ),
+        }),
+      );
+    for (const language of subtitleTranslationLanguages) {
+      const option = doc.createElement("option");
+      option.value = language.code;
+      option.textContent = language.label;
+      translationLanguage.append(option);
+    }
+    translationLanguageRow.append(translationLanguageText, translationLanguage);
+    const preferNativeRow = doc.createElement("label");
+    preferNativeRow.className = "subtitle-translation-row";
+    const preferNativeText = doc.createElement("span");
+    preferNativeText.textContent = t("pipTranslationPreferNative");
+    const preferNative = doc.createElement("input");
+    preferNative.type = "checkbox";
+    preferNative.setAttribute("aria-label", t("pipTranslationPreferNative"));
+    preferNativeRow.append(preferNativeText, preferNative);
+    translationPanel.append(
+      subtitlePrimaryRow,
+      subtitlesEnabledRow,
+      translationEnabledRow,
+      translationServiceRow,
+      translationLanguageRow,
+      translationModeRow,
+      preferNativeRow,
+    );
+    const blurActiveElementWithin = (container: Element) => {
+      const activeElement = doc.activeElement;
+      if (
+        activeElement &&
+        container.contains(activeElement) &&
+        "blur" in activeElement &&
+        typeof activeElement.blur === "function"
+      )
+        activeElement.blur();
+    };
     const playlistPanel = doc.createElement("section");
     playlistPanel.id = "pip-playlist-panel";
     playlistPanel.className = "playlist-panel";
@@ -829,6 +1282,7 @@ globalThis.PipCompanion.PipUI = (() => {
       progress,
       volumeControl,
       speedControl,
+      translationButton,
       playlistButton,
     );
     screen.append(
@@ -837,12 +1291,22 @@ globalThis.PipCompanion.PipUI = (() => {
       danmakuSendStatus,
       danmakuSendPanel,
       playlistPanel,
+      translationPanel,
       miniProgress,
       controls,
+      translationServiceHintTooltip,
     );
     app.append(screen);
     doc.head.replaceChildren(style);
     doc.body.replaceChildren(app);
+    const pipSelects = [
+      subtitlePrimaryTrack,
+      translationService,
+      translationMode,
+      translationLanguage,
+    ];
+    for (const select of pipSelects)
+      globalThis.PipCompanion.customSelect.enhance(select);
     doc.title = t("pipTitle");
 
     const refreshShortcuts = () => {
@@ -864,6 +1328,447 @@ globalThis.PipCompanion.PipUI = (() => {
       setAriaShortcuts(volumeButton, ["pipMuteShortcut"]);
     };
     refreshShortcuts();
+
+    const refreshSubtitleTracks = () => {
+      const tracks = actions.getSubtitleTracks();
+      if (actions.getSubtitleTranslationPreferences().useNativeSecondaryTrack)
+        refreshSubtitleTranslationPreferences();
+      translationButton.hidden = tracks.length === 0;
+      if (translationButton.hidden) {
+        translationPanel.hidden = true;
+        translationButton.setAttribute("aria-expanded", "false");
+      }
+      subtitlePrimaryRow.hidden = tracks.length < 2;
+      if (subtitlePrimaryRow.hidden) return;
+      const signature = [t("pipSubtitleTrackChoose")]
+        .concat(
+          tracks.map((track) => `${track.id}:${track.label}:${track.selected}`),
+        )
+        .join("|");
+      if (subtitlePrimaryTrack.dataset.signature === signature) return;
+      subtitlePrimaryTrack.dataset.signature = signature;
+      subtitlePrimaryTrack.replaceChildren();
+      if (!tracks.some((track) => track.selected)) {
+        const placeholder = doc.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = t("pipSubtitleTrackChoose");
+        placeholder.selected = true;
+        subtitlePrimaryTrack.append(placeholder);
+      }
+      for (const track of tracks) {
+        const option = doc.createElement("option");
+        option.value = track.id;
+        option.textContent = track.label;
+        option.selected = track.selected;
+        subtitlePrimaryTrack.append(option);
+      }
+    };
+    subtitlePrimaryTrack.addEventListener("change", () => {
+      if (!subtitlePrimaryTrack.value) return;
+      actions.selectSubtitleTrack(subtitlePrimaryTrack.value);
+    });
+    let hasNativeSecondaryTracks = false;
+    const refreshTranslationLanguageOptions = () => {
+      const preferences = actions.getSubtitleTranslationPreferences();
+      translationLanguage.replaceChildren();
+      if (preferences.useNativeSecondaryTrack) {
+        const tracks = actions.getSecondarySubtitleTracks();
+        const selectedTrack = actions.getSelectedSecondarySubtitleTrack();
+        hasNativeSecondaryTracks = tracks.length > 0;
+        if (!tracks.length) {
+          const option = doc.createElement("option");
+          option.value = "";
+          option.textContent = t("pipTranslationNoSecondaryTracks");
+          option.disabled = true;
+          option.selected = true;
+          translationLanguage.append(option);
+        } else if (!selectedTrack) {
+          const option = doc.createElement("option");
+          option.value = "";
+          option.textContent = t("pipTranslationChooseSecondaryTrack");
+          option.disabled = true;
+          option.selected = true;
+          translationLanguage.append(option);
+        }
+        for (const track of tracks) {
+          const option = doc.createElement("option");
+          option.value = track.id;
+          option.textContent = track.label;
+          option.selected = track.id === selectedTrack;
+          translationLanguage.append(option);
+        }
+        translationLanguage.value = selectedTrack;
+        return;
+      }
+
+      hasNativeSecondaryTracks = false;
+      const selectedLanguage = preferences.targetLanguage;
+      for (const language of subtitleTranslationLanguages) {
+        const localizedLabel =
+          globalThis.PipCompanion.subtitleTranslationSettings.getLanguageLabel(
+            language.code,
+          );
+        const label =
+          localizedLabel === language.code ? language.label : localizedLabel;
+        const option = doc.createElement("option");
+        option.value = language.code;
+        option.textContent = label;
+        translationLanguage.append(option);
+      }
+      if (
+        selectedLanguage &&
+        !Array.from(translationLanguage.options).some(
+          (option) => option.value === selectedLanguage,
+        )
+      ) {
+        const option = doc.createElement("option");
+        option.value = selectedLanguage;
+        option.textContent =
+          globalThis.PipCompanion.subtitleTranslationSettings.getLanguageLabel(
+            selectedLanguage,
+          );
+        translationLanguage.append(option);
+      }
+      translationLanguage.value = selectedLanguage;
+    };
+    let translationServicesRequestId = 0;
+    let activeTranslationServiceConfigured = false;
+    const refreshSubtitleTranslationServices = () => {
+      const requestId = ++translationServicesRequestId;
+      if (!actions.getSubtitlesEnabled()) {
+        translationService.disabled = true;
+        return;
+      }
+      void actions.getSubtitleTranslationServices().then((result) => {
+        if (requestId !== translationServicesRequestId) return;
+        activeTranslationServiceConfigured = false;
+        for (const option of Array.from(translationService.options)) {
+          if (option.value === "none") {
+            option.disabled = false;
+            continue;
+          }
+          const service = result?.services.find(
+            (item) => item.provider === option.value,
+          );
+          option.disabled = service?.configured !== true;
+          if (result?.provider === option.value)
+            activeTranslationServiceConfigured = service?.configured === true;
+        }
+        if (result)
+          translationService.value = actions.getSubtitleTranslationPreferences()
+            .useNativeSecondaryTrack
+            ? "none"
+            : result.provider;
+        translationService.disabled = false;
+        refreshSubtitleTranslationPreferences();
+      });
+    };
+    const refreshSubtitleTranslationPreferences = () => {
+      const preferences = actions.getSubtitleTranslationPreferences();
+      const subtitlesEnabledValue = actions.getSubtitlesEnabled();
+      if (!subtitlesEnabledValue) {
+        translationServicesRequestId++;
+        translationLanguageRequestId++;
+        activeTranslationServiceConfigured = false;
+        translationService.disabled = true;
+      }
+      refreshTranslationLanguageOptions();
+      const canUseSelectedSource = preferences.useNativeSecondaryTrack
+        ? hasNativeSecondaryTracks
+        : activeTranslationServiceConfigured;
+      translationEnabled.checked = preferences.enabled;
+      subtitlesEnabled.checked = subtitlesEnabledValue;
+      translationMode.value = preferences.mode;
+      if (!preferences.useNativeSecondaryTrack)
+        translationLanguage.value = preferences.targetLanguage;
+      preferNative.checked = preferences.preferNative;
+      translationServiceLabel.textContent = t("pipTranslationSource");
+      translationMode.options[0]!.textContent = t(
+        preferences.useNativeSecondaryTrack
+          ? "pipTranslationOriginalAndSecondary"
+          : "pipTranslationBilingual",
+      );
+      translationMode.options[1]!.textContent = t(
+        preferences.useNativeSecondaryTrack
+          ? "pipTranslationSecondaryOnly"
+          : "pipTranslationOnly",
+      );
+      translationLanguageText.textContent = t("pipTranslationLanguage");
+      preferNativeRow.hidden =
+        !preferences.enabled || preferences.useNativeSecondaryTrack;
+      translationLanguageRow.hidden = !preferences.enabled;
+      translationModeRow.hidden = !preferences.enabled;
+      translationEnabled.disabled =
+        !subtitlesEnabledValue || !canUseSelectedSource;
+      subtitlesEnabled.disabled = false;
+      translationMode.disabled =
+        !subtitlesEnabledValue || !preferences.enabled || !canUseSelectedSource;
+      translationLanguage.disabled =
+        !subtitlesEnabledValue || !preferences.enabled || !canUseSelectedSource;
+      preferNative.disabled =
+        !subtitlesEnabledValue ||
+        !preferences.enabled ||
+        preferences.useNativeSecondaryTrack ||
+        !canUseSelectedSource;
+      translationButton.setAttribute(
+        "aria-pressed",
+        String(preferences.enabled),
+      );
+    };
+    const positionTranslationServiceHintTooltip = () => {
+      if (translationServiceHintTooltip.hidden) return;
+      const iconRect = translationServiceHintIcon.getBoundingClientRect();
+      const screenRect = screen.getBoundingClientRect();
+      const margin = 8;
+      const gap = 6;
+      const maxLeft =
+        screen.clientWidth - translationServiceHintTooltip.offsetWidth - margin;
+      let left = iconRect.left - screenRect.left;
+      let top = iconRect.bottom - screenRect.top + gap;
+      if (
+        top + translationServiceHintTooltip.offsetHeight >
+        screen.clientHeight - margin
+      )
+        top =
+          iconRect.top -
+          screenRect.top -
+          translationServiceHintTooltip.offsetHeight -
+          gap;
+      left = Math.max(margin, Math.min(left, maxLeft));
+      top = Math.max(margin, top);
+      translationServiceHintTooltip.style.left = `${left}px`;
+      translationServiceHintTooltip.style.top = `${top}px`;
+    };
+    const showTranslationServiceHintTooltip = () => {
+      translationServiceHintTooltip.hidden = false;
+      positionTranslationServiceHintTooltip();
+    };
+    const hideTranslationServiceHintTooltip = () => {
+      translationServiceHintTooltip.hidden = true;
+    };
+    translationServiceHintIcon.addEventListener(
+      "pointerenter",
+      showTranslationServiceHintTooltip,
+    );
+    translationServiceHintIcon.addEventListener(
+      "pointerleave",
+      hideTranslationServiceHintTooltip,
+    );
+    translationServiceHintIcon.addEventListener(
+      "focus",
+      showTranslationServiceHintTooltip,
+    );
+    translationServiceHintIcon.addEventListener(
+      "blur",
+      hideTranslationServiceHintTooltip,
+    );
+    translationPanel.addEventListener(
+      "scroll",
+      positionTranslationServiceHintTooltip,
+    );
+    win.addEventListener("resize", positionTranslationServiceHintTooltip);
+    const saveSubtitleTranslationPreferences = (
+      patch: Partial<SubtitleTranslationPreferences>,
+    ) =>
+      actions.setSubtitleTranslationPreferences({
+        ...actions.getSubtitleTranslationPreferences(),
+        ...patch,
+      });
+    let translationLanguageRequestId = 0;
+    const refreshAvailableTranslationLanguages = () => {
+      const requestId = ++translationLanguageRequestId;
+      if (
+        !actions.getSubtitlesEnabled() ||
+        actions.getSubtitleTranslationPreferences().useNativeSecondaryTrack
+      )
+        return;
+      void actions.getSubtitleTranslationLanguages().then((languages) => {
+        if (requestId !== translationLanguageRequestId) return;
+        if (!languages.length) {
+          actions.showFeedback(t("pipTranslationLanguagesUnavailable"));
+          return;
+        }
+        subtitleTranslationLanguages = languages;
+        refreshTranslationLanguageOptions();
+      });
+    };
+    const normalizeLanguageTag = (code: string) =>
+      code.trim().replace(/_/g, "-").toLowerCase();
+    const languageTagsMatch = (left: string, right: string) => {
+      const a = normalizeLanguageTag(left);
+      const b = normalizeLanguageTag(right);
+      return (
+        Boolean(a && b) &&
+        (a === b || a.startsWith(`${b}-`) || b.startsWith(`${a}-`))
+      );
+    };
+    const isLanguageTag = (code: string) =>
+      code.length > 0 &&
+      code.length <= 35 &&
+      /^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/.test(code);
+    translationService.addEventListener("change", () => {
+      if (translationService.value === "none") {
+        const preferences = actions.getSubtitleTranslationPreferences();
+        saveSubtitleTranslationPreferences({ useNativeSecondaryTrack: true });
+        // 切到原生時，沿用目標語言自動挑軌；沒有相符軌就不動，不硬選。
+        const match = actions
+          .getSecondarySubtitleTracks()
+          .find((track) =>
+            languageTagsMatch(track.language ?? "", preferences.targetLanguage),
+          );
+        if (match && match.id !== actions.getSelectedSecondarySubtitleTrack())
+          actions.selectSecondarySubtitleTrack(match.id);
+        refreshSubtitleTranslationPreferences();
+        return;
+      }
+      const provider = translationService.value as SubtitleTranslationProvider;
+      translationService.disabled = true;
+      void actions.setSubtitleTranslationProvider(provider).then((saved) => {
+        if (!saved) actions.showFeedback(t("pipTranslationServiceUnavailable"));
+        else {
+          // 切到機器翻譯時，把已選原生軌的語言帶成目標語言，帶不過去才保留原值。
+          const selectedSecondary = actions
+            .getSecondarySubtitleTracks()
+            .find(
+              (track) =>
+                track.id === actions.getSelectedSecondarySubtitleTrack(),
+            );
+          const carriedLanguage =
+            selectedSecondary?.language &&
+            isLanguageTag(selectedSecondary.language)
+              ? selectedSecondary.language
+              : actions.getSubtitleTranslationPreferences().targetLanguage;
+          saveSubtitleTranslationPreferences({
+            useNativeSecondaryTrack: false,
+            targetLanguage: carriedLanguage,
+          });
+        }
+        refreshSubtitleTranslationServices();
+        if (saved && actions.getSubtitleTranslationPreferences().enabled)
+          refreshAvailableTranslationLanguages();
+      });
+    });
+    translationEnabled.addEventListener("change", () => {
+      saveSubtitleTranslationPreferences({
+        enabled: translationEnabled.checked,
+      });
+      if (
+        translationEnabled.checked &&
+        !actions.getSubtitleTranslationPreferences().useNativeSecondaryTrack
+      )
+        refreshAvailableTranslationLanguages();
+    });
+    subtitlesEnabled.addEventListener("change", () => {
+      actions.toggleSubtitles();
+      refreshSubtitleTranslationPreferences();
+      if (actions.getSubtitlesEnabled()) refreshSubtitleTranslationServices();
+    });
+    translationMode.addEventListener("change", () =>
+      saveSubtitleTranslationPreferences({
+        mode:
+          translationMode.value === "bilingual"
+            ? "bilingual"
+            : "translation-only",
+      }),
+    );
+    translationLanguage.addEventListener("change", () => {
+      const preferences = actions.getSubtitleTranslationPreferences();
+      if (preferences.useNativeSecondaryTrack) {
+        if (
+          !actions.getSelectedSecondarySubtitleTrack() &&
+          preferences.mode !== "bilingual"
+        )
+          saveSubtitleTranslationPreferences({ mode: "bilingual" });
+        actions.selectSecondarySubtitleTrack(translationLanguage.value);
+      } else
+        saveSubtitleTranslationPreferences({
+          targetLanguage:
+            translationLanguage.value as SubtitleTranslationLanguage,
+        });
+    });
+    preferNative.addEventListener("change", () =>
+      saveSubtitleTranslationPreferences({
+        preferNative: preferNative.checked,
+      }),
+    );
+    const closeTranslationPanel = () => {
+      blurActiveElementWithin(translationPanel);
+      translationPanel.hidden = true;
+      translationButton.setAttribute("aria-expanded", "false");
+    };
+    const isTranslationTarget = (target: EventTarget | null) =>
+      target !== null &&
+      (translationPanel.contains(target as Node) ||
+        translationButton.contains(target as Node) ||
+        [
+          subtitlePrimaryTrack,
+          translationService,
+          translationMode,
+          translationLanguage,
+        ].some((select) =>
+          globalThis.PipCompanion.customSelect.containsTarget(select, target),
+        ));
+    const isTranslationPanelFocusTarget = (target: EventTarget | null) =>
+      target !== null &&
+      (translationPanel.contains(target as Node) ||
+        [
+          subtitlePrimaryTrack,
+          translationService,
+          translationMode,
+          translationLanguage,
+        ].some((select) =>
+          globalThis.PipCompanion.customSelect.containsTarget(select, target),
+        ));
+    translationButton.addEventListener("click", (e) => {
+      const open = translationPanel.hidden;
+      translationPanel.hidden = !open;
+      translationButton.setAttribute("aria-expanded", String(open));
+      if (open) {
+        refreshSubtitleTracks();
+        refreshSubtitleTranslationServices();
+        refreshSubtitleTranslationPreferences();
+        if (e.detail === 0) translationEnabled.focus();
+        const preferences = actions.getSubtitleTranslationPreferences();
+        if (
+          actions.getSubtitlesEnabled() &&
+          preferences.enabled &&
+          !preferences.useNativeSecondaryTrack
+        )
+          refreshAvailableTranslationLanguages();
+      }
+    });
+    screen.addEventListener(
+      "pointerdown",
+      (e) => {
+        if (!translationPanel.hidden && !isTranslationTarget(e.target))
+          closeTranslationPanel();
+      },
+      { capture: true },
+    );
+    screen.addEventListener(
+      "focusin",
+      (e) => {
+        if (!translationPanel.hidden && !isTranslationTarget(e.target))
+          closeTranslationPanel();
+      },
+      { capture: true },
+    );
+    win.addEventListener(
+      "keydown",
+      (e) => {
+        if (
+          translationPanel.hidden ||
+          e.key !== "Escape" ||
+          globalThis.PipCompanion.customSelect.isOpenForTarget(e.target)
+        )
+          return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        closeTranslationPanel();
+        translationButton.focus();
+      },
+      { capture: true },
+    );
 
     const refreshLocale = () => {
       doc.documentElement.lang = globalThis.PipCompanion.util.getHtmlLanguage();
@@ -897,6 +1802,55 @@ globalThis.PipCompanion.PipUI = (() => {
       volumeValue.setAttribute("aria-label", t("pipVolumeValue"));
       volumeSlider.setAttribute("aria-label", t("pipVolume"));
       speedSlider.setAttribute("aria-label", t("pipSpeed"));
+      subtitlePrimaryText.textContent = t("pipSubtitleTrack");
+      subtitlePrimaryTrack.setAttribute("aria-label", t("pipSubtitleTrack"));
+      translationPanel.setAttribute("aria-label", t("pipTranslationSettings"));
+      translationServiceLabel.textContent = t("pipTranslationSource");
+      translationServiceHintIcon.setAttribute(
+        "data-tip",
+        t("pipTranslationServiceUnavailable"),
+      );
+      translationServiceHintTooltip.textContent = t(
+        "pipTranslationServiceUnavailable",
+      );
+      translationServiceHintIcon.setAttribute(
+        "aria-label",
+        t("pipTranslationServiceUnavailable"),
+      );
+      translationService.setAttribute("aria-label", t("pipTranslationSource"));
+      nativeSubtitleOption.textContent = t("pipTranslationNoService");
+      translationEnabledText.textContent = t("pipTranslationEnable");
+      translationEnabled.setAttribute("aria-label", t("pipTranslationEnable"));
+      subtitlesEnabledText.textContent = t("pipSubtitlesToggle");
+      subtitlesEnabled.setAttribute("aria-label", t("pipSubtitlesToggle"));
+      translationModeText.textContent = t("pipTranslationDisplayMode");
+      translationMode.setAttribute(
+        "aria-label",
+        t("pipTranslationDisplayMode"),
+      );
+      translationLanguageText.textContent = t("pipTranslationLanguage");
+      translationLanguage.setAttribute(
+        "aria-label",
+        t("pipTranslationLanguage"),
+      );
+      translationMode.options[0]!.textContent = t(
+        actions.getSubtitleTranslationPreferences().useNativeSecondaryTrack
+          ? "pipTranslationOriginalAndSecondary"
+          : "pipTranslationBilingual",
+      );
+      translationMode.options[1]!.textContent = t(
+        actions.getSubtitleTranslationPreferences().useNativeSecondaryTrack
+          ? "pipTranslationSecondaryOnly"
+          : "pipTranslationOnly",
+      );
+      refreshTranslationLanguageOptions();
+      preferNativeText.textContent = t("pipTranslationPreferNative");
+      preferNative.setAttribute("aria-label", t("pipTranslationPreferNative"));
+      translationButton.setAttribute("aria-label", t("pipTranslationSettings"));
+      translationButton.title = t("pipTranslationSettings");
+      refreshSubtitleTracks();
+      refreshSubtitleTranslationPreferences();
+      refreshSubtitleTranslationServices();
       actions.updatePlaybackUi();
     };
 
@@ -926,10 +1880,27 @@ globalThis.PipCompanion.PipUI = (() => {
       timeTooltipText,
       refreshLocale,
       refreshShortcuts,
+      refreshSubtitleTranslationPreferences,
+      refreshSubtitleTranslationServices,
+      refreshSubtitleTranslationLanguages: () => {
+        const preferences = actions.getSubtitleTranslationPreferences();
+        if (
+          !translationPanel.hidden &&
+          preferences.enabled &&
+          !preferences.useNativeSecondaryTrack
+        ) {
+          refreshAvailableTranslationLanguages();
+        } else {
+          translationLanguageRequestId++;
+          if (preferences.useNativeSecondaryTrack)
+            refreshTranslationLanguageOptions();
+        }
+      },
       setDanmakuEnabled: (enabled: boolean) => setDanmakuEnabled(enabled),
       setThumbnailPreviewEnabled: (enabled: boolean) => {
         if (!enabled) clearTimeTooltipThumb();
       },
+      refreshSubtitleTracks,
     };
 
     const update = () => actions.updatePlaybackUi();
@@ -967,6 +1938,7 @@ globalThis.PipCompanion.PipUI = (() => {
       danmakuSendInput.focus();
     };
     const closeDanmakuSendPanel = () => {
+      blurActiveElementWithin(danmakuSendPanel);
       setDanmakuSendPanelOpen(false);
       setDanmakuSendStatus(null);
     };
@@ -1115,7 +2087,7 @@ globalThis.PipCompanion.PipUI = (() => {
     danmakuSendInput.addEventListener("input", updateDanmakuCharacterCount);
     danmakuSendInput.addEventListener("keydown", (e) => {
       e.stopPropagation();
-      if (e.key === "Enter" && (e.isComposing || e.keyCode === 229)) {
+      if (e.key === "Enter" && e.isComposing) {
         e.preventDefault();
         return;
       }
@@ -1145,6 +2117,7 @@ globalThis.PipCompanion.PipUI = (() => {
     );
     nextButton.addEventListener("click", () => actions.playNext());
     const closePlaylist = () => {
+      blurActiveElementWithin(playlistPanel);
       playlistPanel.hidden = true;
       playlistButton.setAttribute("aria-expanded", "false");
     };
@@ -1152,21 +2125,48 @@ globalThis.PipCompanion.PipUI = (() => {
       target !== null &&
       (playlistPanel.contains(target as Node) ||
         playlistButton.contains(target as Node));
+    const isPlaylistPanelFocusTarget = (target: EventTarget | null) =>
+      target !== null && playlistPanel.contains(target as Node);
     let playlistCloseTimer = 0;
+    win.addEventListener("pointerleave", () => {
+      const activeElement = doc.activeElement;
+      if (!isPlaylistPanelFocusTarget(activeElement)) closePlaylist();
+      if (!isTranslationPanelFocusTarget(activeElement))
+        closeTranslationPanel();
+      if (!danmakuSendPanel.contains(activeElement)) closeDanmakuSendPanel();
+    });
     screen.addEventListener("pointerenter", () => {
       win.clearTimeout(playlistCloseTimer);
     });
-    screen.addEventListener("pointerleave", () => {
-      if (playlistPanel.hidden) return;
+    screen.addEventListener("pointerleave", (event) => {
+      if (
+        pipSelects.some((select) =>
+          globalThis.PipCompanion.customSelect.containsTarget(
+            select,
+            event.relatedTarget,
+          ),
+        )
+      )
+        return;
       win.clearTimeout(playlistCloseTimer);
       playlistCloseTimer = win.setTimeout(() => {
         const activeElement = doc.activeElement;
         if (
-          isPlaylistTarget(activeElement) &&
-          activeElement?.matches(":focus-visible")
+          activeElement?.matches(":focus-visible") &&
+          (isPlaylistPanelFocusTarget(activeElement) ||
+            isTranslationPanelFocusTarget(activeElement) ||
+            pipSelects.some((select) =>
+              globalThis.PipCompanion.customSelect.containsTarget(
+                select,
+                activeElement,
+              ),
+            ))
         )
           return;
         closePlaylist();
+        closeTranslationPanel();
+        for (const select of pipSelects)
+          globalThis.PipCompanion.customSelect.closeForSelect(select);
       }, 250);
     });
     screen.addEventListener(
@@ -1276,6 +2276,15 @@ globalThis.PipCompanion.PipUI = (() => {
       update();
       showSpeedFeedback();
     });
+    const releaseRangeFocus = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") return;
+      (event.currentTarget as HTMLInputElement).blur();
+    };
+    for (const slider of [volumeSlider, speedSlider]) {
+      slider.addEventListener("pointerup", releaseRangeFocus);
+      slider.addEventListener("pointercancel", releaseRangeFocus);
+      slider.addEventListener("lostpointercapture", releaseRangeFocus);
+    }
 
     const commitVolumeInput = () => {
       const raw = volumeValue.value.trim();
@@ -1436,10 +2445,10 @@ globalThis.PipCompanion.PipUI = (() => {
         void actions.resize(win.innerWidth, width, height).catch(() => {});
         return;
       }
-      if (videoSource && matches("pipToggleCaptionsShortcut")) {
+      if (videoSource && matches("pipToggleSubtitlesShortcut")) {
         e.preventDefault();
         e.stopPropagation();
-        actions.toggleCaptions();
+        actions.toggleSubtitles();
         return;
       }
       if (actions.matchesCommentsShortcut(e)) {
@@ -1570,7 +2579,12 @@ globalThis.PipCompanion.PipUI = (() => {
       { capture: true },
     );
     const finishSeeking = (e: PointerEvent) => {
-      if (seekingPointerId === e.pointerId) seekingPointerId = null;
+      if (seekingPointerId !== e.pointerId) return;
+      seekingPointerId = null;
+      progress.blur();
+      timeTooltip.hidden = true;
+      clearTimeTooltipThumb();
+      screen.classList.remove("controls-visible");
     };
     progress.addEventListener("pointerup", finishSeeking);
     progress.addEventListener("pointercancel", finishSeeking);
