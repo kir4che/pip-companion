@@ -289,9 +289,11 @@ chrome.runtime.onMessage.addListener(
       return;
     }
     if (message?.type === "CLOSE_PIP") {
-      globalThis.PipCompanion.ContentPipLifecycle.closePiP(true);
-      sendResponse({ ok: true });
-      return;
+      void globalThis.PipCompanion.ContentPipLifecycle.closePiP(true).then(
+        () => sendResponse({ ok: true }),
+        () => sendResponse({ ok: false }),
+      );
+      return true;
     }
     if (message?.type !== "OPEN_PIP") return;
     void globalThis.PipCompanion.ContentPipLifecycle.openPiP().then(

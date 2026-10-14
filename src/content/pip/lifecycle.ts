@@ -523,7 +523,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     state.nextVideoRequested = false;
   }
 
-  function closePiP(closeWindow: boolean) {
+  async function closePiP(closeWindow: boolean): Promise<void> {
     globalThis.PipCompanion.ContentPlayback.cancelNextVideoRequest();
     const session = state.pipSession;
     const oldWindow =
@@ -551,7 +551,10 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         ? flushPipBounds(true, oldWindow)
         : Promise.resolve();
     const videoRestored = releasePipVideo();
-    if (!videoRestored && closeWindow && oldWindow && !oldWindow.closed) return;
+    if (!videoRestored && closeWindow && oldWindow && !oldWindow.closed) {
+      await boundsSave;
+      return;
+    }
 
     state.pipSession = { phase: "closed" };
     state.captionObserver?.disconnect();
@@ -565,15 +568,14 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       console.warn("[Caption PiP] Could not reset storyboard:", error);
     }
     if (oldWindow && !oldWindow.closed) {
-      void boundsSave.finally(() => {
-        notifyPipState(false);
-        if (!closeWindow) return;
-        try {
-          if (!oldWindow.closed) oldWindow.close();
-        } catch (error) {
-          console.warn("[Caption PiP] Could not close PiP window:", error);
-        }
-      });
+      await boundsSave;
+      notifyPipState(false);
+      if (!closeWindow) return;
+      try {
+        if (!oldWindow.closed) oldWindow.close();
+      } catch (error) {
+        console.warn("[Subtitle PiP] Could not close PiP window:", error);
+      }
     } else if (oldWindow) notifyPipState(false);
   }
 

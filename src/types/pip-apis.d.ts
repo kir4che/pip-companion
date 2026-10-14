@@ -303,7 +303,7 @@ interface ContentScreenshotApi {
 
 interface ContentPipLifecycleApi {
   bindSourceVideo(video: HTMLVideoElement): void;
-  closePiP(closeWindow: boolean): void;
+  closePiP(closeWindow: boolean): Promise<void>;
   openPiP(): Promise<PipOperationResult>;
   restorePipBounds(): Promise<{ ok?: boolean; missing?: boolean }>;
 }
