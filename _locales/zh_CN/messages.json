@@ -15,6 +15,7 @@
   "popupDanmaku": { "message": "弹幕" },
   "popupScreenshot": { "message": "截图" },
   "popupFloatingComments": { "message": "悬浮评论区" },
+  "popupThumbnailPreview": { "message": "缩略图预览" },
   "popupSeekInterval": { "message": "快进／快退间隔" },
   "popupSeconds": { "message": "$1 秒" },
   "popupWheel": { "message": "滚轮" },

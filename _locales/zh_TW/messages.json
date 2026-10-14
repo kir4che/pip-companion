@@ -15,6 +15,7 @@
   "popupDanmaku": { "message": "彈幕" },
   "popupScreenshot": { "message": "截圖" },
   "popupFloatingComments": { "message": "浮動留言區" },
+  "popupThumbnailPreview": { "message": "縮圖預覽" },
   "popupSeekInterval": { "message": "快轉／倒轉間隔" },
   "popupSeconds": { "message": "$1 秒" },
   "popupWheel": { "message": "滑鼠滾輪" },

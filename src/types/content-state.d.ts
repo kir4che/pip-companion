@@ -27,6 +27,7 @@ interface State {
   commentsEnabled: boolean;
   screenshotEnabled: boolean;
   danmakuEnabled: boolean;
+  thumbnailPreviewEnabled: boolean;
   followPlaybackPip: boolean;
   seekSeconds: SeekSeconds;
 

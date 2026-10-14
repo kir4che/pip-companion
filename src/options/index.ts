@@ -442,6 +442,9 @@ const screenshotToggle = document.querySelector(
 const followPlaybackPipToggle = document.querySelector(
   "#follow-playback-pip-toggle",
 ) as HTMLInputElement;
+const thumbnailPreviewToggle = document.querySelector(
+  "#thumbnail-preview-toggle",
+) as HTMLInputElement;
 
 async function saveToggle(
   toggle: HTMLInputElement,
@@ -449,7 +452,8 @@ async function saveToggle(
     | "danmakuEnabled"
     | "commentsEnabled"
     | "screenshotEnabled"
-    | "followPlaybackPip",
+    | "followPlaybackPip"
+    | "thumbnailPreviewEnabled",
 ) {
   try {
     await chrome.storage.local.set({ [key]: toggle.checked });
@@ -471,21 +475,25 @@ async function loadToggles() {
       commentsEnabled: true,
       screenshotEnabled: true,
       followPlaybackPip: false,
+      thumbnailPreviewEnabled: true,
     });
     danmakuToggle.checked = stored.danmakuEnabled !== false;
     commentsToggle.checked = stored.commentsEnabled !== false;
     screenshotToggle.checked = stored.screenshotEnabled !== false;
     followPlaybackPipToggle.checked = stored.followPlaybackPip === true;
+    thumbnailPreviewToggle.checked = stored.thumbnailPreviewEnabled !== false;
   } catch {
     danmakuToggle.checked = true;
     commentsToggle.checked = true;
     screenshotToggle.checked = true;
     followPlaybackPipToggle.checked = false;
+    thumbnailPreviewToggle.checked = true;
   } finally {
     danmakuToggle.disabled = false;
     commentsToggle.disabled = false;
     screenshotToggle.disabled = false;
     followPlaybackPipToggle.disabled = false;
+    thumbnailPreviewToggle.disabled = false;
   }
 }
 
@@ -500,6 +508,9 @@ screenshotToggle.addEventListener("change", () => {
 });
 followPlaybackPipToggle.addEventListener("change", () => {
   void saveToggle(followPlaybackPipToggle, "followPlaybackPip");
+});
+thumbnailPreviewToggle.addEventListener("change", () => {
+  void saveToggle(thumbnailPreviewToggle, "thumbnailPreviewEnabled");
 });
 
 // 彈幕設定
@@ -903,6 +914,9 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (changes.followPlaybackPip)
     followPlaybackPipToggle.checked =
       changes.followPlaybackPip.newValue === true;
+  if (changes.thumbnailPreviewEnabled)
+    thumbnailPreviewToggle.checked =
+      changes.thumbnailPreviewEnabled.newValue !== false;
 
   for (const key of util.SHORTCUT_KEYS) {
     if (changes[key]) {

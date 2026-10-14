@@ -39,6 +39,7 @@ const state: State = {
   commentsEnabled: true,
   screenshotEnabled: true,
   danmakuEnabled: true,
+  thumbnailPreviewEnabled: true,
   followPlaybackPip: false,
   seekSeconds: DEFAULT_SEEK_SECONDS,
   lastNonOneRate: 1.25,
@@ -109,6 +110,13 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.commentsEnabled = changes.commentsEnabled.newValue !== false;
   if (changes.screenshotEnabled)
     state.screenshotEnabled = changes.screenshotEnabled.newValue !== false;
+  if (changes.thumbnailPreviewEnabled) {
+    state.thumbnailPreviewEnabled =
+      changes.thumbnailPreviewEnabled.newValue !== false;
+    state.pipUi?.setThumbnailPreviewEnabled(state.thumbnailPreviewEnabled);
+    if (state.thumbnailPreviewEnabled)
+      globalThis.PipCompanion.ContentStoryboard.preload(state.sourceVideo);
+  }
   if (shortcutChanged) state.pipUi?.refreshShortcuts();
 
   if (changes.danmakuEnabled) {
@@ -139,6 +147,7 @@ async function loadSettings() {
       commentsEnabled: true,
       screenshotEnabled: true,
       danmakuEnabled: true,
+      thumbnailPreviewEnabled: true,
       followPlaybackPip: false,
       seekSeconds: DEFAULT_SEEK_SECONDS,
       uiLanguage: "auto",
@@ -154,6 +163,7 @@ async function loadSettings() {
     state.commentsEnabled = stored.commentsEnabled !== false;
     state.screenshotEnabled = stored.screenshotEnabled !== false;
     state.danmakuEnabled = stored.danmakuEnabled !== false;
+    state.thumbnailPreviewEnabled = stored.thumbnailPreviewEnabled !== false;
     state.followPlaybackPip = stored.followPlaybackPip === true;
     state.seekSeconds = normalizeSeekSeconds(stored.seekSeconds);
     if (styleRevision === captionStyleRevision)
@@ -165,12 +175,16 @@ async function loadSettings() {
     state.commentsEnabled = true;
     state.screenshotEnabled = true;
     state.danmakuEnabled = true;
+    state.thumbnailPreviewEnabled = true;
     state.followPlaybackPip = false;
     state.seekSeconds = DEFAULT_SEEK_SECONDS;
     if (styleRevision === captionStyleRevision)
       state.captionStyle = { ...captionSettings.DEFAULTS };
   }
 
+  state.pipUi?.setThumbnailPreviewEnabled(state.thumbnailPreviewEnabled);
+  if (state.thumbnailPreviewEnabled)
+    globalThis.PipCompanion.ContentStoryboard.preload(state.sourceVideo);
   globalThis.PipCompanion.ContentCaptions.renderSubtitle();
   nudgeScan();
   void requestPipHandoff();

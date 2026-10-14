@@ -649,6 +649,12 @@ globalThis.PipCompanion.PipUI = (() => {
     timeTooltipText.className = "time-tooltip-text";
     timeTooltip.append(timeTooltipThumb, timeTooltipText);
 
+    const clearTimeTooltipThumb = () => {
+      timeTooltip.classList.remove("has-thumb");
+      timeTooltipThumb.style.display = "none";
+      timeTooltipThumb.style.backgroundImage = "none";
+    };
+
     const makeButton = (action: string, label: string, ariaLabel: string) => {
       const button = doc.createElement("button");
       button.type = "button";
@@ -921,6 +927,9 @@ globalThis.PipCompanion.PipUI = (() => {
       refreshLocale,
       refreshShortcuts,
       setDanmakuEnabled: (enabled: boolean) => setDanmakuEnabled(enabled),
+      setThumbnailPreviewEnabled: (enabled: boolean) => {
+        if (!enabled) clearTimeTooltipThumb();
+      },
     };
 
     const update = () => actions.updatePlaybackUi();
@@ -1604,9 +1613,7 @@ globalThis.PipCompanion.PipUI = (() => {
         else timeTooltipThumb.style.backgroundSize = "auto";
         timeTooltipThumb.style.backgroundPosition = `-${Math.round(frame.x * scale)}px -${Math.round(frame.y * scale)}px`;
       } else {
-        timeTooltip.classList.remove("has-thumb");
-        timeTooltipThumb.style.display = "none";
-        timeTooltipThumb.style.backgroundImage = "none";
+        clearTimeTooltipThumb();
       }
 
       timeTooltip.hidden = false;
@@ -1615,8 +1622,7 @@ globalThis.PipCompanion.PipUI = (() => {
     });
     progress.addEventListener("pointerleave", () => {
       timeTooltip.hidden = true;
-      timeTooltip.classList.remove("has-thumb");
-      timeTooltipThumb.style.display = "none";
+      clearTimeTooltipThumb();
     });
 
     win.addEventListener(

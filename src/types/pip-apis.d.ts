@@ -144,6 +144,7 @@ interface PipUiHandle {
   refreshLocale(): void;
   refreshShortcuts(): void;
   setDanmakuEnabled(enabled: boolean): void;
+  setThumbnailPreviewEnabled(enabled: boolean): void;
 }
 
 interface PipUiApi {

@@ -245,14 +245,17 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         screenshot: globalThis.PipCompanion.ContentScreenshot.savePipScreenshot,
         formatTime: globalThis.PipCompanion.util.formatTime,
         getStoryboardFrame: (seconds) =>
-          globalThis.PipCompanion.ContentStoryboard.getFrame(
-            seconds,
-            state.sourceVideo,
-          ),
+          state.thumbnailPreviewEnabled
+            ? globalThis.PipCompanion.ContentStoryboard.getFrame(
+                seconds,
+                state.sourceVideo,
+              )
+            : null,
         resize: globalThis.PipCompanion.ContentPlayback.resizePipWindow,
       },
       video,
     );
+    ui.setThumbnailPreviewEnabled(state.thumbnailPreviewEnabled);
     ui.setDanmakuEnabled(state.danmakuEnabled);
     return ui;
   }
@@ -508,7 +511,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
     globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
     globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
-    globalThis.PipCompanion.ContentStoryboard.preload(video);
+    if (state.thumbnailPreviewEnabled)
+      globalThis.PipCompanion.ContentStoryboard.preload(video);
     if (state.pipWindow) {
       if (state.pipUi) remountSourceVideo();
       else mountPipVideo(state.pipWindow, video);

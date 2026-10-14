@@ -57,6 +57,7 @@
   },
   "popupScreenshot": { "message": "Screenshot" },
   "popupFloatingComments": { "message": "Floating comments" },
+  "popupThumbnailPreview": { "message": "Seek thumbnail preview" },
   "popupSeekInterval": { "message": "Seek interval" },
   "popupSeconds": { "message": "$1 sec" },
   "popupWheel": { "message": "wheel" },
