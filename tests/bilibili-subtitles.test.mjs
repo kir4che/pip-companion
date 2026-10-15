@@ -82,10 +82,21 @@ function setup({ nativeTracks = [], active = true } = {}) {
   return { controller, context, posted, requests, events, tracks, respond };
 }
 
-function setupSubtitles({ nativeEnabled = null, overlayText = "" } = {}) {
+function setupSubtitles({
+  nativeEnabled = null,
+  overlayText = "",
+  overlayClass = "",
+} = {}) {
   const fixture = setup();
   const { context } = fixture;
   const nativeState = { enabled: nativeEnabled };
+  const overlay = {
+    className: overlayClass,
+    innerText: overlayText,
+    querySelector: () => null,
+    closest: () => null,
+    getBoundingClientRect: () => ({ width: 100, top: 100, bottom: 120 }),
+  };
   Object.assign(context, {
     IS_YOUTUBE: false,
     getComputedStyle: () => ({ position: "absolute", pointerEvents: "none" }),
@@ -103,21 +114,14 @@ function setupSubtitles({ nativeEnabled = null, overlayText = "" } = {}) {
           return nativeState.enabled === true ? {} : null;
         return null;
       },
-      querySelectorAll: () =>
-        overlayText
-          ? [
-              {
-                innerText: overlayText,
-                querySelector: () => null,
-                closest: () => null,
-                getBoundingClientRect: () => ({
-                  width: 100,
-                  top: 100,
-                  bottom: 120,
-                }),
-              },
-            ]
-          : [],
+      querySelectorAll: (selector) => {
+        if (
+          overlayClass === "vjs-text-track-display" &&
+          !selector.includes("text-track-display")
+        )
+          return [];
+        return overlayText || overlayClass ? [overlay] : [];
+      },
     },
   });
   Object.assign(context.state, {
@@ -188,6 +192,15 @@ test("reopening PiP re-reads the native subtitle switch", () => {
 
 test("unknown native switch retains the existing overlay fallback", () => {
   const { subtitles, context } = setupSubtitles({ overlayText: "字幕" });
+  subtitles.initializeSubtitlesOn();
+  assert.equal(context.state.subtitlessOn, true);
+});
+
+test("detects Video.js captions rendered outside native text tracks", () => {
+  const { subtitles, context } = setupSubtitles({
+    overlayText: "Eine sichtbare Untertitelzeile",
+    overlayClass: "vjs-text-track-display",
+  });
   subtitles.initializeSubtitlesOn();
   assert.equal(context.state.subtitlessOn, true);
 });

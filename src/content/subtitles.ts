@@ -1360,7 +1360,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
 
   function findGenericSubtitleNode() {
     const selector =
-      '[class*="subtitle" i], [class*="caption" i], [class*="timedtext" i], [id*="subtitle" i], [id*="caption" i]';
+      '[class*="subtitle" i], [class*="caption" i], [class*="timedtext" i], [class*="text-track-display" i], [id*="subtitle" i], [id*="caption" i]';
     const scored: {
       element: HTMLElement;
       score: number;
