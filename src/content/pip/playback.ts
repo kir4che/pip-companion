@@ -131,7 +131,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
 
   function findByNextLabel(root: Document | Element): NextControl | null {
     const elements = root.querySelectorAll<NextControl>(
-      "button, a, [role='button'], [aria-label], [title]",
+      "button, a, [role='button']",
     );
     for (const element of elements) {
       if (
@@ -172,7 +172,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       const candidate = container && findByNextLabel(container);
       if (candidate) return candidate;
     }
-    return findByNextLabel(document);
+    return null;
   }
 
   const NEXT_CONTROL_CACHE_MS = 800;
