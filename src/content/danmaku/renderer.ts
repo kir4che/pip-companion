@@ -673,26 +673,28 @@ interface DanmakuRendererOptions {
       item.danmakuEndTime =
         scheduledStartTime + Math.max(0, totalLifetime - elapsed * 1000);
       this.overlay.appendChild(item);
-      let animations: Animation[];
-      if (isAdvanced && advanced) {
-        animations = this.createAdvancedAnimations(
-          item,
-          animatedContent,
-          advanced,
-          overlayWidth,
-          totalLifetime,
-        );
-      } else if (isFixed) {
-        const opacity = this.dependencies.getStyle().opacity / 100;
-        item.danmakuOpacityAnimation = item.animate(
-          [{ opacity }, { opacity }],
-          {
-            duration: totalLifetime,
-            fill: "both",
-          },
-        );
-        animations = [item.danmakuOpacityAnimation];
-      } else animations = item.getAnimations();
+      const animations =
+        isAdvanced && advanced
+          ? this.createAdvancedAnimations(
+              item,
+              animatedContent,
+              advanced,
+              overlayWidth,
+              totalLifetime,
+            )
+          : isFixed
+            ? (() => {
+                const opacity = this.dependencies.getStyle().opacity / 100;
+                item.danmakuOpacityAnimation = item.animate(
+                  [{ opacity }, { opacity }],
+                  {
+                    duration: totalLifetime,
+                    fill: "both",
+                  },
+                );
+                return [item.danmakuOpacityAnimation];
+              })()
+            : item.getAnimations();
       for (const animation of animations) {
         animation.playbackRate = this.playbackRate;
         if (elapsed > 0) animation.currentTime = elapsed * 1000;

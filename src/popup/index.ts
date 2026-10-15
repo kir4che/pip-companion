@@ -543,10 +543,16 @@ async function disableAdditionalSourceForInvalidSettings(
   }
 }
 
-async function saveAdditionalBilibiliSource(): Promise<void> {
-  const revision = ++additionalSourceSaveRevision;
-  setAdditionalBilibiliInputError("url", null);
-  setAdditionalBilibiliInputError("offset", null);
+type AdditionalBilibiliFormResult =
+  | { ok: true; source: AdditionalBilibiliSourceSettings }
+  | {
+      ok: false;
+      errorField: "url" | "offset";
+      url: string;
+      offsetSeconds: number;
+    };
+
+function parseAdditionalBilibiliForm(): AdditionalBilibiliFormResult {
   const rawUrl = additionalBilibiliUrl.value.trim();
   let url = "";
   if (rawUrl) {
@@ -561,29 +567,49 @@ async function saveAdditionalBilibiliSource(): Promise<void> {
       url = parsed.href;
     } catch {
       const currentOffset = Number(additionalBilibiliOffset.value);
-      const safeOffset =
-        Number.isFinite(currentOffset) && Math.abs(currentOffset) <= 3600
-          ? currentOffset
-          : 0;
-      await disableAdditionalSourceForInvalidSettings(
-        revision,
-        rawUrl,
-        safeOffset,
-        "url",
-      );
-      return;
+      return {
+        ok: false,
+        errorField: "url",
+        url: rawUrl,
+        offsetSeconds:
+          Number.isFinite(currentOffset) && Math.abs(currentOffset) <= 3600
+            ? currentOffset
+            : 0,
+      };
     }
   }
 
   const offsetSeconds = Number(additionalBilibiliOffset.value);
-  if (!Number.isFinite(offsetSeconds) || Math.abs(offsetSeconds) > 3600) {
-    await disableAdditionalSourceForInvalidSettings(revision, url, 0, "offset");
+  if (!Number.isFinite(offsetSeconds) || Math.abs(offsetSeconds) > 3600)
+    return { ok: false, errorField: "offset", url, offsetSeconds: 0 };
+
+  return {
+    ok: true,
+    source: {
+      enabled: additionalBilibiliEnabled.checked && Boolean(url),
+      url,
+      offsetSeconds,
+    },
+  };
+}
+
+async function saveAdditionalBilibiliSource(): Promise<void> {
+  const revision = ++additionalSourceSaveRevision;
+  setAdditionalBilibiliInputError("url", null);
+  setAdditionalBilibiliInputError("offset", null);
+  const form = parseAdditionalBilibiliForm();
+  if (!form.ok) {
+    await disableAdditionalSourceForInvalidSettings(
+      revision,
+      form.url,
+      form.offsetSeconds,
+      form.errorField,
+    );
     return;
   }
-  const enabled = additionalBilibiliEnabled.checked && Boolean(url);
-  const source = { enabled, url, offsetSeconds };
+
   try {
-    const saved = await queueAdditionalBilibiliSourceUpdate(source);
+    const saved = await queueAdditionalBilibiliSourceUpdate(form.source);
     if (revision !== additionalSourceSaveRevision) return;
     renderAdditionalBilibiliSource(saved);
   } catch {
