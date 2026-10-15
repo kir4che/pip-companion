@@ -93,4 +93,4 @@ npm run build
 
 如果你喜欢这个项目，欢迎请我喝一杯奶茶 ヾ(_´∀`_)ﾉ
 
-<a href="https://www.buymeacoffee.com/kir4che" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-red.png" alt="Buy Me a Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/kir4che)
