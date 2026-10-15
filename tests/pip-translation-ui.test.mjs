@@ -294,7 +294,10 @@ function createUi(initialProvider, options = {}) {
         getLanguageLabel: (code) => code,
       },
     },
-    chrome: { runtime: { getURL: (path) => path } },
+    chrome:
+      options.runtimeAvailable === false
+        ? {}
+        : { runtime: { getURL: (path) => path } },
     location: { hostname: "example.com", origin: "https://example.com" },
     window: win,
     document: doc,
@@ -381,6 +384,10 @@ for (const from of providers) {
     });
   }
 }
+
+test("PiP UI still initializes when the extension runtime is unavailable", () => {
+  assert.doesNotThrow(() => createUi("none", { runtimeAvailable: false }));
+});
 
 test("failed provider setup keeps the native source and reports failure", async () => {
   const ui = createUi("none", {

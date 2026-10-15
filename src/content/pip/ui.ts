@@ -1006,7 +1006,10 @@ globalThis.PipCompanion.PipUI = (() => {
     playlistButton.hidden = true;
     playlistButton.setAttribute("aria-expanded", "false");
     const playlistIcon = doc.createElement("img");
-    playlistIcon.src = chrome.runtime.getURL("assets/playlist-icon.svg");
+    const playlistIconUrl = globalThis.chrome?.runtime?.getURL?.(
+      "assets/playlist-icon.svg",
+    );
+    if (playlistIconUrl) playlistIcon.src = playlistIconUrl;
     playlistIcon.alt = "";
     playlistIcon.setAttribute("aria-hidden", "true");
     playlistButton.append(playlistIcon);
