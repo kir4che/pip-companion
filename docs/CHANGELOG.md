@@ -2,7 +2,7 @@
 
 - Migrated captions to subtitles with multi-track switching and bilingual display
 - Added live subtitle translation via Microsoft Translator, Google Cloud Translation, or DeepL (bring your own API key)
-- Added additional danmaku sources to overlay Bilibili, Bahamut, or Twitch danmaku/chat onto other videos
+- Added extra danmaku sources to overlay Bilibili, Bahamut, or Twitch danmaku/chat onto other videos
 - Fixed PiP next-button lookup being scoped to player containers
 - Fixed PiP control focus and panel dismissal behavior
 - Fixed premature PiP close during async teardown

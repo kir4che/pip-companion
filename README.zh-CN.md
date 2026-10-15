@@ -53,6 +53,12 @@
 | 爱奇艺                                                                           | Netflix                                                                                                     |
 | ![爱奇艺画中画双语字幕示范](docs/images/iqiyi-pip-bilingual-subtitles.png)       | ![Netflix 画中画双语字幕示范（视频因 DRM 保护而呈现黑屏）](docs/images/netflix-pip-bilingual-subtitles.png) |
 
+### 额外弹幕示范
+
+| YouTube + Twitch 额外弹幕                                                                    |
+| -------------------------------------------------------------------------------------------- |
+| ![YouTube 画中画搭配 Twitch 额外弹幕](docs/images/youtube-pip-with-twitch-extra-danmaku.png) |
+
 ## 操作与快捷键
 
 - **开启画中画**：打开包含视频的网页后，点击扩展程序弹窗中的“开启画中画”，或在视频页面按 `Shift + Alt/Opt + P` 来开启或关闭 PiP。

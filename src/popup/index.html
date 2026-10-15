@@ -42,10 +42,10 @@
                 </button>
                 <button
                   class="settings-open"
-                  id="additional-danmaku-open"
+                  id="extra-danmaku-open"
                   type="button"
-                  aria-label="__MSG_popupAdditionalDanmakuSettings__"
-                  title="__MSG_popupAdditionalDanmakuSettings__"
+                  aria-label="__MSG_popupExtraDanmakuSettings__"
+                  title="__MSG_popupExtraDanmakuSettings__"
                 >
                   <svg
                     aria-hidden="true"
@@ -268,15 +268,15 @@
         </div>
       </section>
       <section
-        id="additional-danmaku-settings-view"
+        id="extra-danmaku-settings-view"
         class="popup-view danmaku-settings-view"
-        aria-labelledby="additional-danmaku-settings-title"
+        aria-labelledby="extra-danmaku-settings-title"
         hidden
       >
         <header class="settings-page-header">
           <button
             class="back-button"
-            id="additional-danmaku-back"
+            id="extra-danmaku-back"
             type="button"
             aria-label="__MSG_popupBackToMenu__"
           >
@@ -295,14 +295,12 @@
             </svg>
           </button>
           <div class="settings-title-hint-group">
-            <h1 id="additional-danmaku-settings-title">
-              __MSG_popupAdditionalDanmaku__
-            </h1>
+            <h1 id="extra-danmaku-settings-title">__MSG_popupExtraDanmaku__</h1>
             <button
               class="settings-hint-button"
               type="button"
-              aria-label="__MSG_popupAdditionalDanmakuScope__"
-              aria-describedby="additional-danmaku-scope-tooltip"
+              aria-label="__MSG_popupExtraDanmakuScope__"
+              aria-describedby="extra-danmaku-scope-tooltip"
             >
               <svg
                 aria-hidden="true"
@@ -326,46 +324,42 @@
                 />
               </svg>
               <span
-                id="additional-danmaku-scope-tooltip"
+                id="extra-danmaku-scope-tooltip"
                 class="settings-hint-tooltip"
                 role="tooltip"
-                >__MSG_popupAdditionalDanmakuScopeTooltip__</span
+                >__MSG_popupExtraDanmakuScopeTooltip__</span
               >
             </button>
           </div>
         </header>
-        <div class="additional-danmaku-settings">
-          <label class="source-toggle" for="additional-bilibili-enabled">
-            <span>__MSG_popupAdditionalDanmakuEnabled__</span>
-            <input
-              id="additional-bilibili-enabled"
-              type="checkbox"
-              role="switch"
-            />
+        <div class="extra-danmaku-settings">
+          <label class="source-toggle" for="extra-bilibili-enabled">
+            <span>__MSG_popupExtraDanmakuEnabled__</span>
+            <input id="extra-bilibili-enabled" type="checkbox" role="switch" />
           </label>
-          <label class="range-row" for="additional-bilibili-url">
-            <span>__MSG_popupAdditionalDanmakuUrl__</span>
+          <label class="range-row" for="extra-bilibili-url">
+            <span>__MSG_popupExtraDanmakuUrl__</span>
             <span class="source-input-wrap">
               <input
-                id="additional-bilibili-url"
+                id="extra-bilibili-url"
                 class="source-input"
                 type="url"
-                placeholder="__MSG_popupAdditionalDanmakuUrlPlaceholder__"
+                placeholder="__MSG_popupExtraDanmakuUrlPlaceholder__"
                 autocomplete="off"
                 spellcheck="false"
               />
               <span
-                id="additional-bilibili-url-error"
+                id="extra-bilibili-url-error"
                 class="source-input-error-tooltip"
                 role="tooltip"
               ></span>
             </span>
           </label>
-          <label class="range-row" for="additional-bilibili-offset">
-            <span>__MSG_popupAdditionalDanmakuOffset__</span>
+          <label class="range-row" for="extra-bilibili-offset">
+            <span>__MSG_popupExtraDanmakuOffset__</span>
             <span class="source-input-wrap">
               <input
-                id="additional-bilibili-offset"
+                id="extra-bilibili-offset"
                 class="source-input"
                 type="number"
                 min="-3600"
@@ -374,7 +368,7 @@
                 value="0"
               />
               <span
-                id="additional-bilibili-offset-error"
+                id="extra-bilibili-offset-error"
                 class="source-input-error-tooltip"
                 role="tooltip"
               ></span>

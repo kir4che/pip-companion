@@ -44,7 +44,7 @@ class TwitchChatConnection {
   private sendStatus(status: "connected" | "error", error?: string): void {
     void chrome.tabs
       .sendMessage(this.tabId, {
-        type: "ADDITIONAL_TWITCH_CHAT_STATUS",
+        type: "EXTRA_TWITCH_CHAT_STATUS",
         channel: this.channel,
         connectionId: this.connectionId,
         status,
@@ -140,7 +140,7 @@ class TwitchChatConnection {
         : undefined;
     void chrome.tabs
       .sendMessage(this.tabId, {
-        type: "ADDITIONAL_TWITCH_CHAT_MESSAGE",
+        type: "EXTRA_TWITCH_CHAT_MESSAGE",
         channel: this.channel,
         connectionId: this.connectionId,
         data: {
@@ -242,14 +242,14 @@ export function registerTwitchChatListener(): void {
       return false;
 
     const connection = connections.get(tabId);
-    if (message.type === "STOP_ADDITIONAL_TWITCH_CHAT") {
+    if (message.type === "STOP_EXTRA_TWITCH_CHAT") {
       if (connection?.pageUrl !== pageUrl) return false;
       connection.stop();
       connections.delete(tabId);
       return false;
     }
     if (
-      message.type !== "START_ADDITIONAL_TWITCH_CHAT" ||
+      message.type !== "START_EXTRA_TWITCH_CHAT" ||
       !isChannel(message.channel)
     )
       return false;

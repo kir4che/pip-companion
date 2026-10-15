@@ -1,17 +1,17 @@
 "use strict";
 
-type AdditionalBilibiliSource = {
+type ExtraBilibiliSource = {
   enabled: boolean;
   url: string;
   offsetSeconds: number;
 };
 
-type AdditionalBilibiliIdentity =
+type ExtraBilibiliIdentity =
   | { kind: "bilibili"; bvid: string; avid: string; page: number; key: string }
   | { kind: "bahamut"; videoSn: string; key: string }
   | { kind: "twitch"; channel: string; key: string };
 
-type AdditionalBilibiliMessage = DanmakuData & { replayTime: number };
+type ExtraBilibiliMessage = DanmakuData & { replayTime: number };
 
 function isValidDanmakuData(
   value: unknown,
@@ -108,9 +108,7 @@ function isValidDanmakuData(
   );
 }
 
-function isAdditionalBilibiliMessage(
-  value: unknown,
-): value is AdditionalBilibiliMessage {
+function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
   return isValidDanmakuData(value, true);
 }
 
@@ -119,7 +117,7 @@ function isAdditionalBilibiliMessage(
     globalThis.PipCompanion.bilibiliDanmakuConfig.segmentSeconds;
   const LATE_TOLERANCE_SECONDS = 0.5;
 
-  function normalizeSource(value: unknown): AdditionalBilibiliSource {
+  function normalizeSource(value: unknown): ExtraBilibiliSource {
     if (!globalThis.PipCompanion.util.isRecord(value))
       return { enabled: false, url: "", offsetSeconds: 0 };
     const url = typeof value.url === "string" ? value.url.trim() : "";
@@ -133,7 +131,7 @@ function isAdditionalBilibiliMessage(
     };
   }
 
-  function parseIdentity(value: string): AdditionalBilibiliIdentity | null {
+  function parseIdentity(value: string): ExtraBilibiliIdentity | null {
     try {
       const url = new URL(value);
       if (url.protocol !== "https:") return null;
@@ -173,20 +171,20 @@ function isAdditionalBilibiliMessage(
     }
   }
 
-  function create(dependencies: ContentAdditionalBilibiliDanmakuDependencies) {
-    let source: AdditionalBilibiliSource = normalizeSource(null);
+  function create(dependencies: ContentExtraBilibiliDanmakuDependencies) {
+    let source: ExtraBilibiliSource = normalizeSource(null);
     let available = dependencies.isSourceAvailable(null);
     let sourceError: string | null = null;
     let sourceErrorRevision = 0;
-    let identity: AdditionalBilibiliIdentity | null = null;
+    let identity: ExtraBilibiliIdentity | null = null;
     let mainPageKey = getMainPageKey();
     let video: HTMLVideoElement | null = null;
     let videoSourceKey = "";
     let videoController: AbortController | null = null;
     let generation = 0;
-    let messages: AdditionalBilibiliMessage[] = [];
+    let messages: ExtraBilibiliMessage[] = [];
     let messageIndex = 0;
-    let emittedMessages = new WeakSet<AdditionalBilibiliMessage>();
+    let emittedMessages = new WeakSet<ExtraBilibiliMessage>();
     const recentlyBroadcast = new Map<string, number>();
     const loadedSegments = new Set<number>();
     const loadingSegments = new Set<number>();
@@ -297,7 +295,7 @@ function isAdditionalBilibiliMessage(
       }
     }
 
-    function mergeMessages(incoming: AdditionalBilibiliMessage[]): void {
+    function mergeMessages(incoming: ExtraBilibiliMessage[]): void {
       const ids = new Set(
         messages.map((message) => message.messageId || message.id),
       );
@@ -341,7 +339,7 @@ function isAdditionalBilibiliMessage(
     }
 
     function requestBahamutDanmaku(
-      targetIdentity: Extract<AdditionalBilibiliIdentity, { kind: "bahamut" }>,
+      targetIdentity: Extract<ExtraBilibiliIdentity, { kind: "bahamut" }>,
     ): void {
       if (loadedSegments.has(1) || loadingSegments.has(1)) return;
       loadingSegments.add(1);
@@ -374,7 +372,7 @@ function isAdditionalBilibiliMessage(
             throw new Error("Invalid Bahamut danmaku response");
           setSourceError(null);
           const validMessages = response.messages.filter(
-            isAdditionalBilibiliMessage,
+            isExtraBilibiliMessage,
           );
           mergeMessages(validMessages);
           loadedSegments.add(1);
@@ -387,7 +385,7 @@ function isAdditionalBilibiliMessage(
     }
 
     function requestSegments(
-      targetIdentity: Extract<AdditionalBilibiliIdentity, { kind: "bilibili" }>,
+      targetIdentity: Extract<ExtraBilibiliIdentity, { kind: "bilibili" }>,
       startSegment: number,
       endSegment: number,
     ): void {
@@ -445,7 +443,7 @@ function isAdditionalBilibiliMessage(
             throw new Error("Invalid Bilibili danmaku response");
           setSourceError(null);
           const validMessages = response.messages.filter(
-            isAdditionalBilibiliMessage,
+            isExtraBilibiliMessage,
           );
           if (response.legacyFallback === true) legacyFallbackLoaded = true;
           mergeMessages(validMessages);
@@ -488,7 +486,7 @@ function isAdditionalBilibiliMessage(
     function publishSourceState(): void {
       void chrome.runtime
         .sendMessage({
-          type: "ADDITIONAL_DANMAKU_SOURCE_CHANGED",
+          type: "EXTRA_DANMAKU_SOURCE_CHANGED",
           source,
           available,
         } satisfies ExtensionMessage)
@@ -539,14 +537,14 @@ function isAdditionalBilibiliMessage(
       if (nextIdentity?.kind === "twitch") {
         void chrome.runtime
           .sendMessage({
-            type: "START_ADDITIONAL_TWITCH_CHAT",
+            type: "START_EXTRA_TWITCH_CHAT",
             channel: nextIdentity.channel,
           } satisfies ExtensionMessage)
           .catch((error: unknown) => handleLoadError(error, generation));
       } else {
         void chrome.runtime
           .sendMessage({
-            type: "STOP_ADDITIONAL_TWITCH_CHAT",
+            type: "STOP_EXTRA_TWITCH_CHAT",
           } satisfies ExtensionMessage)
           .catch(() => {});
       }
@@ -571,14 +569,14 @@ function isAdditionalBilibiliMessage(
       sourceErrorRevision++;
       void chrome.runtime
         .sendMessage({
-          type: "ADDITIONAL_DANMAKU_SOURCE_STATUS",
+          type: "EXTRA_DANMAKU_SOURCE_STATUS",
           error,
           revision: sourceErrorRevision,
         } satisfies ExtensionMessage)
         .catch(() => {});
     }
 
-    function getSource(): AdditionalBilibiliSource & {
+    function getSource(): ExtraBilibiliSource & {
       available: boolean;
       error: string | null;
       errorRevision: number;
@@ -666,7 +664,7 @@ function isAdditionalBilibiliMessage(
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (!globalThis.PipCompanion.util.isRecord(message)) return;
       if (
-        message.type === "ADDITIONAL_TWITCH_CHAT_STATUS" &&
+        message.type === "EXTRA_TWITCH_CHAT_STATUS" &&
         identity?.kind === "twitch" &&
         message.channel === identity.channel &&
         typeof message.connectionId === "string"
@@ -688,7 +686,7 @@ function isAdditionalBilibiliMessage(
         return;
       }
       if (
-        message.type === "ADDITIONAL_TWITCH_CHAT_MESSAGE" &&
+        message.type === "EXTRA_TWITCH_CHAT_MESSAGE" &&
         identity?.kind === "twitch" &&
         message.channel === identity.channel &&
         message.connectionId === twitchConnectionId &&
@@ -698,11 +696,11 @@ function isAdditionalBilibiliMessage(
           scheduleLiveMessage(message.data, "twitch");
         return;
       }
-      if (message.type === "GET_ADDITIONAL_DANMAKU_SOURCE") {
+      if (message.type === "GET_EXTRA_DANMAKU_SOURCE") {
         sendResponse(getSource());
         return;
       }
-      if (message.type === "SET_ADDITIONAL_DANMAKU_SOURCE") {
+      if (message.type === "SET_EXTRA_DANMAKU_SOURCE") {
         setSource(message.source);
         sendResponse(getSource());
         return;
@@ -714,5 +712,5 @@ function isAdditionalBilibiliMessage(
 
   globalThis.PipCompanion =
     globalThis.PipCompanion || ({} as PipCompanionGlobal);
-  globalThis.PipCompanion.ContentAdditionalBilibiliDanmaku = { create };
+  globalThis.PipCompanion.ContentExtraBilibiliDanmaku = { create };
 })();

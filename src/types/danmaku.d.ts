@@ -119,14 +119,14 @@ interface ContentDanmakuRendererApi {
   ): DanmakuRendererHandle;
 }
 
-interface ContentAdditionalBilibiliDanmakuDependencies {
+interface ContentExtraBilibiliDanmakuDependencies {
   isVisible(): boolean;
   isSourceAvailable(video: HTMLVideoElement | null): boolean;
   broadcast(data: DanmakuData, options?: DanmakuEmitOptions): void;
 }
 
-interface ContentAdditionalBilibiliDanmakuApi {
-  create(dependencies: ContentAdditionalBilibiliDanmakuDependencies): {
+interface ContentExtraBilibiliDanmakuApi {
+  create(dependencies: ContentExtraBilibiliDanmakuDependencies): {
     checkAndBind(video: HTMLVideoElement | null): void;
     getSource(): {
       enabled: boolean;
@@ -194,6 +194,6 @@ declare function checkAndBindDanmakuChat(): void;
 declare function checkAndBindBilibiliDanmaku(
   video: HTMLVideoElement | null,
 ): void;
-declare function checkAndBindAdditionalBilibiliDanmaku(
+declare function checkAndBindExtraBilibiliDanmaku(
   video: HTMLVideoElement | null,
 ): void;

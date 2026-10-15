@@ -95,22 +95,18 @@ function setup(kind, options = {}) {
   vm.runInNewContext(
     ts.transpileModule(
       readFileSync(
-        new URL(
-          "../src/content/danmaku/additional-danmaku.ts",
-          import.meta.url,
-        ),
+        new URL("../src/content/danmaku/extra-danmaku.ts", import.meta.url),
         "utf8",
       ),
       { compilerOptions: { target: ts.ScriptTarget.ES2022 } },
     ).outputText,
     context,
   );
-  const controller =
-    context.PipCompanion.ContentAdditionalBilibiliDanmaku.create({
-      isVisible: () => true,
-      isSourceAvailable: () => true,
-      broadcast: (message) => broadcasts.push(message),
-    });
+  const controller = context.PipCompanion.ContentExtraBilibiliDanmaku.create({
+    isVisible: () => true,
+    isSourceAvailable: () => true,
+    broadcast: (message) => broadcasts.push(message),
+  });
   const url =
     kind === "bahamut"
       ? "https://ani.gamer.com.tw/animeVideo.php?sn=123"
@@ -195,7 +191,7 @@ test("a delayed response from the previous Bilibili source is ignored", async ()
 test("Twitch chat ignores messages from an old connection after channel switch", async () => {
   const { broadcasts, controller, dispatchRuntimeMessage } = setup("twitch");
   dispatchRuntimeMessage({
-    type: "ADDITIONAL_TWITCH_CHAT_STATUS",
+    type: "EXTRA_TWITCH_CHAT_STATUS",
     status: "connected",
     channel: "first_channel",
     connectionId: "connection-1",
@@ -207,14 +203,14 @@ test("Twitch chat ignores messages from an old connection after channel switch",
     offsetSeconds: 0,
   });
   dispatchRuntimeMessage({
-    type: "ADDITIONAL_TWITCH_CHAT_STATUS",
+    type: "EXTRA_TWITCH_CHAT_STATUS",
     status: "connected",
     channel: "second_channel",
     connectionId: "connection-2",
   });
   const sendChat = (channel, connectionId, text) =>
     dispatchRuntimeMessage({
-      type: "ADDITIONAL_TWITCH_CHAT_MESSAGE",
+      type: "EXTRA_TWITCH_CHAT_MESSAGE",
       channel,
       connectionId,
       data: { messageId: text, text },

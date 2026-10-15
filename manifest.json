@@ -62,7 +62,7 @@
         "content/danmaku/renderer.js",
         "content/danmaku/sources.js",
         "content/danmaku/bilibili.js",
-        "content/danmaku/additional-danmaku.js",
+        "content/danmaku/extra-danmaku.js",
         "content/danmaku/youtube.js",
         "content/danmaku/sender/bahamut.js",
         "content/danmaku/sender/bilibili.js",

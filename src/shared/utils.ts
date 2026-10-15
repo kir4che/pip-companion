@@ -203,7 +203,7 @@ globalThis.PipCompanion.util = (() => {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
 
-  function isValidAdditionalDanmakuSourceUrl(value: string): boolean {
+  function isValidExtraDanmakuSourceUrl(value: string): boolean {
     try {
       const url = new URL(value);
       if (url.protocol !== "https:") return false;
@@ -280,7 +280,7 @@ globalThis.PipCompanion.util = (() => {
         );
       case "PIP_SOURCE_PLAYBACK_CHANGED":
         return typeof value.playing === "boolean";
-      case "GET_ADDITIONAL_DANMAKU_SOURCE":
+      case "GET_EXTRA_DANMAKU_SOURCE":
         return true;
       case "GET_BAHAMUT_DANMAKU":
         return (
@@ -288,14 +288,14 @@ globalThis.PipCompanion.util = (() => {
           /^\d{1,12}$/.test(value.videoSn) &&
           Number(value.videoSn) > 0
         );
-      case "START_ADDITIONAL_TWITCH_CHAT":
+      case "START_EXTRA_TWITCH_CHAT":
         return (
           typeof value.channel === "string" &&
           /^[a-z0-9_]{1,25}$/i.test(value.channel)
         );
-      case "STOP_ADDITIONAL_TWITCH_CHAT":
+      case "STOP_EXTRA_TWITCH_CHAT":
         return true;
-      case "ADDITIONAL_TWITCH_CHAT_STATUS":
+      case "EXTRA_TWITCH_CHAT_STATUS":
         return (
           typeof value.channel === "string" &&
           /^[a-z0-9_]{1,25}$/i.test(value.channel) &&
@@ -304,7 +304,7 @@ globalThis.PipCompanion.util = (() => {
           (value.status === "connected" || value.status === "error") &&
           (value.error === undefined || typeof value.error === "string")
         );
-      case "ADDITIONAL_TWITCH_CHAT_MESSAGE":
+      case "EXTRA_TWITCH_CHAT_MESSAGE":
         return (
           typeof value.channel === "string" &&
           /^[a-z0-9_]{1,25}$/i.test(value.channel) &&
@@ -314,28 +314,28 @@ globalThis.PipCompanion.util = (() => {
           typeof value.data.text === "string" &&
           value.data.text.length <= 2000
         );
-      case "ADDITIONAL_DANMAKU_SOURCE_STATUS":
+      case "EXTRA_DANMAKU_SOURCE_STATUS":
         return (
           (value.error === null || typeof value.error === "string") &&
           typeof value.revision === "number" &&
           Number.isInteger(value.revision) &&
           value.revision >= 0
         );
-      case "ADDITIONAL_DANMAKU_SOURCE_CHANGED":
+      case "EXTRA_DANMAKU_SOURCE_CHANGED":
         return (
           isRecord(value.source) &&
           typeof value.source.enabled === "boolean" &&
           typeof value.source.url === "string" &&
           value.source.url.length <= 2048 &&
           (value.source.url === "" ||
-            isValidAdditionalDanmakuSourceUrl(value.source.url)) &&
+            isValidExtraDanmakuSourceUrl(value.source.url)) &&
           (!value.source.enabled || value.source.url !== "") &&
           typeof value.source.offsetSeconds === "number" &&
           Number.isFinite(value.source.offsetSeconds) &&
           Math.abs(value.source.offsetSeconds) <= 3600 &&
           typeof value.available === "boolean"
         );
-      case "SET_ADDITIONAL_DANMAKU_SOURCE":
+      case "SET_EXTRA_DANMAKU_SOURCE":
         return (
           isRecord(value.source) &&
           typeof value.source.enabled === "boolean" &&
@@ -511,7 +511,7 @@ globalThis.PipCompanion.util = (() => {
     SEEK_SECONDS_OPTIONS,
     normalizeSeekSeconds,
     isRecord,
-    isValidAdditionalDanmakuSourceUrl,
+    isValidExtraDanmakuSourceUrl,
     isExtensionMessage,
     normalizeShortcut,
     hasMetaModifier,

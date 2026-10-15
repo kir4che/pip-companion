@@ -287,7 +287,7 @@ interface PipCompanionUtil {
   SEEK_SECONDS_OPTIONS: readonly SeekSeconds[];
   normalizeSeekSeconds(value: unknown): SeekSeconds;
   isRecord(value: unknown): value is Record<string, unknown>;
-  isValidAdditionalDanmakuSourceUrl(value: string): boolean;
+  isValidExtraDanmakuSourceUrl(value: string): boolean;
   isExtensionMessage(value: unknown): value is ExtensionMessage;
   normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut;
   hasMetaModifier(e: KeyboardEvent): boolean;
@@ -513,7 +513,7 @@ interface PipCompanionGlobal {
   ContentScreenshot: ContentScreenshotApi;
   ContentPipLifecycle: ContentPipLifecycleApi;
   ContentBilibiliDanmaku: ContentBilibiliDanmakuApi;
-  ContentAdditionalBilibiliDanmaku: ContentAdditionalBilibiliDanmakuApi;
+  ContentExtraBilibiliDanmaku: ContentExtraBilibiliDanmakuApi;
   ContentBahamutDanmakuSender: ContentBahamutDanmakuSenderApi;
   ContentBilibiliDanmakuSender: ContentBilibiliDanmakuSenderApi;
   ContentYouTubeDanmakuSender: ContentYouTubeDanmakuSenderApi;

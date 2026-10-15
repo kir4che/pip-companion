@@ -497,7 +497,7 @@ function scanPage() {
       state.sourceVideo = null;
       globalThis.PipCompanion.ContentSubtitles.setNativeSubtitleVideo(null);
     }
-    checkAndBindAdditionalBilibiliDanmaku(null);
+    checkAndBindExtraBilibiliDanmaku(null);
     return;
   }
 
@@ -515,7 +515,7 @@ function scanPage() {
   }
   if (IS_BILIBILI && !isBilibiliLivePage())
     checkAndBindBilibiliDanmaku(state.sourceVideo);
-  checkAndBindAdditionalBilibiliDanmaku(state.sourceVideo);
+  checkAndBindExtraBilibiliDanmaku(state.sourceVideo);
   globalThis.PipCompanion.ContentSubtitles.refreshSubtitle();
   globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
 }

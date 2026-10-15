@@ -35,22 +35,22 @@
   "popupDanmaku": {
     "message": "彈幕"
   },
-  "popupAdditionalDanmaku": {
+  "popupExtraDanmaku": {
     "message": "額外彈幕"
   },
-  "popupAdditionalDanmakuScope": {
+  "popupExtraDanmakuScope": {
     "message": "設定套用範圍說明"
   },
-  "popupAdditionalDanmakuScopeTooltip": {
+  "popupExtraDanmakuScopeTooltip": {
     "message": "設定只套用目前分頁，切換影片、重新整理或來源錯誤時會停用。"
   },
-  "popupAdditionalDanmakuEnabled": {
+  "popupExtraDanmakuEnabled": {
     "message": "顯示額外彈幕"
   },
-  "popupAdditionalDanmakuUrl": {
+  "popupExtraDanmakuUrl": {
     "message": "來源網址（支援 Bilibili、動畫瘋、Twitch）"
   },
-  "popupAdditionalDanmakuOffset": {
+  "popupExtraDanmakuOffset": {
     "message": "時間偏移／延遲（秒）"
   },
   "popupScreenshot": {
@@ -614,34 +614,34 @@
   "shortcutCaptions": {
     "message": "字幕"
   },
-  "popupAdditionalDanmakuSettings": {
+  "popupExtraDanmakuSettings": {
     "message": "額外彈幕設定"
   },
-  "popupAdditionalDanmakuUrlPlaceholder": {
-    "message": "Bilibili、動畫瘋或 twitch.tv/頻道名稱"
+  "popupExtraDanmakuUrlPlaceholder": {
+    "message": "Bilibili、巴哈動畫瘋或 Twitch"
   },
-  "popupAdditionalDanmakuConnectionFailed": {
+  "popupExtraDanmakuConnectionFailed": {
     "message": "無法連線至目前分頁，請重新整理影片頁後再試。"
   },
-  "popupAdditionalDanmakuStorageFailed": {
+  "popupExtraDanmakuStorageFailed": {
     "message": "無法讀取此分頁的額外彈幕"
   },
-  "popupAdditionalDanmakuApplyFailed": {
+  "popupExtraDanmakuApplyFailed": {
     "message": "無法套用此分頁的額外彈幕，請重新整理後再試。"
   },
-  "popupAdditionalDanmakuLoadFailed": {
+  "popupExtraDanmakuLoadFailed": {
     "message": "無法載入額外彈幕，請重新開啟設定頁。"
   },
-  "popupAdditionalDanmakuInvalidUrl": {
+  "popupExtraDanmakuInvalidUrl": {
     "message": "請輸入有效的 Bilibili、巴哈動畫瘋或 Twitch 影片網址"
   },
-  "popupAdditionalDanmakuInvalidOffset": {
+  "popupExtraDanmakuInvalidOffset": {
     "message": "時間偏移須介於 -3600 至 3600 秒"
   },
-  "popupAdditionalDanmakuDisableFailed": {
+  "popupExtraDanmakuDisableFailed": {
     "message": "無法停用目前來源，請重新整理影片頁後再試。"
   },
-  "popupAdditionalDanmakuSaveFailed": {
+  "popupExtraDanmakuSaveFailed": {
     "message": "儲存失敗，請重新整理影片頁後再試。"
   },
   "popupCaptionStyleSettings": {

@@ -68,14 +68,14 @@ const danmakuSettingsOpen = document.querySelector(
 const danmakuSettingsBack = document.querySelector(
   "#danmaku-settings-back",
 ) as HTMLButtonElement;
-const additionalDanmakuSettingsView = document.querySelector(
-  "#additional-danmaku-settings-view",
+const extraDanmakuSettingsView = document.querySelector(
+  "#extra-danmaku-settings-view",
 ) as HTMLElement;
-const additionalDanmakuOpen = document.querySelector(
-  "#additional-danmaku-open",
+const extraDanmakuOpen = document.querySelector(
+  "#extra-danmaku-open",
 ) as HTMLButtonElement;
-const additionalDanmakuBack = document.querySelector(
-  "#additional-danmaku-back",
+const extraDanmakuBack = document.querySelector(
+  "#extra-danmaku-back",
 ) as HTMLButtonElement;
 const subtitleSettingsView = document.querySelector(
   "#subtitle-settings-view",
@@ -86,12 +86,12 @@ const subtitleSettingsOpen = document.querySelector(
 const subtitleSettingsBack = document.querySelector(
   "#subtitle-settings-back",
 ) as HTMLButtonElement;
-let activeSettingsView: "danmaku" | "subtitle" | "additional" = "danmaku";
+let activeSettingsView: "danmaku" | "subtitle" | "extra" = "danmaku";
 
-function setSettingsView(view: "menu" | "danmaku" | "subtitle" | "additional") {
+function setSettingsView(view: "menu" | "danmaku" | "subtitle" | "extra") {
   menuView.hidden = view !== "menu";
   danmakuSettingsView.hidden = view !== "danmaku";
-  additionalDanmakuSettingsView.hidden = view !== "additional";
+  extraDanmakuSettingsView.hidden = view !== "extra";
   subtitleSettingsView.hidden = view !== "subtitle";
   if (view !== "menu") activeSettingsView = view;
   const focusTarget =
@@ -100,21 +100,19 @@ function setSettingsView(view: "menu" | "danmaku" | "subtitle" | "additional") {
         ? danmakuSettingsOpen
         : activeSettingsView === "subtitle"
           ? subtitleSettingsOpen
-          : additionalDanmakuOpen
+          : extraDanmakuOpen
       : view === "danmaku"
         ? danmakuSettingsBack
         : view === "subtitle"
           ? subtitleSettingsBack
-          : additionalDanmakuBack;
+          : extraDanmakuBack;
   focusTarget.focus();
 }
 
 danmakuSettingsOpen.addEventListener("click", () => setSettingsView("danmaku"));
 danmakuSettingsBack.addEventListener("click", () => setSettingsView("menu"));
-additionalDanmakuOpen.addEventListener("click", () =>
-  setSettingsView("additional"),
-);
-additionalDanmakuBack.addEventListener("click", () => setSettingsView("menu"));
+extraDanmakuOpen.addEventListener("click", () => setSettingsView("extra"));
+extraDanmakuBack.addEventListener("click", () => setSettingsView("menu"));
 subtitleSettingsOpen.addEventListener("click", () =>
   setSettingsView("subtitle"),
 );
@@ -230,20 +228,20 @@ const danmakuStyleControls = [
 const danmakuStyleReset = document.querySelector(
   "#danmaku-style-reset",
 ) as HTMLButtonElement;
-const additionalBilibiliEnabled = document.querySelector(
-  "#additional-bilibili-enabled",
+const extraBilibiliEnabled = document.querySelector(
+  "#extra-bilibili-enabled",
 ) as HTMLInputElement;
-const additionalBilibiliUrl = document.querySelector(
-  "#additional-bilibili-url",
+const extraBilibiliUrl = document.querySelector(
+  "#extra-bilibili-url",
 ) as HTMLInputElement;
-const additionalBilibiliOffset = document.querySelector(
-  "#additional-bilibili-offset",
+const extraBilibiliOffset = document.querySelector(
+  "#extra-bilibili-offset",
 ) as HTMLInputElement;
-const additionalBilibiliUrlError = document.querySelector(
-  "#additional-bilibili-url-error",
+const extraBilibiliUrlError = document.querySelector(
+  "#extra-bilibili-url-error",
 ) as HTMLElement;
-const additionalBilibiliOffsetError = document.querySelector(
-  "#additional-bilibili-offset-error",
+const extraBilibiliOffsetError = document.querySelector(
+  "#extra-bilibili-offset-error",
 ) as HTMLElement;
 let popupDanmakuStyle = { ...popupDanmakuSettings.DEFAULTS };
 let popupDanmakuStyleRevision = 0;
@@ -259,48 +257,45 @@ const screenshotToggle = document.querySelector(
 const followPlaybackPipToggle = document.querySelector(
   "#follow-playback-pip-toggle",
 ) as HTMLInputElement;
-let additionalSourceSaveQueue: Promise<void> = Promise.resolve();
-let additionalSourceSaveRevision = 0;
-let additionalBilibiliSourceEdited = false;
-let additionalBilibiliTabId: number | undefined;
-let additionalSourceLoadError: string | null = null;
-let additionalSourceErrorRevision = -1;
+let extraSourceSaveQueue: Promise<void> = Promise.resolve();
+let extraSourceSaveRevision = 0;
+let extraBilibiliSourceEdited = false;
+let extraBilibiliTabId: number | undefined;
+let extraSourceLoadError: string | null = null;
+let extraSourceErrorRevision = -1;
 
 function showStatus(message: string, error = false) {
   statusEl.textContent = message;
   statusEl.dataset.error = String(error);
 }
 
-function setAdditionalSourceLoadError(error: string | null): void {
-  const previousError = additionalSourceLoadError;
-  additionalSourceLoadError = error;
+function setExtraSourceLoadError(error: string | null): void {
+  const previousError = extraSourceLoadError;
+  extraSourceLoadError = error;
   if (error) {
-    setAdditionalBilibiliInputError("url", error);
+    setExtraBilibiliInputError("url", error);
   } else if (
     previousError &&
-    additionalBilibiliUrlError.textContent === previousError
+    extraBilibiliUrlError.textContent === previousError
   ) {
-    setAdditionalBilibiliInputError("url", null);
+    setExtraBilibiliInputError("url", null);
   }
 }
 
-function clearAdditionalSourceLoadError(): void {
-  setAdditionalSourceLoadError(null);
+function clearExtraSourceLoadError(): void {
+  setExtraSourceLoadError(null);
 }
 
-function updateAdditionalSourceError(
-  error: string | null,
-  revision: number,
-): void {
-  if (revision < additionalSourceErrorRevision) return;
-  additionalSourceErrorRevision = revision;
-  setAdditionalSourceLoadError(error);
+function updateExtraSourceError(error: string | null, revision: number): void {
+  if (revision < extraSourceErrorRevision) return;
+  extraSourceErrorRevision = revision;
+  setExtraSourceLoadError(error);
 }
 
-async function sendAdditionalDanmakuMessage(
+async function sendExtraDanmakuMessage(
   message: ExtensionMessage,
 ): Promise<unknown> {
-  let tabId = additionalBilibiliTabId;
+  let tabId = extraBilibiliTabId;
   if (tabId === undefined) {
     const [activeTab] = await chrome.tabs.query({
       active: true,
@@ -308,7 +303,7 @@ async function sendAdditionalDanmakuMessage(
     });
     if (activeTab?.id === undefined) throw new Error("No active browser tab");
     tabId = activeTab.id;
-    additionalBilibiliTabId = tabId;
+    extraBilibiliTabId = tabId;
   }
   try {
     await chrome.tabs.get(tabId);
@@ -319,21 +314,18 @@ async function sendAdditionalDanmakuMessage(
     });
     if (activeTab?.id === undefined) throw new Error("No active browser tab");
     tabId = activeTab.id;
-    additionalBilibiliTabId = tabId;
+    extraBilibiliTabId = tabId;
   }
   return chrome.tabs.sendMessage(tabId, message);
 }
 
-function setAdditionalBilibiliInputError(
+function setExtraBilibiliInputError(
   field: "url" | "offset",
   message: string | null,
 ): void {
-  const input =
-    field === "url" ? additionalBilibiliUrl : additionalBilibiliOffset;
+  const input = field === "url" ? extraBilibiliUrl : extraBilibiliOffset;
   const tooltip =
-    field === "url"
-      ? additionalBilibiliUrlError
-      : additionalBilibiliOffsetError;
+    field === "url" ? extraBilibiliUrlError : extraBilibiliOffsetError;
   input.classList.toggle("is-error", message !== null);
   if (message) {
     tooltip.textContent = message;
@@ -344,15 +336,15 @@ function setAdditionalBilibiliInputError(
   }
 }
 
-type AdditionalBilibiliSourceSettings = {
+type ExtraBilibiliSourceSettings = {
   enabled: boolean;
   url: string;
   offsetSeconds: number;
 };
 
-function parseAdditionalBilibiliSource(
+function parseExtraBilibiliSource(
   value: unknown,
-): AdditionalBilibiliSourceSettings | null {
+): ExtraBilibiliSourceSettings | null {
   if (
     !util.isRecord(value) ||
     typeof value.enabled !== "boolean" ||
@@ -370,31 +362,30 @@ function parseAdditionalBilibiliSource(
   };
 }
 
-function hasAdditionalBilibiliSourceSettings(
-  source: AdditionalBilibiliSourceSettings | null,
+function hasExtraBilibiliSourceSettings(
+  source: ExtraBilibiliSourceSettings | null,
 ): boolean {
   return Boolean(
     source && (source.enabled || source.url || source.offsetSeconds !== 0),
   );
 }
 
-function additionalBilibiliSourceStorageKey(tabId: number): string {
-  return `additionalBilibiliSource:${tabId}`;
+function extraBilibiliSourceStorageKey(tabId: number): string {
+  return `extraBilibiliSource:${tabId}`;
 }
 
-function setAdditionalBilibiliAvailability(available: boolean): void {
-  additionalBilibiliEnabled.disabled = !available;
-  additionalBilibiliUrl.disabled = !available;
-  additionalBilibiliOffset.disabled = !available;
+function setExtraBilibiliAvailability(available: boolean): void {
+  extraBilibiliEnabled.disabled = !available;
+  extraBilibiliUrl.disabled = !available;
+  extraBilibiliOffset.disabled = !available;
 }
 
-function renderAdditionalBilibiliSource(value: unknown) {
+function renderExtraBilibiliSource(value: unknown) {
   const source = util.isRecord(value) ? value : {};
-  setAdditionalBilibiliAvailability(source.available !== false);
-  additionalBilibiliEnabled.checked = source.enabled === true;
-  additionalBilibiliUrl.value =
-    typeof source.url === "string" ? source.url : "";
-  additionalBilibiliOffset.value = String(
+  setExtraBilibiliAvailability(source.available !== false);
+  extraBilibiliEnabled.checked = source.enabled === true;
+  extraBilibiliUrl.value = typeof source.url === "string" ? source.url : "";
+  extraBilibiliOffset.value = String(
     typeof source.offsetSeconds === "number" &&
       Number.isFinite(source.offsetSeconds)
       ? Math.max(-3600, Math.min(3600, source.offsetSeconds))
@@ -402,8 +393,8 @@ function renderAdditionalBilibiliSource(value: unknown) {
   );
 }
 
-async function loadAdditionalBilibiliSource() {
-  const revision = additionalSourceSaveRevision;
+async function loadExtraBilibiliSource() {
+  const revision = extraSourceSaveRevision;
   try {
     const [activeTab] = await chrome.tabs.query({
       active: true,
@@ -411,62 +402,54 @@ async function loadAdditionalBilibiliSource() {
     });
     if (activeTab?.id === undefined) throw new Error("No active browser tab");
     const tabId = activeTab.id;
-    additionalBilibiliTabId = tabId;
-    const storageKey = additionalBilibiliSourceStorageKey(tabId);
+    extraBilibiliTabId = tabId;
+    const storageKey = extraBilibiliSourceStorageKey(tabId);
+    const legacyStorageKey = `additionalBilibiliSource:${tabId}`;
     let sourceMessageError: string | null = null;
     let storageReadError: string | null = null;
     const [liveSource, storedValues] = await Promise.all([
       chrome.tabs
         .sendMessage(tabId, {
-          type: "GET_ADDITIONAL_DANMAKU_SOURCE",
+          type: "GET_EXTRA_DANMAKU_SOURCE",
         } satisfies ExtensionMessage)
         .catch(() => {
-          sourceMessageError = t("popupAdditionalDanmakuConnectionFailed");
+          sourceMessageError = t("popupExtraDanmakuConnectionFailed");
           return null;
         }),
-      chrome.storage.session.get(storageKey).catch(() => {
-        storageReadError = t("popupAdditionalDanmakuStorageFailed");
+      chrome.storage.session.get([storageKey, legacyStorageKey]).catch(() => {
+        storageReadError = t("popupExtraDanmakuStorageFailed");
         return {} as Record<string, unknown>;
       }),
     ]);
-    if (
-      revision !== additionalSourceSaveRevision ||
-      additionalBilibiliSourceEdited
-    )
+    if (revision !== extraSourceSaveRevision || extraBilibiliSourceEdited)
       return;
 
-    const liveSettings = parseAdditionalBilibiliSource(liveSource);
-    const storedSettings = parseAdditionalBilibiliSource(
-      storedValues[storageKey],
+    const liveSettings = parseExtraBilibiliSource(liveSource);
+    const storedSettings = parseExtraBilibiliSource(
+      storedValues[storageKey] ?? storedValues[legacyStorageKey],
     );
     let sourceToRender: unknown = liveSource;
-    if (!hasAdditionalBilibiliSourceSettings(liveSettings) && storedSettings) {
+    if (!hasExtraBilibiliSourceSettings(liveSettings) && storedSettings) {
       const restoredSettings = { ...storedSettings, enabled: false };
       sourceToRender = restoredSettings;
       try {
         sourceToRender = await chrome.tabs.sendMessage(tabId, {
-          type: "SET_ADDITIONAL_DANMAKU_SOURCE",
+          type: "SET_EXTRA_DANMAKU_SOURCE",
           source: restoredSettings,
         } satisfies ExtensionMessage);
         sourceMessageError = null;
       } catch {
-        sourceMessageError = t("popupAdditionalDanmakuApplyFailed");
+        sourceMessageError = t("popupExtraDanmakuApplyFailed");
       }
-      if (
-        revision !== additionalSourceSaveRevision ||
-        additionalBilibiliSourceEdited
-      )
+      if (revision !== extraSourceSaveRevision || extraBilibiliSourceEdited)
         return;
-    } else if (
-      liveSettings &&
-      hasAdditionalBilibiliSourceSettings(liveSettings)
-    ) {
+    } else if (liveSettings && hasExtraBilibiliSourceSettings(liveSettings)) {
       void chrome.storage.session
         .set({ [storageKey]: liveSettings })
         .catch(() => {});
     }
 
-    renderAdditionalBilibiliSource(sourceToRender);
+    renderExtraBilibiliSource(sourceToRender);
     if (
       util.isRecord(sourceToRender) &&
       (typeof sourceToRender.error === "string" ||
@@ -474,77 +457,74 @@ async function loadAdditionalBilibiliSource() {
       typeof sourceToRender.errorRevision === "number" &&
       Number.isInteger(sourceToRender.errorRevision)
     )
-      updateAdditionalSourceError(
+      updateExtraSourceError(
         sourceToRender.error,
         sourceToRender.errorRevision,
       );
-    else setAdditionalSourceLoadError(storageReadError ?? sourceMessageError);
+    else setExtraSourceLoadError(storageReadError ?? sourceMessageError);
   } catch {
-    if (
-      revision === additionalSourceSaveRevision &&
-      !additionalBilibiliSourceEdited
-    ) {
-      renderAdditionalBilibiliSource(null);
-      setAdditionalSourceLoadError(t("popupAdditionalDanmakuLoadFailed"));
+    if (revision === extraSourceSaveRevision && !extraBilibiliSourceEdited) {
+      renderExtraBilibiliSource(null);
+      setExtraSourceLoadError(t("popupExtraDanmakuLoadFailed"));
     }
   }
 }
 
-function queueAdditionalBilibiliSourceUpdate(source: {
+function queueExtraBilibiliSourceUpdate(source: {
   enabled: boolean;
   url: string;
   offsetSeconds: number;
 }): Promise<unknown> {
-  const request = additionalSourceSaveQueue.then(async () => {
-    const saved = await sendAdditionalDanmakuMessage({
-      type: "SET_ADDITIONAL_DANMAKU_SOURCE",
+  const request = extraSourceSaveQueue.then(async () => {
+    const saved = await sendExtraDanmakuMessage({
+      type: "SET_EXTRA_DANMAKU_SOURCE",
       source,
     });
-    const tabId = additionalBilibiliTabId;
-    const settings = parseAdditionalBilibiliSource(saved) ?? source;
+    const tabId = extraBilibiliTabId;
+    const settings = parseExtraBilibiliSource(saved) ?? source;
     if (tabId !== undefined)
       await chrome.storage.session.set({
-        [additionalBilibiliSourceStorageKey(tabId)]: settings,
+        [extraBilibiliSourceStorageKey(tabId)]: settings,
       });
     return saved;
   });
-  additionalSourceSaveQueue = request.then(
+  extraSourceSaveQueue = request.then(
     () => {},
     () => {},
   );
   return request;
 }
 
-async function disableAdditionalSourceForInvalidSettings(
+async function disableExtraSourceForInvalidSettings(
   revision: number,
   url: string,
   offsetSeconds: number,
   errorField: "url" | "offset",
 ): Promise<void> {
-  additionalBilibiliEnabled.checked = false;
+  extraBilibiliEnabled.checked = false;
   const validationError =
     errorField === "url"
-      ? t("popupAdditionalDanmakuInvalidUrl")
-      : t("popupAdditionalDanmakuInvalidOffset");
+      ? t("popupExtraDanmakuInvalidUrl")
+      : t("popupExtraDanmakuInvalidOffset");
   try {
-    await queueAdditionalBilibiliSourceUpdate({
+    await queueExtraBilibiliSourceUpdate({
       enabled: false,
       url: errorField === "url" ? "" : url,
       offsetSeconds,
     });
-    if (revision === additionalSourceSaveRevision)
-      setAdditionalBilibiliInputError(errorField, validationError);
+    if (revision === extraSourceSaveRevision)
+      setExtraBilibiliInputError(errorField, validationError);
   } catch {
-    if (revision === additionalSourceSaveRevision)
-      setAdditionalBilibiliInputError(
+    if (revision === extraSourceSaveRevision)
+      setExtraBilibiliInputError(
         errorField,
-        `${validationError} ${t("popupAdditionalDanmakuDisableFailed")}`,
+        `${validationError} ${t("popupExtraDanmakuDisableFailed")}`,
       );
   }
 }
 
-type AdditionalBilibiliFormResult =
-  | { ok: true; source: AdditionalBilibiliSourceSettings }
+type ExtraBilibiliFormResult =
+  | { ok: true; source: ExtraBilibiliSourceSettings }
   | {
       ok: false;
       errorField: "url" | "offset";
@@ -552,21 +532,21 @@ type AdditionalBilibiliFormResult =
       offsetSeconds: number;
     };
 
-function parseAdditionalBilibiliForm(): AdditionalBilibiliFormResult {
-  const rawUrl = additionalBilibiliUrl.value.trim();
+function parseExtraBilibiliForm(): ExtraBilibiliFormResult {
+  const rawUrl = extraBilibiliUrl.value.trim();
   let url = "";
   if (rawUrl) {
     try {
       const parsed = new URL(rawUrl);
       if (
-        !util.isValidAdditionalDanmakuSourceUrl(parsed.href) ||
+        !util.isValidExtraDanmakuSourceUrl(parsed.href) ||
         (parsed.hostname === "ani.gamer.com.tw" &&
           Number(parsed.searchParams.get("sn")) <= 0)
       )
         throw new Error("invalid URL");
       url = parsed.href;
     } catch {
-      const currentOffset = Number(additionalBilibiliOffset.value);
+      const currentOffset = Number(extraBilibiliOffset.value);
       return {
         ok: false,
         errorField: "url",
@@ -579,27 +559,27 @@ function parseAdditionalBilibiliForm(): AdditionalBilibiliFormResult {
     }
   }
 
-  const offsetSeconds = Number(additionalBilibiliOffset.value);
+  const offsetSeconds = Number(extraBilibiliOffset.value);
   if (!Number.isFinite(offsetSeconds) || Math.abs(offsetSeconds) > 3600)
     return { ok: false, errorField: "offset", url, offsetSeconds: 0 };
 
   return {
     ok: true,
     source: {
-      enabled: additionalBilibiliEnabled.checked && Boolean(url),
+      enabled: extraBilibiliEnabled.checked && Boolean(url),
       url,
       offsetSeconds,
     },
   };
 }
 
-async function saveAdditionalBilibiliSource(): Promise<void> {
-  const revision = ++additionalSourceSaveRevision;
-  setAdditionalBilibiliInputError("url", null);
-  setAdditionalBilibiliInputError("offset", null);
-  const form = parseAdditionalBilibiliForm();
+async function saveExtraBilibiliSource(): Promise<void> {
+  const revision = ++extraSourceSaveRevision;
+  setExtraBilibiliInputError("url", null);
+  setExtraBilibiliInputError("offset", null);
+  const form = parseExtraBilibiliForm();
   if (!form.ok) {
-    await disableAdditionalSourceForInvalidSettings(
+    await disableExtraSourceForInvalidSettings(
       revision,
       form.url,
       form.offsetSeconds,
@@ -609,48 +589,45 @@ async function saveAdditionalBilibiliSource(): Promise<void> {
   }
 
   try {
-    const saved = await queueAdditionalBilibiliSourceUpdate(form.source);
-    if (revision !== additionalSourceSaveRevision) return;
-    renderAdditionalBilibiliSource(saved);
+    const saved = await queueExtraBilibiliSourceUpdate(form.source);
+    if (revision !== extraSourceSaveRevision) return;
+    renderExtraBilibiliSource(saved);
   } catch {
-    if (revision === additionalSourceSaveRevision)
-      setAdditionalBilibiliInputError(
-        "url",
-        t("popupAdditionalDanmakuSaveFailed"),
-      );
+    if (revision === extraSourceSaveRevision)
+      setExtraBilibiliInputError("url", t("popupExtraDanmakuSaveFailed"));
   }
 }
 
-additionalBilibiliUrl.addEventListener("input", () => {
-  additionalBilibiliSourceEdited = true;
-  clearAdditionalSourceLoadError();
+extraBilibiliUrl.addEventListener("input", () => {
+  extraBilibiliSourceEdited = true;
+  clearExtraSourceLoadError();
 });
-additionalBilibiliOffset.addEventListener("input", () => {
-  additionalBilibiliSourceEdited = true;
+extraBilibiliOffset.addEventListener("input", () => {
+  extraBilibiliSourceEdited = true;
 });
-void loadAdditionalBilibiliSource();
-additionalBilibiliUrl.addEventListener("change", () => {
-  void saveAdditionalBilibiliSource();
+void loadExtraBilibiliSource();
+extraBilibiliUrl.addEventListener("change", () => {
+  void saveExtraBilibiliSource();
 });
-additionalBilibiliOffset.addEventListener("change", () => {
-  void saveAdditionalBilibiliSource();
+extraBilibiliOffset.addEventListener("change", () => {
+  void saveExtraBilibiliSource();
 });
-additionalBilibiliEnabled.addEventListener("change", () => {
-  void saveAdditionalBilibiliSource();
+extraBilibiliEnabled.addEventListener("change", () => {
+  void saveExtraBilibiliSource();
 });
 chrome.runtime.onMessage.addListener((message, sender) => {
   if (
     !util.isExtensionMessage(message) ||
-    sender.tab?.id !== additionalBilibiliTabId
+    sender.tab?.id !== extraBilibiliTabId
   )
     return;
-  if (message.type === "ADDITIONAL_DANMAKU_SOURCE_STATUS") {
-    updateAdditionalSourceError(message.error, message.revision);
+  if (message.type === "EXTRA_DANMAKU_SOURCE_STATUS") {
+    updateExtraSourceError(message.error, message.revision);
     return;
   }
-  if (message.type === "ADDITIONAL_DANMAKU_SOURCE_CHANGED") {
-    additionalBilibiliEnabled.checked = message.source.enabled;
-    setAdditionalBilibiliAvailability(message.available);
+  if (message.type === "EXTRA_DANMAKU_SOURCE_CHANGED") {
+    extraBilibiliEnabled.checked = message.source.enabled;
+    setExtraBilibiliAvailability(message.available);
   }
 });
 

@@ -50,7 +50,7 @@ function updateAllDanmakuVisibility(): void {
     bilibiliDanmakuController.checkAndBind(null);
   if (DANMAKU_IS_TWITCH || DANMAKU_IS_BAHAMUT || DANMAKU_IS_BILIBILI_LIVE)
     checkAndBindSiteDanmaku();
-  checkAndBindAdditionalBilibiliDanmaku(state.sourceVideo);
+  checkAndBindExtraBilibiliDanmaku(state.sourceVideo);
 }
 
 function toggleDanmaku(forceState?: boolean): boolean {
@@ -213,8 +213,8 @@ const danmakuSourcesController =
     broadcast: broadcastDanmaku,
     clear: clearDanmaku,
   });
-const additionalBilibiliDanmakuController =
-  globalThis.PipCompanion.ContentAdditionalBilibiliDanmaku.create({
+const extraBilibiliDanmakuController =
+  globalThis.PipCompanion.ContentExtraBilibiliDanmaku.create({
     isVisible: isDanmakuVisible,
     isSourceAvailable: (video) =>
       !DANMAKU_IS_BAHAMUT &&
@@ -250,10 +250,10 @@ function checkAndBindSiteDanmaku(): void {
   danmakuSourcesController.checkAndBind();
 }
 
-function checkAndBindAdditionalBilibiliDanmaku(
+function checkAndBindExtraBilibiliDanmaku(
   video: HTMLVideoElement | null,
 ): void {
-  additionalBilibiliDanmakuController.checkAndBind(video);
+  extraBilibiliDanmakuController.checkAndBind(video);
 }
 
 try {

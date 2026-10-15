@@ -53,6 +53,12 @@
 | iQIYI                                                                              | Netflix                                                                                                         |
 | ![iQIYI 子母畫面雙語字幕示範](docs/images/iqiyi-pip-bilingual-subtitles.png)       | ![Netflix 子母畫面雙語字幕示範（影片因 DRM 保護而呈現黑畫面）](docs/images/netflix-pip-bilingual-subtitles.png) |
 
+### 額外彈幕示範
+
+| YouTube + Twitch 額外彈幕                                                                      |
+| ---------------------------------------------------------------------------------------------- |
+| ![YouTube 子母畫面搭配 Twitch 額外彈幕](docs/images/youtube-pip-with-twitch-extra-danmaku.png) |
+
 ## 操作與快捷鍵
 
 - 開啟子母畫面：先開啟有影片的網頁，就能透過選單中的「開啟子母畫面」按鈕或在影片頁面按 `Shift + Alt/Opt + P` 來開啟或關閉子母畫面。

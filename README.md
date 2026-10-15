@@ -29,7 +29,7 @@ A browser extension that brings web videos into Picture-in-Picture, with subtitl
   - Render chat messages from YouTube and Twitch as danmaku.
   - Send danmaku from PiP on Bahamut Anime Crazy, YouTube Live, and Bilibili.
   - Customize danmaku appearance.
-  - Additional danmaku: overlay danmaku/chat from Bilibili, Bahamut Anime Crazy, or Twitch onto other videos.
+  - Extra danmaku: overlay danmaku/chat from Bilibili, Bahamut Anime Crazy, or Twitch onto other videos.
 - **Floating comments:** open the comments panel on YouTube and Bilibili video pages while watching.
 - **Screenshots:** save the video frame as a PNG file.
 - **Follow playback:** when enabled and the PiP source pauses while another page (or the same page) has a playing video, PiP hands off to it. Due to browser restrictions, cross-tab handoff requires a click on that tab.
@@ -52,6 +52,12 @@ A browser extension that brings web videos into Picture-in-Picture, with subtitl
 | ![Coursera Picture-in-Picture bilingual subtitles](docs/images/coursera-pip-bilingual-subtitles.png) | ![YouTube Picture-in-Picture bilingual subtitles](docs/images/youtube-pip-bilingual-subtitles.png)                            |
 | iQIYI                                                                                                | Netflix                                                                                                                       |
 | ![iQIYI Picture-in-Picture bilingual subtitles](docs/images/iqiyi-pip-bilingual-subtitles.png)       | ![Netflix Picture-in-Picture bilingual subtitles; video is black due to DRM](docs/images/netflix-pip-bilingual-subtitles.png) |
+
+### Extra danmaku
+
+| YouTube with Twitch extra danmaku                                                                              |
+| -------------------------------------------------------------------------------------------------------------- |
+| ![YouTube Picture-in-Picture with Twitch extra danmaku](docs/images/youtube-pip-with-twitch-extra-danmaku.png) |
 
 ## Controls and Shortcuts
 

@@ -35,22 +35,22 @@
   "popupDanmaku": {
     "message": "弹幕"
   },
-  "popupAdditionalDanmaku": {
+  "popupExtraDanmaku": {
     "message": "额外弹幕"
   },
-  "popupAdditionalDanmakuScope": {
+  "popupExtraDanmakuScope": {
     "message": "设置应用范围说明"
   },
-  "popupAdditionalDanmakuScopeTooltip": {
+  "popupExtraDanmakuScopeTooltip": {
     "message": "设置仅应用于当前标签页，切换视频、刷新页面或来源出错时会停用。"
   },
-  "popupAdditionalDanmakuEnabled": {
+  "popupExtraDanmakuEnabled": {
     "message": "显示额外弹幕"
   },
-  "popupAdditionalDanmakuUrl": {
+  "popupExtraDanmakuUrl": {
     "message": "来源网址（支持 Bilibili、动画疯、Twitch）"
   },
-  "popupAdditionalDanmakuOffset": {
+  "popupExtraDanmakuOffset": {
     "message": "时间偏移／延迟（秒）"
   },
   "popupScreenshot": {
@@ -614,34 +614,34 @@
   "shortcutCaptions": {
     "message": "字幕"
   },
-  "popupAdditionalDanmakuSettings": {
+  "popupExtraDanmakuSettings": {
     "message": "额外弹幕设置"
   },
-  "popupAdditionalDanmakuUrlPlaceholder": {
-    "message": "Bilibili、动画疯或 twitch.tv/频道名称"
+  "popupExtraDanmakuUrlPlaceholder": {
+    "message": "Bilibili、巴哈动画疯或 Twitch"
   },
-  "popupAdditionalDanmakuConnectionFailed": {
+  "popupExtraDanmakuConnectionFailed": {
     "message": "无法连接到当前标签页，请刷新视频页面后重试。"
   },
-  "popupAdditionalDanmakuStorageFailed": {
+  "popupExtraDanmakuStorageFailed": {
     "message": "无法读取此标签页的额外弹幕"
   },
-  "popupAdditionalDanmakuApplyFailed": {
+  "popupExtraDanmakuApplyFailed": {
     "message": "无法应用此标签页的额外弹幕，请刷新后重试。"
   },
-  "popupAdditionalDanmakuLoadFailed": {
+  "popupExtraDanmakuLoadFailed": {
     "message": "无法加载额外弹幕，请重新打开设置页。"
   },
-  "popupAdditionalDanmakuInvalidUrl": {
+  "popupExtraDanmakuInvalidUrl": {
     "message": "请输入有效的 Bilibili、巴哈动画疯或 Twitch 视频网址"
   },
-  "popupAdditionalDanmakuInvalidOffset": {
+  "popupExtraDanmakuInvalidOffset": {
     "message": "时间偏移须介于 -3600 至 3600 秒"
   },
-  "popupAdditionalDanmakuDisableFailed": {
+  "popupExtraDanmakuDisableFailed": {
     "message": "无法停用当前来源，请刷新视频页面后重试。"
   },
-  "popupAdditionalDanmakuSaveFailed": {
+  "popupExtraDanmakuSaveFailed": {
     "message": "保存失败，请刷新视频页面后重试。"
   },
   "popupCaptionStyleSettings": {

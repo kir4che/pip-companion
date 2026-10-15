@@ -35,22 +35,22 @@
   "popupDanmaku": {
     "message": "Danmaku"
   },
-  "popupAdditionalDanmaku": {
-    "message": "Additional danmaku"
+  "popupExtraDanmaku": {
+    "message": "Extra danmaku"
   },
-  "popupAdditionalDanmakuScope": {
+  "popupExtraDanmakuScope": {
     "message": "Settings scope"
   },
-  "popupAdditionalDanmakuScopeTooltip": {
+  "popupExtraDanmakuScopeTooltip": {
     "message": "Settings apply only to the current tab and are disabled when you switch videos, reload, or the source fails."
   },
-  "popupAdditionalDanmakuEnabled": {
-    "message": "Show additional danmaku"
+  "popupExtraDanmakuEnabled": {
+    "message": "Show extra danmaku"
   },
-  "popupAdditionalDanmakuUrl": {
+  "popupExtraDanmakuUrl": {
     "message": "Source URL (Bilibili, Bahamut Anime, Twitch)"
   },
-  "popupAdditionalDanmakuOffset": {
+  "popupExtraDanmakuOffset": {
     "message": "Time offset / delay (seconds)"
   },
   "popupScreenshot": {
@@ -610,5 +610,35 @@
   },
   "pipTranslationServiceUnavailable": {
     "message": "This translation service is not set up yet. Add an API key in the options page."
+  },
+  "popupExtraDanmakuSettings": {
+    "message": "Extra danmaku settings"
+  },
+  "popupExtraDanmakuUrlPlaceholder": {
+    "message": "Bilibili, Bahamut, or Twitch"
+  },
+  "popupExtraDanmakuConnectionFailed": {
+    "message": "Couldn't connect to this tab. Refresh the video page and try again."
+  },
+  "popupExtraDanmakuStorageFailed": {
+    "message": "Couldn't read extra danmaku for this tab."
+  },
+  "popupExtraDanmakuApplyFailed": {
+    "message": "Couldn't apply extra danmaku to this tab. Refresh and try again."
+  },
+  "popupExtraDanmakuLoadFailed": {
+    "message": "Couldn't load extra danmaku. Reopen the settings page."
+  },
+  "popupExtraDanmakuInvalidUrl": {
+    "message": "Enter a valid Bilibili, Bahamut Anime, or Twitch video URL."
+  },
+  "popupExtraDanmakuInvalidOffset": {
+    "message": "Time offset must be between -3600 and 3600 seconds."
+  },
+  "popupExtraDanmakuDisableFailed": {
+    "message": "Couldn't disable the current source. Refresh the video page and try again."
+  },
+  "popupExtraDanmakuSaveFailed": {
+    "message": "Couldn't save. Refresh the video page and try again."
   }
 }

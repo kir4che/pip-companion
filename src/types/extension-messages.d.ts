@@ -40,19 +40,19 @@ type ExtensionMessage =
   | { type: "GET_PIP_BOUNDS" }
   | { type: "PIP_SOURCE_PLAYBACK_CHANGED"; playing: boolean }
   | { type: "PIP_SUBTITLES_ENABLED_CHANGED"; enabled: boolean }
-  | { type: "GET_ADDITIONAL_DANMAKU_SOURCE" }
+  | { type: "GET_EXTRA_DANMAKU_SOURCE" }
   | {
-      type: "ADDITIONAL_DANMAKU_SOURCE_STATUS";
+      type: "EXTRA_DANMAKU_SOURCE_STATUS";
       error: string | null;
       revision: number;
     }
   | {
-      type: "ADDITIONAL_DANMAKU_SOURCE_CHANGED";
+      type: "EXTRA_DANMAKU_SOURCE_CHANGED";
       source: { enabled: boolean; url: string; offsetSeconds: number };
       available: boolean;
     }
   | {
-      type: "SET_ADDITIONAL_DANMAKU_SOURCE";
+      type: "SET_EXTRA_DANMAKU_SOURCE";
       source: { enabled: boolean; url: string; offsetSeconds: number };
     }
   | {
@@ -69,19 +69,19 @@ type ExtensionMessage =
     } & ({ bvid: string; avid?: never } | { avid: string; bvid?: never }))
   | { type: "GET_BAHAMUT_DANMAKU"; videoSn: string }
   | {
-      type: "START_ADDITIONAL_TWITCH_CHAT";
+      type: "START_EXTRA_TWITCH_CHAT";
       channel: string;
     }
-  | { type: "STOP_ADDITIONAL_TWITCH_CHAT" }
+  | { type: "STOP_EXTRA_TWITCH_CHAT" }
   | {
-      type: "ADDITIONAL_TWITCH_CHAT_STATUS";
+      type: "EXTRA_TWITCH_CHAT_STATUS";
       channel: string;
       connectionId: string;
       status: "connected" | "error";
       error?: string;
     }
   | {
-      type: "ADDITIONAL_TWITCH_CHAT_MESSAGE";
+      type: "EXTRA_TWITCH_CHAT_MESSAGE";
       channel: string;
       connectionId: string;
       data: DanmakuData;

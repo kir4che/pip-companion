@@ -46,12 +46,12 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-const additionalBilibiliSourceStorageKey = (tabId: number) =>
-  `additionalBilibiliSource:${tabId}`;
+const extraBilibiliSourceStorageKey = (tabId: number) =>
+  `extraBilibiliSource:${tabId}`;
 const pipSubtitlesEnabledStorageKey = (tabId: number) =>
   `pipSubtitlesEnabled:${tabId}`;
 
-function isValidAdditionalDanmakuSourceUrl(value: string): boolean {
+function isValidExtraDanmakuSourceUrl(value: string): boolean {
   try {
     const url = new URL(value);
     if (url.protocol !== "https:") return false;
@@ -80,7 +80,8 @@ function isValidAdditionalDanmakuSourceUrl(value: string): boolean {
 chrome.tabs.onRemoved.addListener((tabId) => {
   void chrome.storage.session
     .remove([
-      additionalBilibiliSourceStorageKey(tabId),
+      extraBilibiliSourceStorageKey(tabId),
+      `additionalBilibiliSource:${tabId}`,
       pipSubtitlesEnabledStorageKey(tabId),
     ])
     .catch(() => {});
@@ -141,7 +142,7 @@ async function findPipWindow(
 chrome.runtime.onMessage.addListener(
   (message: unknown, sender, sendResponse) => {
     if (!isRecord(message)) return false;
-    if (message.type === "ADDITIONAL_DANMAKU_SOURCE_CHANGED") {
+    if (message.type === "EXTRA_DANMAKU_SOURCE_CHANGED") {
       const tabId = sender.tab?.id;
       const source = message.source;
       if (
@@ -150,7 +151,7 @@ chrome.runtime.onMessage.addListener(
         typeof source.enabled !== "boolean" ||
         typeof source.url !== "string" ||
         source.url.length > 2048 ||
-        (source.url !== "" && !isValidAdditionalDanmakuSourceUrl(source.url)) ||
+        (source.url !== "" && !isValidExtraDanmakuSourceUrl(source.url)) ||
         (source.enabled && source.url === "") ||
         typeof source.offsetSeconds !== "number" ||
         !Number.isFinite(source.offsetSeconds) ||
@@ -159,7 +160,7 @@ chrome.runtime.onMessage.addListener(
         return false;
       void chrome.storage.session
         .set({
-          [additionalBilibiliSourceStorageKey(tabId)]: {
+          [extraBilibiliSourceStorageKey(tabId)]: {
             enabled: source.enabled,
             url: source.url,
             offsetSeconds: source.offsetSeconds,
