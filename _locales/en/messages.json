@@ -488,6 +488,9 @@
   "pipVideoNotFound": {
     "message": "No video found. Make sure the player has loaded, then try again."
   },
+  "pipEmbeddedVideoRetry": {
+    "message": "This video can't use extension PiP. Reopen PiP to use your browser's native PiP."
+  },
   "pipGestureRequired": {
     "message": "The browser requires an action on the page. Close the menu and press the shortcut you configured."
   },

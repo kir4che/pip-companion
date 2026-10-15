@@ -436,6 +436,7 @@ interface ContentScreenshotApi {
 interface ContentPipLifecycleApi {
   bindSourceVideo(video: HTMLVideoElement): void;
   closePiP(closeWindow: boolean): Promise<void>;
+  isPipOpen(): boolean;
   openPiP(): Promise<PipOperationResult>;
   restorePipBounds(): Promise<{ ok?: boolean; missing?: boolean }>;
 }

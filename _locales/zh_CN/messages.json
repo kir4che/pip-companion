@@ -488,6 +488,9 @@
   "pipVideoNotFound": {
     "message": "尚未找到视频，请确认播放器加载后再试一次。"
   },
+  "pipEmbeddedVideoRetry": {
+    "message": "此视频无法使用扩展程序 PiP，请重新开启 PiP 改用浏览器原生 PiP。"
+  },
   "pipGestureRequired": {
     "message": "浏览器要求在页面上操作，请关闭菜单后按设置的快捷键。"
   },

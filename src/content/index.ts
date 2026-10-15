@@ -385,7 +385,7 @@ chrome.runtime.onMessage.addListener(
     if (message?.type === "PING") {
       sendResponse({
         ok: true,
-        pipOpen: Boolean(state.pipWindow && !state.pipWindow.closed),
+        pipOpen: globalThis.PipCompanion.ContentPipLifecycle.isPipOpen(),
       });
       return;
     }
