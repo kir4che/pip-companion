@@ -36,12 +36,14 @@ jobs:
       - name: Validate version and package extension
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
-          node - "$VERSION" <<'NODE'
+          BASE_VERSION="${VERSION%%-*}"
+          node - "$VERSION" "$BASE_VERSION" <<'NODE'
           const fs = require("node:fs");
           const version = process.argv[2];
+          const baseVersion = process.argv[3];
           const manifest = JSON.parse(fs.readFileSync("dist/manifest.json", "utf8"));
-          if (manifest.version !== version) {
-            console.error(`Tag version ${version} does not match manifest version ${manifest.version}`);
+          if (manifest.version !== baseVersion) {
+            console.error(`Tag base version ${baseVersion} does not match manifest version ${manifest.version}`);
             process.exit(1);
           }
           NODE
@@ -59,21 +61,22 @@ jobs:
           PREVIOUS_TAG="$PREVIOUS_TAG" node <<'NODE'
           const fs = require("node:fs");
           const version = process.env.GITHUB_REF_NAME.replace(/^v/, "");
+          const baseVersion = version.split("-")[0];
           const tag = process.env.GITHUB_REF_NAME;
           const base = process.env.PREVIOUS_TAG;
 
           function changelogSection(path) {
             const lines = fs.readFileSync(path, "utf8").split(/\r?\n/);
             const start = lines.findIndex((line) => {
-              const match = line.match(/^##\s+v?(\d+\.\d+\.\d+)(?:\s|$|\])/);
-              return match?.[1] === version;
+              const match = line.match(/^##\s+v?(\d+\.\d+\.\d+)(?:[-\s]|$|\])/);
+              return match?.[1] === baseVersion;
             });
-            if (start === -1) throw new Error(`${path} is missing a section for ${version}`);
+            if (start === -1) throw new Error(`${path} is missing a section for ${baseVersion}`);
 
             let end = start + 1;
             while (end < lines.length && !/^##\s+/.test(lines[end])) end++;
             const section = lines.slice(start + 1, end).join("\n").trim();
-            if (!section) throw new Error(`${path} has no entries for ${version}`);
+            if (!section) throw new Error(`${path} has no entries for ${baseVersion}`);
             return section;
           }
 
@@ -92,13 +95,18 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          PRERELEASE_FLAG=""
+          case "$VERSION" in
+            *beta*|*alpha*) PRERELEASE_FLAG="--prerelease" ;;
+          esac
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release edit "$GITHUB_REF_NAME" \
               --title "$GITHUB_REF_NAME" \
               --notes-file release-notes.md
           else
+            # shellcheck disable=SC2086
             gh release create "$GITHUB_REF_NAME" "pip-companion-${VERSION}.zip" \
               --verify-tag \
               --title "$GITHUB_REF_NAME" \
-              --notes-file release-notes.md
+              --notes-file release-notes.md $PRERELEASE_FLAG
           fi

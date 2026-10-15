@@ -1,3 +1,13 @@
+## 0.5.0-beta.1
+
+- Migrated captions to subtitles with multi-track switching and bilingual display
+- Added live subtitle translation via Microsoft Translator, Google Cloud Translation, or DeepL (bring your own API key)
+- Added additional danmaku sources to overlay Bilibili, Bahamut, or Twitch danmaku/chat onto other videos
+- Fixed PiP next-button lookup being scoped to player containers
+- Fixed PiP control focus and panel dismissal behavior
+- Fixed premature PiP close during async teardown
+- Fixed duplicate content script injection
+
 ## 0.4.0
 
 - Added a localized interface in English, Traditional Chinese, and Simplified Chinese, with a language selector
