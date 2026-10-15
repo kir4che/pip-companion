@@ -28,7 +28,7 @@ body {
   position: relative;
   isolation: isolate;
   width: min(1280px, 100%);
-  aspect-ratio: 2 / 1;
+  aspect-ratio: 2.5 / 1;
   overflow: hidden;
   color: var(--ink);
   background-color: #f7f8f5;
@@ -214,10 +214,10 @@ h1 span {
 
 .video {
   position: absolute;
-  top: 17%;
+  top: 12%;
   left: 2%;
   width: 79%;
-  height: 62%;
+  height: 70%;
   overflow: hidden;
   border: 1px solid #d9e0e4;
   border-radius: 13px;
@@ -366,6 +366,8 @@ h1 span {
   color: #fff;
   font-size: clamp(10px, 1vw, 13px);
   font-weight: 650;
+  line-height: 1.3;
+  text-align: center;
   white-space: nowrap;
 }
 
@@ -502,9 +504,9 @@ h1 span {
 .comment-card {
   position: absolute;
   z-index: 3;
-  top: 7%;
-  right: 0;
-  width: 31%;
+  top: 3%;
+  right: -2%;
+  width: 32%;
   padding: 14px 13px;
   border: 1px solid #e0e5e9;
   border-radius: 11px;
@@ -648,7 +650,7 @@ kbd {
     top: 17%;
     left: 2%;
     width: 79%;
-    height: 62%;
+    height: 70%;
   }
   .comment-card {
     top: 4%;
@@ -668,7 +670,7 @@ kbd {
 
 @media print {
   @page {
-    size: 1280px 640px;
+    size: 1280px 610px;
     margin: 0;
   }
   body {
@@ -678,7 +680,7 @@ kbd {
   }
   .poster {
     width: 1280px;
-    height: 640px;
+    height: 610px;
     box-shadow: none;
   }
 }

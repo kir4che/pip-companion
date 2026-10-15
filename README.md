@@ -2,7 +2,7 @@
 
 <p align="right">
   <a href="https://chromewebstore.google.com/detail/%E5%B9%95%E4%BC%B4-pip-%C2%B7-pip-companion/gnfofimkbdmkbjejmkdmihdpemlgejlm?utm_source=item-share-cb"><img align="left" height="20" src="https://img.shields.io/chrome-web-store/v/gnfofimkbdmkbjejmkdmihdpemlgejlm?label=chrome" alt="Chrome Web Store version" /></a>
-  English | <a href="README.zh-TW.md">繁體中文</a>
+  English | <a href="README.zh-CN.md">简体中文</a> | <a href="README.zh-TW.md">繁體中文</a>
 </p>
 
 A browser extension that brings web videos into Picture-in-Picture, with subtitles, danmaku, screenshots, and floating comments panels.
@@ -44,6 +44,14 @@ A browser extension that brings web videos into Picture-in-Picture, with subtitl
 | YouTube                                                              | Bilibili                                                               |
 | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | ![YouTube Picture-in-Picture demo](docs/images/youtube-pip-demo.png) | ![Bilibili Picture-in-Picture demo](docs/images/bilibili-pip-demo.png) |
+
+### Bilingual subtitles across platforms
+
+| Coursera                                                                                             | YouTube                                                                                                                       |
+| ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| ![Coursera Picture-in-Picture bilingual subtitles](docs/images/coursera-pip-bilingual-subtitles.png) | ![YouTube Picture-in-Picture bilingual subtitles](docs/images/youtube-pip-bilingual-subtitles.png)                            |
+| iQIYI                                                                                                | Netflix                                                                                                                       |
+| ![iQIYI Picture-in-Picture bilingual subtitles](docs/images/iqiyi-pip-bilingual-subtitles.png)       | ![Netflix Picture-in-Picture bilingual subtitles; video is black due to DRM](docs/images/netflix-pip-bilingual-subtitles.png) |
 
 ## Controls and Shortcuts
 

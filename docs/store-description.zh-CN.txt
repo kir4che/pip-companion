@@ -12,7 +12,7 @@
 • 设置页面可切换弹幕、截图、浮动评论区和视频跟随，调整跳转时长、字幕及弹幕样式、字幕翻译服务和界面语言（繁体中文、简体中文、英文）。
 • 支持符合条件的嵌入式视频；实际兼容性取决于网站结构和浏览器限制。
 
-平台支持与限制：https://github.com/kir4che/pip-companion/blob/main/docs/platform-support.zh-TW.md
+平台支持与限制：https://github.com/kir4che/pip-companion/blob/main/docs/platform-support.zh-CN.md
 
 【隐私与支持】
 • 不收集个人信息用于分析；发送弹幕、字幕翻译等功能会根据你的操作与相应平台或服务通信。

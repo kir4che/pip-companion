@@ -2,7 +2,7 @@
 
 <p align="right">
   <a href="https://chromewebstore.google.com/detail/%E5%B9%95%E4%BC%B4-pip-%C2%B7-pip-companion/gnfofimkbdmkbjejmkdmihdpemlgejlm?utm_source=item-share-cb"><img align="left" height="20" src="https://img.shields.io/chrome-web-store/v/gnfofimkbdmkbjejmkdmihdpemlgejlm?label=chrome" alt="Chrome 線上應用程式商店版本" /></a>
-  <a href="README.md">English</a> | 繁體中文
+  <a href="README.md">English</a> | <a href="README.zh-CN.md">简体中文</a> | 繁體中文
 </p>
 
 讓網頁影片在子母畫面中播放，支援字幕、彈幕、截圖與浮動留言區。
@@ -44,6 +44,14 @@
 | YouTube                                                   | Bilibili                                                    |
 | --------------------------------------------------------- | ----------------------------------------------------------- |
 | ![YouTube 子母畫面示意](docs/images/youtube-pip-demo.png) | ![Bilibili 子母畫面示意](docs/images/bilibili-pip-demo.png) |
+
+### 雙語字幕跨平台示範
+
+| Coursera                                                                           | YouTube                                                                                                         |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| ![Coursera 子母畫面雙語字幕示範](docs/images/coursera-pip-bilingual-subtitles.png) | ![YouTube 子母畫面雙語字幕示範](docs/images/youtube-pip-bilingual-subtitles.png)                                |
+| iQIYI                                                                              | Netflix                                                                                                         |
+| ![iQIYI 子母畫面雙語字幕示範](docs/images/iqiyi-pip-bilingual-subtitles.png)       | ![Netflix 子母畫面雙語字幕示範（影片因 DRM 保護而呈現黑畫面）](docs/images/netflix-pip-bilingual-subtitles.png) |
 
 ## 操作與快捷鍵
 

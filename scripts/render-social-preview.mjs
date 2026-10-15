@@ -21,6 +21,11 @@ const VARIANTS = [
     source: "docs/social-preview/pip-companion-social-preview.zh-TW.html",
     output: "docs/images/pip-companion-social-preview.zh-TW.png",
   },
+  {
+    name: "zh-CN",
+    source: "docs/social-preview/pip-companion-social-preview.zh-CN.html",
+    output: "docs/images/pip-companion-social-preview.zh-CN.png",
+  },
 ];
 
 function sleep(milliseconds) {
