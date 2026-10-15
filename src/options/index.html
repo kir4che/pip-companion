@@ -20,7 +20,10 @@
           <a href="#features" class="nav-item">__MSG_popupFeatureSettings__</a>
           <a href="#shortcuts" class="nav-item">__MSG_popupShortcuts__</a>
           <a href="#danmaku" class="nav-item">__MSG_popupDanmakuStyle__</a>
-          <a href="#captions" class="nav-item">__MSG_popupCaptionStyle__</a>
+          <a href="#subtitless" class="nav-item">__MSG_popupSubtitleStyle__</a>
+          <a href="#subtitle-translation" class="nav-item"
+            >__MSG_popupSubtitleTranslation__</a
+          >
         </nav>
       </aside>
 
@@ -217,10 +220,10 @@
               </button>
             </div>
             <div class="shortcut-item">
-              <span class="shortcut-name">__MSG_shortcutCaptions__</span>
+              <span class="shortcut-name">__MSG_shortcutSubtitles__</span>
               <button
                 class="shortcut-btn"
-                data-shortcut="pipToggleCaptionsShortcut"
+                data-shortcut="pipToggleSubtitlesShortcut"
                 type="button"
                 disabled
               >
@@ -468,92 +471,83 @@
         </section>
 
         <!-- 字幕樣式設定 -->
-        <section id="captions" class="settings-card">
+        <section id="subtitless" class="settings-card">
           <div class="card-header">
-            <h3>__MSG_popupCaptionStyle__</h3>
+            <h3>__MSG_popupSubtitleStyle__</h3>
+          </div>
+          <div class="subtitle-style-row">
+            <div
+              class="subtitle-style-switcher"
+              role="group"
+              aria-label="__MSG_popupSubtitleStyle__"
+            >
+              <button
+                id="subtitle-style-primary"
+                class="subtitle-style-option"
+                type="button"
+                aria-pressed="true"
+              >
+                __MSG_popupPrimarySubtitleStyle__
+              </button>
+              <button
+                id="subtitle-style-secondary"
+                class="subtitle-style-option"
+                type="button"
+                aria-pressed="false"
+              >
+                __MSG_popupSecondarySubtitleStyle__
+              </button>
+            </div>
             <button
-              id="caption-style-reset"
+              id="subtitle-style-reset"
               class="secondary-btn"
               type="button"
             >
-              __MSG_popupResetCaptionStyle__
+              __MSG_popupResetSubtitleStyle__
             </button>
           </div>
           <div
             class="subtitle-preview"
-            aria-label="__MSG_popupCaptionPreview__"
+            aria-label="__MSG_popupSubtitlePreview__"
           >
-            <div class="subtitle-preview-caption" id="caption-preview">
-              <span class="subtitle-preview-segment"
-                >__MSG_popupCaptionPreviewText__</span
+            <div class="subtitle-preview-subtitle" id="subtitle-preview">
+              <span
+                class="subtitle-preview-segment"
+                id="subtitle-preview-primary"
+                >__MSG_popupSubtitlePreviewText__</span
               >
-              <span class="subtitle-preview-segment"
-                >__MSG_popupCaptionPreviewSecondLine__</span
+              <span
+                class="subtitle-preview-segment"
+                id="subtitle-preview-secondary"
+                >__MSG_popupSubtitlePreviewSecondLine__</span
               >
             </div>
           </div>
           <div class="controls-grid">
-            <label class="control-field" for="caption-size">
+            <label class="control-field" for="subtitle-size">
               <span class="control-label">
                 __MSG_popupFontSize__
-                <output id="caption-size-value">100%</output>
+                <output id="subtitle-size-value">100%</output>
               </span>
               <input
-                id="caption-size"
+                id="subtitle-size"
                 type="range"
                 min="50"
                 max="200"
                 step="5"
               />
             </label>
-            <label class="control-field color-field" for="caption-text-color">
+            <label class="control-field color-field" for="subtitle-text-color">
               <span class="control-label">__MSG_popupTextColor__</span>
               <input
-                id="caption-text-color"
+                id="subtitle-text-color"
                 type="color"
                 aria-label="__MSG_popupTextColor__"
               />
             </label>
-            <label
-              class="control-field color-field"
-              for="caption-background-color"
-            >
-              <span class="control-label">__MSG_popupBackgroundColor__</span>
-              <input
-                id="caption-background-color"
-                type="color"
-                aria-label="__MSG_popupBackgroundColor__"
-              />
-            </label>
-            <label class="control-field" for="caption-background-opacity">
-              <span class="control-label">
-                __MSG_popupBackgroundOpacity__
-                <output id="caption-background-opacity-value">75%</output>
-              </span>
-              <input
-                id="caption-background-opacity"
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-              />
-            </label>
-            <label class="control-field" for="caption-position">
-              <span class="control-label">
-                __MSG_popupVerticalPosition__
-                <output id="caption-position-value">10%</output>
-              </span>
-              <input
-                id="caption-position"
-                type="range"
-                min="0"
-                max="100"
-                step="1"
-              />
-            </label>
-            <label class="control-field" for="caption-font-family">
+            <label class="control-field" for="subtitle-font-family">
               <span class="control-label">__MSG_popupFont__</span>
-              <select id="caption-font-family">
+              <select id="subtitle-font-family">
                 <optgroup label="__MSG_popupFontGeneral__">
                   <option value="default">__MSG_popupSystemDefault__</option>
                   <option value="sansSerif">__MSG_popupSansSerif__</option>
@@ -572,9 +566,9 @@
                 </optgroup>
               </select>
             </label>
-            <label class="control-field" for="caption-edge-style">
+            <label class="control-field" for="subtitle-edge-style">
               <span class="control-label">__MSG_popupTextEdge__</span>
-              <select id="caption-edge-style">
+              <select id="subtitle-edge-style">
                 <option value="none">__MSG_popupNone__</option>
                 <option value="shadow">__MSG_popupShadow__</option>
                 <option value="raised">__MSG_popupRaised__</option>
@@ -582,57 +576,311 @@
                 <option value="outline">__MSG_popupOutline__</option>
               </select>
             </label>
-            <label class="control-field color-field" for="caption-edge-color">
+            <label class="control-field color-field" for="subtitle-edge-color">
               <span class="control-label">__MSG_popupEdgeColor__</span>
               <input
-                id="caption-edge-color"
+                id="subtitle-edge-color"
                 type="color"
                 aria-label="__MSG_popupEdgeColor__"
               />
             </label>
             <label
-              id="caption-outline-width-row"
+              id="subtitle-edge-intensity-row"
               class="control-field"
-              for="caption-outline-width"
+              for="subtitle-edge-intensity"
             >
               <span class="control-label">
-                __MSG_popupOutlineWidth__
-                <output id="caption-outline-width-value">1px</output>
+                __MSG_popupEdgeIntensity__
+                <output id="subtitle-edge-intensity-value">1</output>
               </span>
               <input
-                id="caption-outline-width"
+                id="subtitle-edge-intensity"
                 type="range"
                 min="0.5"
                 max="3"
                 step="0.5"
               />
             </label>
-            <label class="control-field" for="caption-font-weight">
+            <label class="control-field" for="subtitle-font-weight">
               <span class="control-label">
                 __MSG_popupFontWeight__
-                <output id="caption-font-weight-value">400</output>
+                <output id="subtitle-font-weight-value">400</output>
               </span>
               <input
-                id="caption-font-weight"
+                id="subtitle-font-weight"
                 type="range"
                 min="100"
                 max="900"
                 step="100"
               />
             </label>
-            <label class="control-field" for="caption-line-height">
+            <label class="control-field" for="subtitle-line-height">
               <span class="control-label">
                 __MSG_popupLineHeight__
-                <output id="caption-line-height-value">100%</output>
+                <output id="subtitle-line-height-value">100%</output>
               </span>
               <input
-                id="caption-line-height"
+                id="subtitle-line-height"
                 type="range"
                 min="100"
                 max="200"
                 step="5"
               />
             </label>
+          </div>
+          <div class="subtitle-layout-section">
+            <div class="subtitle-layout-header">
+              <h4>__MSG_popupSharedSubtitleLayout__</h4>
+              <button
+                id="subtitle-layout-reset"
+                class="secondary-btn"
+                type="button"
+              >
+                __MSG_popupResetSubtitleLayout__
+              </button>
+            </div>
+            <div class="controls-grid">
+              <label
+                class="control-field color-field"
+                for="subtitle-background-color"
+              >
+                <span class="control-label">__MSG_popupBackgroundColor__</span>
+                <input
+                  id="subtitle-background-color"
+                  type="color"
+                  aria-label="__MSG_popupBackgroundColor__"
+                />
+              </label>
+              <label class="control-field" for="subtitle-background-opacity">
+                <span class="control-label">
+                  __MSG_popupBackgroundOpacity__
+                  <output id="subtitle-background-opacity-value">50%</output>
+                </span>
+                <input
+                  id="subtitle-background-opacity"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="5"
+                />
+              </label>
+              <label class="control-field" for="subtitle-pair-gap">
+                <span class="control-label">
+                  __MSG_popupSubtitlePairGap__
+                  <output id="subtitle-pair-gap-value">0.35em</output>
+                </span>
+                <input
+                  id="subtitle-pair-gap"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                />
+              </label>
+              <label class="control-field" for="subtitle-letter-spacing">
+                <span class="control-label">
+                  __MSG_popupLetterSpacing__
+                  <output id="subtitle-letter-spacing-value">0.00em</output>
+                </span>
+                <input
+                  id="subtitle-letter-spacing"
+                  type="range"
+                  min="0"
+                  max="30"
+                  step="1"
+                />
+              </label>
+              <label
+                id="subtitle-position-row"
+                class="control-field"
+                for="subtitle-position"
+              >
+                <span class="control-label">
+                  __MSG_popupVerticalPosition__
+                  <output id="subtitle-position-value">10%</output>
+                </span>
+                <input
+                  id="subtitle-position"
+                  type="range"
+                  min="0"
+                  max="100"
+                  step="1"
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+
+        <section id="subtitle-translation" class="settings-card">
+          <div class="card-header">
+            <h3>__MSG_popupSubtitleTranslation__</h3>
+            <span class="translation-help">
+              <button
+                class="translation-help-trigger"
+                type="button"
+                aria-label="__MSG_subtitleTranslationHelpLabel__"
+                aria-describedby="subtitle-translation-help-tooltip"
+              >
+                <span aria-hidden="true">?</span>
+              </button>
+              <span
+                id="subtitle-translation-help-tooltip"
+                class="translation-tooltip"
+                role="tooltip"
+                >__MSG_subtitleTranslationSetupHint__</span
+              >
+            </span>
+          </div>
+          <div class="control-field translation-provider-field">
+            <label class="control-label" for="subtitle-translation-provider"
+              >__MSG_subtitleTranslationProvider__</label
+            >
+            <select id="subtitle-translation-provider" class="form-select">
+              <option value="microsoft">Microsoft Translator</option>
+              <option value="google">Google Cloud Translation</option>
+              <option value="deepl">DeepL API</option>
+            </select>
+          </div>
+          <div
+            id="microsoft-translation-config"
+            class="translation-config-grid"
+          >
+            <div class="control-field">
+              <div class="translation-field-heading">
+                <label
+                  class="control-label"
+                  id="microsoft-translation-key-label"
+                  for="microsoft-translation-key"
+                  >__MSG_subtitleTranslationApiKey__</label
+                >
+                <a
+                  class="key-link"
+                  href="https://portal.azure.com/#create/Microsoft.CognitiveServicesTranslator"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >__MSG_subtitleTranslationGetKey__</a
+                >
+              </div>
+              <input
+                id="microsoft-translation-key"
+                type="password"
+                autocomplete="new-password"
+                maxlength="4096"
+              />
+              <output
+                id="microsoft-translation-key-display"
+                class="translation-key-display"
+                aria-labelledby="microsoft-translation-key-label"
+                hidden
+              ></output>
+            </div>
+            <label class="control-field" for="microsoft-translation-region">
+              <span class="control-label"
+                >__MSG_subtitleTranslationRegion__</span
+              >
+              <input
+                id="microsoft-translation-region"
+                type="text"
+                autocomplete="off"
+                maxlength="100"
+              />
+            </label>
+          </div>
+          <div
+            id="google-translation-config"
+            class="translation-config-grid translation-config-grid--single"
+            hidden
+          >
+            <div class="control-field">
+              <div class="translation-field-heading">
+                <label
+                  class="control-label"
+                  id="google-translation-key-label"
+                  for="google-translation-key"
+                  >__MSG_subtitleTranslationApiKey__</label
+                >
+                <a
+                  class="key-link"
+                  href="https://console.cloud.google.com/apis/library/translate.googleapis.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >__MSG_subtitleTranslationGetKey__</a
+                >
+              </div>
+              <input
+                id="google-translation-key"
+                type="password"
+                autocomplete="new-password"
+                maxlength="4096"
+              />
+              <output
+                id="google-translation-key-display"
+                class="translation-key-display"
+                aria-labelledby="google-translation-key-label"
+                hidden
+              ></output>
+            </div>
+          </div>
+          <div
+            id="deepl-translation-config"
+            class="translation-config-grid translation-config-grid--single"
+            hidden
+          >
+            <div class="control-field">
+              <div class="translation-field-heading">
+                <label
+                  class="control-label"
+                  id="deepl-translation-key-label"
+                  for="deepl-translation-key"
+                  >__MSG_subtitleTranslationApiKey__</label
+                >
+                <a
+                  class="key-link"
+                  href="https://www.deepl.com/your-account/keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >__MSG_subtitleTranslationGetKey__</a
+                >
+              </div>
+              <input
+                id="deepl-translation-key"
+                type="password"
+                autocomplete="new-password"
+                maxlength="4096"
+              />
+              <output
+                id="deepl-translation-key-display"
+                class="translation-key-display"
+                aria-labelledby="deepl-translation-key-label"
+                hidden
+              ></output>
+            </div>
+          </div>
+          <div class="translation-settings-actions">
+            <button
+              id="subtitle-translation-remove"
+              class="translation-remove-btn"
+              type="button"
+              aria-label="__MSG_subtitleTranslationRemoveKey__"
+              title="__MSG_subtitleTranslationRemoveKey__"
+            >
+              <span>__MSG_subtitleTranslationRemoveKey__</span>
+            </button>
+            <button
+              id="subtitle-translation-test"
+              class="secondary-btn"
+              type="button"
+              disabled
+            >
+              __MSG_subtitleTranslationTest__
+            </button>
+            <button
+              id="subtitle-translation-save"
+              class="primary-btn"
+              type="button"
+            >
+              __MSG_subtitleTranslationSave__
+            </button>
           </div>
         </section>
 
@@ -652,7 +900,9 @@
     <script src="../../shared/locales.js"></script>
     <script src="../../shared/utils.js"></script>
     <script src="../../shared/danmaku-settings.js"></script>
-    <script src="../../shared/caption-settings.js"></script>
+    <script src="../../shared/subtitle-settings.js"></script>
+    <script src="../../shared/subtitle-translation-settings.js"></script>
+    <script src="../../shared/custom-select.js"></script>
     <script type="module" src="/options/index.js"></script>
   </body>
 </html>

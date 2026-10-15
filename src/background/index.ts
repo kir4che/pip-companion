@@ -1,7 +1,90 @@
 import { isRecord } from "../shared/type-guards.js";
+import { registerBilibiliSubtitleListener } from "./bilibili-subtitle.js";
 import { registerBilibiliDanmakuListener } from "./bilibili-danmaku.js";
+import { registerBahamutDanmakuListener } from "./bahamut-danmaku.js";
+import { registerTwitchChatListener } from "./twitch-chat.js";
+import { registerSubtitleTranslationListener } from "./subtitle-translation.js";
 
+registerBilibiliSubtitleListener();
 registerBilibiliDanmakuListener();
+registerBahamutDanmakuListener();
+registerTwitchChatListener();
+registerSubtitleTranslationListener();
+
+async function migrateLegacySubtitleSettings() {
+  const stored = await chrome.storage.local.get([
+    "captionStyle",
+    "subtitleStyle",
+    "subtitleLayout",
+    "pipToggleCaptionsShortcut",
+    "pipToggleSubtitlesShortcut",
+  ]);
+  const updates: Record<string, unknown> = {};
+  if (stored.subtitleStyle === undefined && isRecord(stored.captionStyle)) {
+    updates.subtitleStyle = stored.captionStyle;
+    if (stored.subtitleLayout === undefined) {
+      const { backgroundColor, backgroundOpacity, bottomOffset } =
+        stored.captionStyle;
+      updates.subtitleLayout = {
+        backgroundColor,
+        backgroundOpacity,
+        bottomOffset,
+      };
+    }
+  }
+  if (
+    stored.pipToggleSubtitlesShortcut === undefined &&
+    isRecord(stored.pipToggleCaptionsShortcut)
+  )
+    updates.pipToggleSubtitlesShortcut = stored.pipToggleCaptionsShortcut;
+  if (Object.keys(updates).length) await chrome.storage.local.set(updates);
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+  void migrateLegacySubtitleSettings().catch((error: unknown) => {
+    console.warn("[PiP Companion] Could not migrate subtitle settings:", error);
+  });
+});
+
+const additionalBilibiliSourceStorageKey = (tabId: number) =>
+  `additionalBilibiliSource:${tabId}`;
+const pipSubtitlesEnabledStorageKey = (tabId: number) =>
+  `pipSubtitlesEnabled:${tabId}`;
+
+function isValidAdditionalDanmakuSourceUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return false;
+    if (/(^|\.)bilibili\.com$/i.test(url.hostname)) {
+      const page = Number(url.searchParams.get("p") || 1);
+      return (
+        /^\/video\/(?:BV[\w]{10}|av\d+)\/?$/i.test(url.pathname) &&
+        Number.isInteger(page) &&
+        page >= 1 &&
+        page <= 1000
+      );
+    }
+    if (url.hostname.toLowerCase() === "ani.gamer.com.tw")
+      return (
+        url.pathname === "/animeVideo.php" &&
+        /^\d{1,12}$/.test(url.searchParams.get("sn") || "")
+      );
+    if (/(^|\.)twitch\.tv$/i.test(url.hostname))
+      return /^\/[a-z0-9_]{1,25}$/i.test(url.pathname);
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+chrome.tabs.onRemoved.addListener((tabId) => {
+  void chrome.storage.session
+    .remove([
+      additionalBilibiliSourceStorageKey(tabId),
+      pipSubtitlesEnabledStorageKey(tabId),
+    ])
+    .catch(() => {});
+});
 
 async function getOpenPipTabId(): Promise<number | null> {
   const { pipTabId } = await chrome.storage.session.get("pipTabId");
@@ -40,7 +123,10 @@ async function broadcastPipState(pipOpen: boolean) {
   ]);
 }
 
-async function findPipWindow(innerWidth: number, sourceWindowId: number) {
+async function findPipWindow(
+  innerWidth: number,
+  sourceWindowId: number | undefined,
+) {
   const tabs = await chrome.tabs.query({ active: true });
   const pipTab = tabs.find(
     (tab) =>
@@ -55,6 +141,33 @@ async function findPipWindow(innerWidth: number, sourceWindowId: number) {
 chrome.runtime.onMessage.addListener(
   (message: unknown, sender, sendResponse) => {
     if (!isRecord(message)) return false;
+    if (message.type === "ADDITIONAL_DANMAKU_SOURCE_CHANGED") {
+      const tabId = sender.tab?.id;
+      const source = message.source;
+      if (
+        tabId === undefined ||
+        !isRecord(source) ||
+        typeof source.enabled !== "boolean" ||
+        typeof source.url !== "string" ||
+        source.url.length > 2048 ||
+        (source.url !== "" && !isValidAdditionalDanmakuSourceUrl(source.url)) ||
+        (source.enabled && source.url === "") ||
+        typeof source.offsetSeconds !== "number" ||
+        !Number.isFinite(source.offsetSeconds) ||
+        Math.abs(source.offsetSeconds) > 3600
+      )
+        return false;
+      void chrome.storage.session
+        .set({
+          [additionalBilibiliSourceStorageKey(tabId)]: {
+            enabled: source.enabled,
+            url: source.url,
+            offsetSeconds: source.offsetSeconds,
+          },
+        })
+        .catch(() => {});
+      return false;
+    }
     if (message.type === "PIP_SOURCE_PLAYBACK_CHANGED") {
       if (typeof message.playing !== "boolean") return false;
       const playing = message.playing;
@@ -81,6 +194,18 @@ chrome.runtime.onMessage.addListener(
       })();
       return false;
     }
+    if (message.type === "PIP_SUBTITLES_ENABLED_CHANGED") {
+      if (typeof message.enabled !== "boolean") return false;
+      void (async () => {
+        const { pipTabId } = await chrome.storage.session.get("pipTabId");
+        if (pipTabId !== sender.tab?.id) return;
+        await chrome.storage.session.set({
+          [pipSubtitlesEnabledStorageKey(sender.tab!.id as number)]:
+            message.enabled,
+        });
+      })();
+      return false;
+    }
     if (message.type === "PIP_STATE_CHANGED") {
       if (typeof message.pipOpen !== "boolean") return false;
       const pipOpen = message.pipOpen;
@@ -90,6 +215,8 @@ chrome.runtime.onMessage.addListener(
           await chrome.storage.session.set({
             pipTabId: sender.tab.id,
             pipSourcePlaying: message.playing !== false,
+            [pipSubtitlesEnabledStorageKey(sender.tab.id)]:
+              message.subtitlesEnabled === true,
           });
         else if (!pipOpen && (pipTabId === sender.tab?.id || pipTabId == null))
           await chrome.storage.session.set({
@@ -97,6 +224,15 @@ chrome.runtime.onMessage.addListener(
             pipSourcePlaying: true,
           });
         else return;
+
+        if (
+          !pipOpen &&
+          pipTabId === sender.tab?.id &&
+          sender.tab?.id !== undefined
+        )
+          await chrome.storage.session.remove(
+            pipSubtitlesEnabledStorageKey(sender.tab.id),
+          );
 
         await broadcastPipState(pipOpen);
       })();
@@ -212,7 +348,8 @@ chrome.runtime.onMessage.addListener(
     if (!isRecord(message)) return false;
     if (
       message.type === "SAVE_PIP_BOUNDS" ||
-      message.type === "RESTORE_PIP_BOUNDS"
+      message.type === "RESTORE_PIP_BOUNDS" ||
+      message.type === "CENTER_PIP_BOUNDS"
     ) {
       const sourceWindowId = sender.tab?.windowId;
       const innerWidth = message.innerWidth;
@@ -242,7 +379,10 @@ chrome.runtime.onMessage.addListener(
             return;
           }
 
-          if (message.type === "SAVE_PIP_BOUNDS") {
+          if (
+            message.type === "SAVE_PIP_BOUNDS" ||
+            message.type === "CENTER_PIP_BOUNDS"
+          ) {
             const { pipTabId } = await chrome.storage.session.get("pipTabId");
             const { left, top, width, height } = message;
             if (
@@ -261,8 +401,11 @@ chrome.runtime.onMessage.addListener(
             await chrome.storage.session.set({
               pipBounds: { left, top, width, height },
             });
-            sendResponse({ ok: true });
-            return;
+            if (message.type === "SAVE_PIP_BOUNDS") {
+              sendResponse({ ok: true });
+              return;
+            }
+            pipBounds = { left, top, width, height };
           }
 
           if (
@@ -326,22 +469,13 @@ chrome.runtime.onMessage.addListener(
       return false;
     }
 
-    void chrome.tabs
-      .query({ active: true })
-      .then((tabs) => {
-        const pipTab = tabs.find(
-          (tab) =>
-            tab.windowId !== sourceWindowId &&
-            typeof tab.width === "number" &&
-            Math.abs(tab.width - innerWidth) <= 3,
-        );
-
-        if (pipTab?.windowId === undefined) {
+    void findPipWindow(innerWidth, sourceWindowId)
+      .then((pipWindow) => {
+        if (pipWindow?.id === undefined) {
           sendResponse({ ok: false });
           return;
         }
-
-        void chrome.windows.update(pipTab.windowId, { width, height }).then(
+        void chrome.windows.update(pipWindow.id, { width, height }).then(
           () => sendResponse({ ok: true }),
           () => sendResponse({ ok: false }),
         );

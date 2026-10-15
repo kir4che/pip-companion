@@ -5,7 +5,7 @@
   English | <a href="README.zh-TW.md">繁體中文</a>
 </p>
 
-A browser extension that brings web videos into Picture-in-Picture, with captions, danmaku, screenshots, and floating comments panels.
+A browser extension that brings web videos into Picture-in-Picture, with subtitles, danmaku, screenshots, and floating comments panels.
 
 <p align="center">
   <img src="docs/images/pip-companion-social-preview.png" alt="PiP Companion social preview" width="960" />
@@ -20,13 +20,16 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
   - **Playback speed:** adjust from 0.25× to 5×; automatically hidden during live streams to preserve sync, and some websites may impose limits.
   - **Progress bar & previews:** keeps the mini progress bar visible at the bottom when controls are hidden, and hovering over the seek bar previews thumbnails (thumbnail previews are supported only on YouTube, Bilibili, and Bahamut Anime Crazy).
   - **Jump to a timestamp:** enter a video time to jump directly to that point.
+  - **Bilingual subtitles:** display subtitles that can be read from the video in PiP, with switchable tracks by the languages the video provides.
+    - Customizable styles.
+    - The second subtitle can use the video's native subtitle track, or live translation via Microsoft Translator, Google Cloud Translation, or DeepL (bring your own API key).
   - **Playlists:** supported on YouTube, Bilibili, and Bahamut Anime Crazy.
-  - **Captions:** display captions that can be read from the video in PiP, with customizable styles. These settings apply only in PiP and do not affect the website's original player.
 - **Danmaku:**
   - Display native danmaku from Bilibili and Bahamut Anime Crazy.
   - Render chat messages from YouTube and Twitch as danmaku.
   - Send danmaku from PiP on Bahamut Anime Crazy, YouTube Live, and Bilibili.
   - Customize danmaku appearance.
+  - Additional danmaku: overlay danmaku/chat from Bilibili, Bahamut Anime Crazy, or Twitch onto other videos.
 - **Floating comments:** open the comments panel on YouTube and Bilibili video pages while watching.
 - **Screenshots:** save the video frame as a PNG file.
 - **Follow playback:** when enabled and the PiP source pauses while another page (or the same page) has a playing video, PiP hands off to it. Due to browser restrictions, cross-tab handoff requires a click on that tab.
@@ -54,7 +57,7 @@ A browser extension that brings web videos into Picture-in-Picture, with caption
 | Seek (5s by default)     | `←` / `→`                 |
 | Adjust volume            | `↓` / `↑`                 |
 | Mute                     | `M`                       |
-| Captions                 | `C`                       |
+| Subtitles                | `C`                       |
 | Fanmaku                  | `D`                       |
 | Danmaku input            | `Enter`                   |
 | Ffloating comments       | `Alt/Opt + C`             |

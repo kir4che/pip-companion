@@ -27,7 +27,7 @@
 ## 0.1.0
 
 - Picture-in-Picture playback controls for play/pause, seeking, volume, playback speed, frame stepping, and jumping to a timestamp
-- Caption display in PiP, with customizable font, size, color, and other styles #5
+- Subtitle display in PiP, with customizable font, size, color, and other styles #5
 - Danmaku support for Bilibili and Bahamut Anime Crazy, plus YouTube Live and Twitch chat messages
 - Floating comments panels on YouTube and Bilibili video pages
 - Video screenshots saved as PNG files

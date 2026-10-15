@@ -17,7 +17,7 @@ type ShortcutKey =
   | "pipSeekForwardShortcut"
   | "pipVolumeDownShortcut"
   | "pipVolumeUpShortcut"
-  | "pipToggleCaptionsShortcut"
+  | "pipToggleSubtitlesShortcut"
   | "pipMuteShortcut"
   | "pipFrameStepBackwardShortcut"
   | "pipFrameStepForwardShortcut"

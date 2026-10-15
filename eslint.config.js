@@ -48,7 +48,7 @@ module.exports = [
     },
   },
   {
-    files: ["scripts/**/*.mjs"],
+    files: ["scripts/**/*.mjs", "tests/**/*.mjs"],
     languageOptions: {
       sourceType: "module",
       ecmaVersion: 2022,

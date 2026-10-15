@@ -18,6 +18,22 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   const PIP_BOUNDS_POLL_MS = 1000;
   const PIP_BOUNDS_SAVE_DEBOUNCE_MS = 1200;
   let cachedPipSize: { width: number; height: number } | null = null;
+  let hahowPipStream: MediaStream | null = null;
+
+  function isHahowPage() {
+    return globalThis.PipCompanion.site.isHahowHost(location.hostname);
+  }
+
+  function captureVideoStream(video: HTMLVideoElement): MediaStream | null {
+    const captureStream = (
+      video as HTMLVideoElement & {
+        captureStream?: () => MediaStream;
+      }
+    ).captureStream;
+    return typeof captureStream === "function"
+      ? captureStream.call(video)
+      : null;
+  }
 
   function loadCachedPipSize() {
     void chrome.runtime
@@ -41,6 +57,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           type: "PIP_STATE_CHANGED",
           pipOpen,
           playing,
+          subtitlesEnabled: state.subtitlessOn,
         } satisfies ExtensionMessage)
         .catch(() => {});
     } catch {
@@ -156,6 +173,31 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     observePipBounds(win);
   }
 
+  function getCenteredPipBounds(win: Window) {
+    const width = win.outerWidth;
+    const height = win.outerHeight;
+    const screen = win.screen as Screen & {
+      availLeft?: unknown;
+      availTop?: unknown;
+    };
+    const availLeft =
+      typeof screen.availLeft === "number" ? screen.availLeft : 0;
+    const availTop = typeof screen.availTop === "number" ? screen.availTop : 0;
+    return {
+      innerWidth: win.innerWidth,
+      left: Math.max(
+        availLeft,
+        Math.round(availLeft + (win.screen.availWidth - width) / 2),
+      ),
+      top: Math.max(
+        availTop,
+        Math.round(availTop + (win.screen.availHeight - height) / 2),
+      ),
+      width,
+      height,
+    };
+  }
+
   async function restorePipBounds(win = state.pipWindow) {
     if (!win || win.closed) return { ok: false };
     let result: { ok?: boolean; missing?: boolean } = { ok: false };
@@ -170,6 +212,17 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       }
       if (result.ok || result.missing) break;
       await new Promise((resolve) => window.setTimeout(resolve, 250));
+    }
+    if (result.missing && !win.closed) {
+      try {
+        const centered = await chrome.runtime.sendMessage({
+          type: "CENTER_PIP_BOUNDS",
+          ...getCenteredPipBounds(win),
+        } satisfies ExtensionMessage);
+        if (centered?.ok === true) result = centered;
+      } catch {
+        // 置中失敗就留在瀏覽器預設位置，照舊開始追蹤。
+      }
     }
     if (result.ok || result.missing) startPipBoundsTracking(win);
     return result;
@@ -208,7 +261,121 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
           globalThis.PipCompanion.ContentFeedback.showFrameStepIcon,
         getVolumePercent:
           globalThis.PipCompanion.ContentPlayback.getSourceVolumePercent,
-        toggleCaptions: globalThis.PipCompanion.ContentPlayback.toggleCaptions,
+        toggleSubtitles:
+          globalThis.PipCompanion.ContentPlayback.toggleSubtitles,
+        getSubtitlesEnabled: () => state.subtitlessOn,
+        isSubtitleTranslationSuspended:
+          globalThis.PipCompanion.ContentSubtitles
+            .isSubtitleTranslationSuspended,
+        resumeSubtitleTranslation:
+          globalThis.PipCompanion.ContentSubtitles.resumeSubtitleTranslation,
+        hasSubtitleSource:
+          globalThis.PipCompanion.ContentSubtitles.hasSubtitleSource,
+        getSubtitleTracks:
+          globalThis.PipCompanion.ContentSubtitles.getNativeSubtitleTracks,
+        selectSubtitleTrack:
+          globalThis.PipCompanion.ContentSubtitles.selectNativeSubtitleTrack,
+        getSecondarySubtitleTracks:
+          globalThis.PipCompanion.ContentSubtitles.getSecondarySubtitleTracks,
+        getSelectedSecondarySubtitleTrack:
+          globalThis.PipCompanion.ContentSubtitles
+            .getSelectedSecondarySubtitleTrack,
+        selectSecondarySubtitleTrack:
+          globalThis.PipCompanion.ContentSubtitles.selectSecondarySubtitleTrack,
+        getSubtitleTranslationPreferences: () =>
+          state.subtitleTranslationPreferences,
+        getSubtitleTranslationLanguages: async () => {
+          try {
+            const response: unknown = await chrome.runtime.sendMessage({
+              type: "GET_SUBTITLE_TRANSLATION_LANGUAGES",
+            } satisfies ExtensionMessage);
+            if (
+              !globalThis.PipCompanion.util.isRecord(response) ||
+              response.ok !== true ||
+              !Array.isArray(response.languages)
+            )
+              return [];
+            return response.languages.flatMap((language) =>
+              globalThis.PipCompanion.util.isRecord(language) &&
+              typeof language.code === "string" &&
+              language.code.length <= 35 &&
+              typeof language.label === "string" &&
+              language.label.length <= 100
+                ? [{ code: language.code, label: language.label }]
+                : [],
+            );
+          } catch {
+            return [];
+          }
+        },
+        getSubtitleTranslationServices: async () => {
+          try {
+            const response: unknown = await chrome.runtime.sendMessage({
+              type: "GET_SUBTITLE_TRANSLATION_SERVICES",
+            } satisfies ExtensionMessage);
+            if (
+              !globalThis.PipCompanion.util.isRecord(response) ||
+              response.ok !== true ||
+              (response.provider !== "microsoft" &&
+                response.provider !== "google" &&
+                response.provider !== "deepl") ||
+              !Array.isArray(response.services)
+            )
+              return null;
+            const services: SubtitleTranslationServiceOption[] =
+              response.services.flatMap((service) =>
+                globalThis.PipCompanion.util.isRecord(service) &&
+                (service.provider === "microsoft" ||
+                  service.provider === "google" ||
+                  service.provider === "deepl") &&
+                typeof service.configured === "boolean"
+                  ? [
+                      {
+                        provider: service.provider,
+                        configured: service.configured,
+                      },
+                    ]
+                  : [],
+              );
+            return { provider: response.provider, services };
+          } catch {
+            return null;
+          }
+        },
+        setSubtitleTranslationProvider: async (provider) => {
+          try {
+            const response: unknown = await chrome.runtime.sendMessage({
+              type: "SET_SUBTITLE_TRANSLATION_PROVIDER",
+              provider,
+            } satisfies ExtensionMessage);
+            return (
+              globalThis.PipCompanion.util.isRecord(response) &&
+              response.ok === true
+            );
+          } catch {
+            return false;
+          }
+        },
+        setSubtitleTranslationPreferences: (preferences) => {
+          const normalized =
+            globalThis.PipCompanion.subtitleTranslationSettings.normalizePreferences(
+              preferences,
+            );
+          const previous = state.subtitleTranslationPreferences;
+          state.subtitleTranslationPreferences = normalized;
+          globalThis.PipCompanion.ContentSubtitles.onTranslationPreferencesChanged(
+            previous,
+            normalized,
+          );
+          state.pipUi?.refreshSubtitleTranslationPreferences();
+          globalThis.PipCompanion.ContentSubtitles.renderSubtitle();
+          void chrome.storage.local
+            .set({
+              [globalThis.PipCompanion.subtitleTranslationSettings
+                .PREFERENCES_KEY]: normalized,
+            })
+            .catch(() => {});
+        },
         toggleComments: toggleFloatingComments,
         toggleDanmaku:
           globalThis.PipCompanion.ContentPlayback.toggleDanmakuFromShortcut,
@@ -260,7 +427,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     return ui;
   }
 
-  function stashSourceVideo() {
+  function stashSourceVideo(keepInPlayer = false) {
     const video = state.sourceVideo;
     if (!video) return;
     const rect = video.getBoundingClientRect();
@@ -273,7 +440,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       placeholder: null,
     };
 
-    if (rect.width > 0 && rect.height > 0 && parent) {
+    if (!keepInPlayer && rect.width > 0 && rect.height > 0 && parent) {
       const placeholder = video.ownerDocument.createElement("div");
       placeholder.setAttribute("aria-hidden", "true");
       const display = getComputedStyle(video).display;
@@ -287,6 +454,10 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       state.videoStash.placeholder = placeholder;
     }
     video.controls = false;
+    if (keepInPlayer) {
+      video.style.opacity = "0";
+      video.style.pointerEvents = "none";
+    }
   }
 
   function restoreSourceVideo() {
@@ -305,14 +476,14 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       } catch (error) {
         const fallback = document.body ?? document.documentElement;
         if (!fallback) {
-          console.warn("[Caption PiP] Could not restore source video:", error);
+          console.warn("[Subtitle PiP] Could not restore source video:", error);
           return false;
         }
         try {
           fallback.append(video);
         } catch (fallbackError) {
           console.warn(
-            "[Caption PiP] Could not restore source video:",
+            "[Subtitle PiP] Could not restore source video:",
             fallbackError,
           );
           return false;
@@ -326,11 +497,31 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   function remountSourceVideo() {
     if (!state.pipUi || !state.sourceVideo) return;
     const wasPlaying = !state.sourceVideo.paused;
-    globalThis.PipCompanion.ContentCaptions.prepareNativeCaptions();
+    globalThis.PipCompanion.ContentSubtitles.prepareNativeSubtitles();
+    const hahowStream =
+      isHahowPage() && state.pipUi.video !== state.sourceVideo
+        ? (hahowPipStream ?? captureVideoStream(state.sourceVideo))
+        : null;
+    if (hahowStream) {
+      if (hahowStream !== hahowPipStream) {
+        hahowPipStream?.getTracks().forEach((track) => track.stop());
+        hahowPipStream = hahowStream;
+      }
+      if (state.pipUi.video.srcObject !== hahowPipStream)
+        state.pipUi.video.srcObject = hahowPipStream;
+      stashSourceVideo(true);
+      state.pipUi.screen.append(state.pipUi.video);
+      globalThis.PipCompanion.PipAudio.start(
+        state.sourceVideo,
+        state.pipWindow,
+      );
+      if (wasPlaying) void state.pipUi.video.play().catch(() => {});
+      return;
+    }
     stashSourceVideo();
     state.pipUi.screen.append(state.sourceVideo);
     state.sourceVideo.style.cssText = "";
-    globalThis.PipCompanion.ContentCaptions.prepareNativeCaptions();
+    globalThis.PipCompanion.ContentSubtitles.prepareNativeSubtitles();
     globalThis.PipCompanion.PipAudio.start(state.sourceVideo, state.pipWindow);
     if (wasPlaying) void state.sourceVideo.play().catch(() => {});
   }
@@ -358,15 +549,30 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     )
       return;
     if (session.waitTimer !== null) window.clearTimeout(session.waitTimer);
+    let pipVideo = video;
+    if (isHahowPage()) {
+      const stream = captureVideoStream(video);
+      if (stream) {
+        pipVideo = win.document.createElement("video");
+        pipVideo.muted = true;
+        pipVideo.defaultMuted = true;
+        pipVideo.playsInline = true;
+        pipVideo.autoplay = true;
+        hahowPipStream = stream;
+        pipVideo.srcObject = hahowPipStream;
+      }
+    }
     state.pipSession = {
       phase: "active",
       window: win,
-      ui: createPipUi(win, video),
+      ui: createPipUi(win, pipVideo),
     };
-    globalThis.PipCompanion.ContentCaptions.initializeCaptionsOn();
+    globalThis.PipCompanion.ContentSubtitles.initializeSubtitlesOn();
+    state.pipUi?.refreshSubtitleTracks();
+    globalThis.PipCompanion.ContentSubtitles.refreshSubtitle(true);
     remountSourceVideo();
     initDanmakuInPip(win, video);
-    globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
+    globalThis.PipCompanion.ContentSubtitles.refreshSubtitle(true);
     globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
     if (!video.paused) resumePlayback();
   }
@@ -375,19 +581,23 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     try {
       globalThis.PipCompanion.PipAudio.stop();
     } catch (error) {
-      console.warn("[Caption PiP] Could not stop PiP audio:", error);
+      console.warn("[Subtitle PiP] Could not stop PiP audio:", error);
     }
     let videoRestored = false;
     try {
       videoRestored = restoreSourceVideo();
     } catch (error) {
-      console.warn("[Caption PiP] Could not restore source video:", error);
+      console.warn("[Subtitle PiP] Could not restore source video:", error);
     }
     try {
-      globalThis.PipCompanion.ContentCaptions.restoreNativeCaptionModes();
+      globalThis.PipCompanion.ContentSubtitles.restoreNativeSubtitleModes();
     } catch (error) {
-      console.warn("[Caption PiP] Could not restore native captions:", error);
+      console.warn("[Subtitle PiP] Could not restore native subtitles:", error);
     }
+    const pipVideo = state.pipUi?.video;
+    if (pipVideo) pipVideo.srcObject = null;
+    hahowPipStream?.getTracks().forEach((track) => track.stop());
+    hahowPipStream = null;
     return videoRestored;
   }
 
@@ -403,13 +613,20 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     state.sourceAbort?.abort();
     state.sourceAbort = new AbortController();
     state.sourceVideo = video;
+    globalThis.PipCompanion.ContentSubtitles.setNativeSubtitleVideo(video);
     const signal = state.sourceAbort.signal;
     setDanmakuPlaybackRate(video.playbackRate);
     setDanmakuPaused(video.paused);
 
     const sync = () => {
+      const pipVideo = state.pipUi?.video;
+      if (pipVideo && pipVideo !== video) {
+        pipVideo.playbackRate = video.playbackRate;
+        if (video.paused) pipVideo.pause();
+        else void pipVideo.play().catch(() => {});
+      }
       globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
-      globalThis.PipCompanion.ContentCaptions.refreshSubtitle();
+      globalThis.PipCompanion.ContentSubtitles.refreshSubtitle();
     };
     const resetPipAudioToNative = () => {
       if (!globalThis.PipCompanion.PipAudio.isActiveFor(video)) return;
@@ -491,26 +708,37 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     }
     video.addEventListener("volumechange", syncVolume, { signal });
     const trackList = video.textTracks;
-    const syncCaptions = () =>
-      globalThis.PipCompanion.ContentCaptions.syncNativeCaptions();
-    trackList.addEventListener("change", syncCaptions, { signal });
-    trackList.addEventListener("removetrack", syncCaptions, { signal });
+    const syncSubtitles = () =>
+      globalThis.PipCompanion.ContentSubtitles.syncNativeSubtitles();
+    const syncSubtitleTracks = () => {
+      syncSubtitles();
+      state.pipUi?.refreshSubtitleTracks();
+    };
+    trackList.addEventListener("change", syncSubtitleTracks, { signal });
+    trackList.addEventListener(
+      "removetrack",
+      () => {
+        syncSubtitleTracks();
+        globalThis.PipCompanion.ContentSubtitles.refreshSubtitle(true);
+      },
+      { signal },
+    );
     trackList.addEventListener(
       "addtrack",
       (e) => {
-        e.track?.addEventListener("cuechange", syncCaptions, { signal });
-        if (state.pipUi && state.captionsOn)
-          globalThis.PipCompanion.ContentCaptions.prepareNativeCaptions();
-        syncCaptions();
+        e.track?.addEventListener("cuechange", syncSubtitles, { signal });
+        if (state.pipUi && state.subtitlessOn)
+          globalThis.PipCompanion.ContentSubtitles.prepareNativeSubtitles();
+        syncSubtitleTracks();
       },
       { signal },
     );
     for (const track of trackList) {
-      track.addEventListener("cuechange", syncCaptions, { signal });
+      track.addEventListener("cuechange", syncSubtitles, { signal });
     }
 
     globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
-    globalThis.PipCompanion.ContentCaptions.refreshSubtitle(true);
+    globalThis.PipCompanion.ContentSubtitles.refreshSubtitle(true);
     if (state.thumbnailPreviewEnabled)
       globalThis.PipCompanion.ContentStoryboard.preload(video);
     if (state.pipWindow) {
@@ -540,7 +768,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     try {
       destroyDanmakuInPip();
     } catch (error) {
-      console.warn("[Caption PiP] Could not destroy PiP danmaku:", error);
+      console.warn("[Subtitle PiP] Could not destroy PiP danmaku:", error);
     }
     window.clearInterval(boundsTimer);
     boundsTimer = 0;
@@ -556,27 +784,28 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       return;
     }
 
+    state.pipUi?.dispose();
     state.pipSession = { phase: "closed" };
-    state.captionObserver?.disconnect();
-    state.captionObserver = null;
-    state.captionNode = null;
-    state.captionExtract = null;
-    state.captionLines = [];
+    if (oldWindow) notifyPipState(false);
+    state.subtitleObserver?.disconnect();
+    state.subtitleObserver = null;
+    state.subtitleNode = null;
+    state.subtitleExtract = null;
+    state.subtitleLines = [];
     try {
       globalThis.PipCompanion.ContentStoryboard.reset();
     } catch (error) {
-      console.warn("[Caption PiP] Could not reset storyboard:", error);
+      console.warn("[Subtitle PiP] Could not reset storyboard:", error);
     }
     if (oldWindow && !oldWindow.closed) {
       await boundsSave;
-      notifyPipState(false);
       if (!closeWindow) return;
       try {
         if (!oldWindow.closed) oldWindow.close();
       } catch (error) {
         console.warn("[Subtitle PiP] Could not close PiP window:", error);
       }
-    } else if (oldWindow) notifyPipState(false);
+    }
   }
 
   async function openPiP(): Promise<PipOperationResult> {
@@ -656,7 +885,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       const sourceChanged =
         error instanceof Error && error.message === "source changed";
       if (!gestureRequired && !sourceChanged)
-        console.warn("[Caption PiP] Could not open PiP:", error);
+        console.warn("[Subtitle PiP] Could not open PiP:", error);
       return {
         ok: false,
         message: gestureRequired ? t("pipGestureRequired") : t("pipCannotOpen"),

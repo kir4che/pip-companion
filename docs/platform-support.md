@@ -6,12 +6,14 @@
 | ---------------------- | ----------------------------------------- | ---------------------------------------------- | -------------------- | -------------------------------------------- | --------------------- |
 | Playback / volume      | ✅                                        | ✅                                             | ✅                   | ✅                                           | ✅                    |
 | Playback speed         | ✅ (non-live)                             | ✅ (non-live)                                  | ✅ (non-live)        | ✅                                           | ✅                    |
-| Captions               | ✅                                        | ✅ (enable native captions first)              | ❌                   | ❌                                           | ✅                    |
+| Subtitles              | ✅                                        | ✅                                             | ❌                   | ❌                                           | ✅                    |
 | Danmaku / chat display | ✅ (chat as danmaku)                      | ✅ (native danmaku)                            | ✅ (chat as danmaku) | ✅ (native danmaku)                          | ❌                    |
 | Danmaku / chat sending | ✅ (live; subject to channel permissions) | ✅ (subject to login and platform permissions) | ❌                   | ✅ (requires login and platform permissions) | ❌                    |
 | Next video             | ✅ (playlists)                            | ✅ (playlists / series)                        | ❌                   | ✅                                           | ✅                    |
 | Playlist               | ✅                                        | ✅                                             | ❌                   | ✅                                           | ❌                    |
 | Thumbnail previews     | ✅                                        | ✅                                             | ❌                   | ✅                                           | ❌                    |
 | Screenshots            | ✅                                        | ✅                                             | ✅                   | ✅                                           | ❌ (DRM restrictions) |
+| Add extra danmaku      | ✅                                        | ✅                                             | ✅                   | ❌ (crashes in tests)                        | ✅                    |
+| Provide extra danmaku  | ❌                                        | ✅                                             | ✅                   | ✅                                           | ❌                    |
 
 > This table covers the main tested platforms. Other sites have not been fully verified; actual support depends on the site and browser restrictions.

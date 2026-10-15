@@ -3,17 +3,17 @@ Press Shift + Alt/Opt + P on a page with a video to toggle Picture-in-Picture (P
 Features
 • PiP controls for playback, seeking (including timestamp entry), volume, speed, and frame stepping. Play next on supported sites.
 • Playlists and thumbnail previews for YouTube, Bilibili, and Bahamut Anime Crazy.
-• Show captions readable from the video in PiP, with customizable font, size, and color.
-• Danmaku (scrolling comments): show native danmaku on Bilibili and Bahamut Anime Crazy, or display YouTube and Twitch chat as scrolling messages. Send from PiP on Bilibili, Bahamut Anime Crazy, and YouTube Live.
+• Bilingual subtitles: show subtitles available on the video in PiP, with switchable tracks and customizable styles. The second subtitle can use the native track or live translation services (bring your own API key).
+• Danmaku (scrolling comments): show native danmaku on Bilibili and Bahamut Anime Crazy, or display YouTube and Twitch chat as scrolling messages. Send from PiP on Bilibili, Bahamut Anime Crazy, and YouTube Live. Extra danmaku from Bilibili, Bahamut Anime Crazy, or Twitch can be overlaid onto other videos.
 • Floating comment panels for YouTube and Bilibili.
 • Save supported video frames as PNG.
 • Follow playback: when enabled, switch to another playing video when the PiP video pauses.
 • Resize PiP to fit the video's aspect ratio.
-• In Settings, toggle danmaku, screenshots, floating comments, and follow playback; customize shortcuts, seek interval, caption and danmaku styles, and interface language (Traditional Chinese, Simplified Chinese, or English).
+• In Settings, toggle danmaku, screenshots, floating comments, and follow playback; customize shortcuts, seek interval, subtitle and danmaku styles, subtitle translation services, and interface language (Traditional Chinese, Simplified Chinese, or English).
 • Detect videos in supported iframes; compatibility depends on the site and browser permissions.
 
 Platform support and limitations: https://github.com/kir4che/pip-companion/blob/main/docs/platform-support.md
 
 Privacy and support
-• No personal data is collected for analytics. Sending danmaku connects to the relevant platform only when you use the feature.
+• No personal data is collected for analytics. Sending danmaku or using subtitle translation connects to the relevant platform or service only when you use the feature.
 • Report issues or suggest features: https://github.com/kir4che/pip-companion/issues

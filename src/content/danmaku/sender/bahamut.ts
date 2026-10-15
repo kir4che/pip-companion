@@ -118,7 +118,6 @@ globalThis.PipCompanion.ContentBahamutDanmakuSender = (() => {
       return { ok: false, nativeInputCleared: false };
     }
 
-    // 交由巴哈播放器處理登入與送出。
     composer.button.click();
 
     const deadline = Date.now() + 1000;

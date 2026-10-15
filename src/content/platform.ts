@@ -10,7 +10,7 @@ globalThis.PipCompanion.ContentPlatform = (() => {
     if (site.isYouTubeHost(hostname))
       return {
         id: "youtube",
-        captions: true,
+        subtitless: true,
         danmakuDisplay: true,
         danmakuSend:
           globalThis.PipCompanion.ContentDanmakuSender.isSupportedPage(),
@@ -19,7 +19,7 @@ globalThis.PipCompanion.ContentPlatform = (() => {
     if (site.isBilibiliHost(hostname) || site.isBilibiliLiveHost(hostname))
       return {
         id: "bilibili",
-        captions: true,
+        subtitless: true,
         danmakuDisplay: true,
         danmakuSend:
           globalThis.PipCompanion.ContentDanmakuSender.isSupportedPage(),
@@ -28,7 +28,7 @@ globalThis.PipCompanion.ContentPlatform = (() => {
     if (site.isTwitchHost(hostname))
       return {
         id: "twitch",
-        captions: false,
+        subtitless: false,
         danmakuDisplay: true,
         danmakuSend: false,
         screenshot: true,
@@ -36,7 +36,7 @@ globalThis.PipCompanion.ContentPlatform = (() => {
     if (site.isBahamutHost(hostname))
       return {
         id: "bahamut",
-        captions: false,
+        subtitless: false,
         danmakuDisplay: true,
         danmakuSend:
           globalThis.PipCompanion.ContentDanmakuSender.isSupportedPage(),
@@ -46,7 +46,7 @@ globalThis.PipCompanion.ContentPlatform = (() => {
     // 未列入平台清單的網站沿用通用影片能力，不額外辨識 Netflix。
     return {
       id: "generic",
-      captions: true,
+      subtitless: true,
       danmakuDisplay: false,
       danmakuSend: false,
       screenshot: true,

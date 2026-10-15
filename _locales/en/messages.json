@@ -1,148 +1,304 @@
 {
-  "extName": { "message": "PiP Companion" },
+  "extName": {
+    "message": "PiP Companion"
+  },
   "extDescription": {
-    "message": "Play web videos in Picture-in-Picture (PiP) with captions, danmaku, screenshots, and floating comments."
+    "message": "Play web videos in Picture-in-Picture (PiP) with subtitles, danmaku, screenshots, and floating comments."
   },
-  "popupOpenPip": { "message": "Open PiP" },
-  "popupClosePip": { "message": "Close PiP" },
-  "popupMainMenu": { "message": "Main menu" },
-  "popupShortcuts": { "message": "Shortcuts" },
-  "shortcutPlayPause": { "message": "Play / pause" },
-  "shortcutCaptions": { "message": "Captions" },
-  "shortcutMute": { "message": "Mute" },
-  "shortcutDanmakuInput": { "message": "Danmaku input" },
-  "shortcutResizePip": { "message": "Resize PiP" },
-  "popupDanmaku": { "message": "Danmaku" },
-  "popupAdditionalDanmakuSettings": {
-    "message": "Additional danmaku settings"
+  "popupOpenPip": {
+    "message": "Open PiP"
   },
-  "popupAdditionalDanmaku": { "message": "Additional danmaku" },
-  "popupAdditionalDanmakuScope": { "message": "Settings scope" },
+  "popupClosePip": {
+    "message": "Close PiP"
+  },
+  "popupMainMenu": {
+    "message": "Main menu"
+  },
+  "popupShortcuts": {
+    "message": "Shortcuts"
+  },
+  "shortcutPlayPause": {
+    "message": "Play / pause"
+  },
+  "shortcutSubtitles": {
+    "message": "Subtitles"
+  },
+  "shortcutMute": {
+    "message": "Mute"
+  },
+  "shortcutDanmakuInput": {
+    "message": "Danmaku input"
+  },
+  "shortcutResizePip": {
+    "message": "Resize PiP"
+  },
+  "popupDanmaku": {
+    "message": "Danmaku"
+  },
+  "popupAdditionalDanmaku": {
+    "message": "Additional danmaku"
+  },
+  "popupAdditionalDanmakuScope": {
+    "message": "Settings scope"
+  },
   "popupAdditionalDanmakuScopeTooltip": {
     "message": "Settings apply only to the current tab and are disabled when you switch videos, reload, or the source fails."
   },
-  "popupAdditionalDanmakuEnabled": { "message": "Show additional danmaku" },
+  "popupAdditionalDanmakuEnabled": {
+    "message": "Show additional danmaku"
+  },
   "popupAdditionalDanmakuUrl": {
     "message": "Source URL (Bilibili, Bahamut Anime, Twitch)"
-  },
-  "popupAdditionalDanmakuUrlPlaceholder": {
-    "message": "Bilibili, Bahamut Anime, or twitch.tv/channel-name"
   },
   "popupAdditionalDanmakuOffset": {
     "message": "Time offset / delay (seconds)"
   },
-  "popupAdditionalDanmakuConnectionFailed": {
-    "message": "Could not connect to the current tab. Reload the video page and try again."
+  "popupScreenshot": {
+    "message": "Screenshot"
   },
-  "popupAdditionalDanmakuStorageFailed": {
-    "message": "Could not read additional danmaku for this tab."
+  "popupFloatingComments": {
+    "message": "Floating comments"
   },
-  "popupAdditionalDanmakuApplyFailed": {
-    "message": "Could not apply additional danmaku for this tab. Reload the page and try again."
+  "popupThumbnailPreview": {
+    "message": "Seek thumbnail preview"
   },
-  "popupAdditionalDanmakuLoadFailed": {
-    "message": "Could not load additional danmaku. Reopen the settings page and try again."
+  "popupSeekInterval": {
+    "message": "Seek interval"
   },
-  "popupAdditionalDanmakuInvalidUrl": {
-    "message": "Enter a valid Bilibili, Bahamut Anime, or Twitch video URL."
+  "popupSeconds": {
+    "message": "$1 sec"
   },
-  "popupAdditionalDanmakuInvalidOffset": {
-    "message": "The time offset must be between -3600 and 3600 seconds."
+  "popupWheel": {
+    "message": "wheel"
   },
-  "popupAdditionalDanmakuDisableFailed": {
-    "message": "Could not disable the current source. Reload the video page and try again."
+  "popupFeatureSettings": {
+    "message": "Feature settings"
   },
-  "popupAdditionalDanmakuSaveFailed": {
-    "message": "Could not save. Reload the video page and try again."
+  "popupGeneralSettings": {
+    "message": "General settings"
   },
-  "popupScreenshot": { "message": "Screenshot" },
-  "popupFloatingComments": { "message": "Floating comments" },
-  "popupThumbnailPreview": { "message": "Seek thumbnail preview" },
-  "popupSeekInterval": { "message": "Seek interval" },
-  "popupSeconds": { "message": "$1 sec" },
-  "popupWheel": { "message": "wheel" },
-  "popupFeatureSettings": { "message": "Feature settings" },
-  "popupGeneralSettings": { "message": "General settings" },
-  "popupAllSettings": { "message": "All settings" },
-  "popupReportIssue": { "message": "Report an issue" },
-  "optionsTitle": { "message": "PiP Companion Settings" },
-  "optionsBrandTitle": { "message": "PiP Companion" },
-  "optionsSupportDevelopment": { "message": "Support PiP Companion" },
-  "popupLanguage": { "message": "Language" },
+  "popupAllSettings": {
+    "message": "All settings"
+  },
+  "popupReportIssue": {
+    "message": "Report an issue"
+  },
+  "optionsTitle": {
+    "message": "PiP Companion Settings"
+  },
+  "optionsBrandTitle": {
+    "message": "PiP Companion"
+  },
+  "optionsSupportDevelopment": {
+    "message": "Support PiP Companion"
+  },
+  "popupLanguage": {
+    "message": "Language"
+  },
   "popupLanguageSaveFailed": {
     "message": "Could not save language preference."
   },
   "popupDanmakuDisplaySettings": {
     "message": "Danmaku display settings"
   },
-  "popupCaptionStyleSettings": { "message": "Caption style settings" },
-  "popupFollowPlayback": { "message": "Follow video playback" },
-  "popupBackToMenu": { "message": "Back to main menu" },
-  "popupDanmakuStyle": { "message": "Danmaku style" },
-  "popupFontSize": { "message": "Font size" },
-  "popupScrollSpeed": { "message": "Scroll speed" },
-  "speedVerySlow": { "message": "Very slow" },
-  "speedSlow": { "message": "Slow" },
-  "speedNormal": { "message": "Normal" },
-  "speedFast": { "message": "Fast" },
-  "speedVeryFast": { "message": "Very fast" },
-  "popupOpacity": { "message": "Opacity" },
-  "popupDisplayArea": { "message": "Display area" },
-  "popupFont": { "message": "Font" },
-  "popupFontGeneral": { "message": "General" },
-  "popupFontAdvanced": { "message": "Advanced fonts (device support varies)" },
-  "popupSystemDefault": { "message": "System default" },
-  "popupSansSerif": { "message": "Sans serif" },
-  "popupSerif": { "message": "Serif" },
-  "popupMonospace": { "message": "Monospace" },
-  "popupArialLatin": { "message": "Arial" },
-  "popupBlackFont": { "message": "Heiti" },
-  "popupSongFont": { "message": "Song / Ming" },
-  "popupFangSongFont": { "message": "FangSong" },
-  "popupKaiFont": { "message": "Kaiti" },
-  "popupFontWeight": { "message": "Font weight" },
-  "popupMaxFontSize": { "message": "Maximum font size" },
-  "popupResetDanmakuStyle": { "message": "Reset danmaku style" },
-  "popupCaptionStyle": { "message": "Caption style" },
-  "popupCaptionPreview": { "message": "Caption style preview" },
-  "popupCaptionPreviewText": { "message": "Caption preview sample" },
-  "popupCaptionPreviewSecondLine": { "message": "Second line" },
-  "popupTextColor": { "message": "Text color" },
-  "popupBackgroundColor": { "message": "Background color" },
-  "popupBackgroundOpacity": { "message": "Background opacity" },
-  "popupVerticalPosition": { "message": "Vertical position" },
-  "popupTextEdge": { "message": "Text edge" },
-  "popupNone": { "message": "None" },
-  "popupShadow": { "message": "Shadow" },
-  "popupRaised": { "message": "Raised" },
-  "popupDepressed": { "message": "Depressed" },
-  "popupOutline": { "message": "Outline" },
-  "popupEdgeColor": { "message": "Edge color" },
-  "popupOutlineWidth": { "message": "Outline width" },
-  "popupLineHeight": { "message": "Line height" },
-  "popupResetCaptionStyle": { "message": "Reset caption style" },
+  "popupSubtitleStyleSettings": {
+    "message": "Subtitle style settings"
+  },
+  "popupFollowPlayback": {
+    "message": "Follow video playback"
+  },
+  "popupBackToMenu": {
+    "message": "Back to main menu"
+  },
+  "popupDanmakuStyle": {
+    "message": "Danmaku style"
+  },
+  "popupFontSize": {
+    "message": "Font size"
+  },
+  "popupScrollSpeed": {
+    "message": "Scroll speed"
+  },
+  "speedVerySlow": {
+    "message": "Very slow"
+  },
+  "speedSlow": {
+    "message": "Slow"
+  },
+  "speedNormal": {
+    "message": "Normal"
+  },
+  "speedFast": {
+    "message": "Fast"
+  },
+  "speedVeryFast": {
+    "message": "Very fast"
+  },
+  "popupOpacity": {
+    "message": "Opacity"
+  },
+  "popupDisplayArea": {
+    "message": "Display area"
+  },
+  "popupFont": {
+    "message": "Font"
+  },
+  "popupFontGeneral": {
+    "message": "General"
+  },
+  "popupFontAdvanced": {
+    "message": "Advanced fonts (device support varies)"
+  },
+  "popupSystemDefault": {
+    "message": "System default"
+  },
+  "popupSansSerif": {
+    "message": "Sans serif"
+  },
+  "popupSerif": {
+    "message": "Serif"
+  },
+  "popupMonospace": {
+    "message": "Monospace"
+  },
+  "popupArialLatin": {
+    "message": "Arial"
+  },
+  "popupBlackFont": {
+    "message": "Heiti"
+  },
+  "popupSongFont": {
+    "message": "Song / Ming"
+  },
+  "popupFangSongFont": {
+    "message": "FangSong"
+  },
+  "popupKaiFont": {
+    "message": "Kaiti"
+  },
+  "popupFontWeight": {
+    "message": "Font weight"
+  },
+  "popupMaxFontSize": {
+    "message": "Maximum font size"
+  },
+  "popupResetDanmakuStyle": {
+    "message": "Reset danmaku style"
+  },
+  "popupSubtitleStyle": {
+    "message": "Subtitle style"
+  },
+  "popupPrimarySubtitleStyle": {
+    "message": "Primary subtitle"
+  },
+  "popupSecondarySubtitleStyle": {
+    "message": "Secondary subtitle"
+  },
+  "popupSharedSubtitleLayout": {
+    "message": "Shared layout"
+  },
+  "popupResetCurrentSubtitleStyle": {
+    "message": "Reset current style"
+  },
+  "popupResetSubtitleLayout": {
+    "message": "Reset shared layout"
+  },
+  "popupSubtitlePreview": {
+    "message": "Subtitle style preview"
+  },
+  "popupSubtitlePreviewText": {
+    "message": "Subtitle preview sample"
+  },
+  "popupSubtitlePreviewSecondLine": {
+    "message": "Second line"
+  },
+  "popupTextColor": {
+    "message": "Text color"
+  },
+  "popupBackgroundColor": {
+    "message": "Background color"
+  },
+  "popupBackgroundOpacity": {
+    "message": "Background opacity"
+  },
+  "popupSubtitlePairGap": {
+    "message": "Primary/secondary subtitle gap"
+  },
+  "popupLetterSpacing": {
+    "message": "Letter spacing"
+  },
+  "popupVerticalPosition": {
+    "message": "Vertical position"
+  },
+  "popupTextEdge": {
+    "message": "Text edge"
+  },
+  "popupNone": {
+    "message": "None"
+  },
+  "popupShadow": {
+    "message": "Shadow"
+  },
+  "popupRaised": {
+    "message": "Raised"
+  },
+  "popupDepressed": {
+    "message": "Depressed"
+  },
+  "popupOutline": {
+    "message": "Outline"
+  },
+  "popupEdgeColor": {
+    "message": "Edge color"
+  },
+  "popupOutlineWidth": {
+    "message": "Outline width"
+  },
+  "popupEdgeIntensity": {
+    "message": "Effect intensity"
+  },
+  "popupLineHeight": {
+    "message": "Line height"
+  },
+  "popupResetSubtitleStyle": {
+    "message": "Reset subtitle style"
+  },
   "popupCannotSaveToggle": {
     "message": "Could not save the setting. Please try again."
   },
   "popupCannotSaveDanmaku": {
     "message": "Could not save danmaku settings. Please try again."
   },
-  "popupCannotSaveCaption": {
-    "message": "Could not save caption settings. Please try again."
+  "popupCannotSaveSubtitle": {
+    "message": "Could not save subtitle settings. Please try again."
   },
   "popupCannotSaveSeek": {
     "message": "Could not save the seek interval. Please try again."
   },
-  "popupRecordingShortcut": { "message": "Press a key…" },
-  "popupRecordingResizeShortcut": { "message": "Hold a modifier and scroll…" },
-  "popupOtherShortcut": { "message": "Other shortcut" },
-  "popupCheckingPip": { "message": "Checking PiP status…" },
-  "popupClosingPip": { "message": "Closing PiP…" },
-  "popupCannotClosePip": { "message": "Could not close PiP." },
+  "popupRecordingShortcut": {
+    "message": "Press a key…"
+  },
+  "popupRecordingResizeShortcut": {
+    "message": "Hold a modifier and scroll…"
+  },
+  "popupOtherShortcut": {
+    "message": "Other shortcut"
+  },
+  "popupCheckingPip": {
+    "message": "Checking PiP status…"
+  },
+  "popupClosingPip": {
+    "message": "Closing PiP…"
+  },
+  "popupCannotClosePip": {
+    "message": "Could not close PiP."
+  },
   "popupOpenOnWebpage": {
     "message": "Open a video on a webpage that the extension can access."
   },
-  "popupOpeningPip": { "message": "Opening…" },
+  "popupOpeningPip": {
+    "message": "Opening…"
+  },
   "popupCannotOpenPip": {
     "message": "Could not open PiP. Make sure the page has a playable video."
   },
@@ -164,66 +320,168 @@
   "popupShortcutConflict": {
     "message": "This shortcut conflicts with \"$1\". Please choose another."
   },
-  "popupResetShortcut": { "message": "Reset shortcut to default" },
-  "popupClearShortcut": { "message": "Clear shortcut" },
-  "popupShortcutUnassigned": { "message": "Unassigned" },
+  "popupResetShortcut": {
+    "message": "Reset shortcut to default"
+  },
+  "popupClearShortcut": {
+    "message": "Clear shortcut"
+  },
+  "popupShortcutUnassigned": {
+    "message": "Unassigned"
+  },
   "popupCannotSaveShortcut": {
     "message": "Could not save the shortcut. Please try again."
   },
   "popupResizeNeedsModifier": {
     "message": "Hold at least one modifier key while scrolling."
   },
-  "shortcutStepBackward": { "message": "Frame backward" },
-  "shortcutStepForward": { "message": "Frame forward" },
-  "shortcutSlower": { "message": "Decrease playback speed" },
-  "shortcutFaster": { "message": "Increase playback speed" },
-  "shortcutRewind": { "message": "Rewind" },
-  "shortcutForward": { "message": "Forward" },
-  "shortcutVolumeUp": { "message": "Volume +10" },
-  "shortcutVolumeDown": { "message": "Volume -10" },
-  "shortcutAutoFit": { "message": "Auto-fit aspect ratio" },
-  "commentsTooltip": { "message": "Comments ($1)" },
-  "commentsClose": { "message": "Close comments" },
+  "shortcutStepBackward": {
+    "message": "Frame backward"
+  },
+  "shortcutStepForward": {
+    "message": "Frame forward"
+  },
+  "shortcutSlower": {
+    "message": "Decrease playback speed"
+  },
+  "shortcutFaster": {
+    "message": "Increase playback speed"
+  },
+  "shortcutRewind": {
+    "message": "Rewind"
+  },
+  "shortcutForward": {
+    "message": "Forward"
+  },
+  "shortcutVolumeUp": {
+    "message": "Volume +10"
+  },
+  "shortcutVolumeDown": {
+    "message": "Volume -10"
+  },
+  "shortcutAutoFit": {
+    "message": "Auto-fit aspect ratio"
+  },
+  "commentsTooltip": {
+    "message": "Comments ($1)"
+  },
+  "commentsClose": {
+    "message": "Close comments"
+  },
   "contentHandoffFailed": {
     "message": "Could not switch to PiP automatically. Press the PiP shortcut on this page to reopen it."
   },
-  "pipProgress": { "message": "Playback progress" },
-  "pipDanmakuInputOpen": { "message": "Open danmaku input" },
-  "pipDanmakuInputClose": { "message": "Close danmaku input" },
-  "pipChatMessage": { "message": "Chat message" },
-  "pipSend": { "message": "Send" },
-  "pipPlayVideo": { "message": "Play video" },
-  "pipPauseVideo": { "message": "Pause video" },
-  "pipNextEpisode": { "message": "Next video" },
-  "pipPlaylist": { "message": "Playlist" },
-  "pipPlaybackSpeed": { "message": "Playback speed $1" },
+  "pipProgress": {
+    "message": "Playback progress"
+  },
+  "pipDanmakuInputOpen": {
+    "message": "Open danmaku input"
+  },
+  "pipDanmakuInputClose": {
+    "message": "Close danmaku input"
+  },
+  "pipChatMessage": {
+    "message": "Chat message"
+  },
+  "pipSend": {
+    "message": "Send"
+  },
+  "pipPlayVideo": {
+    "message": "Play video"
+  },
+  "pipPauseVideo": {
+    "message": "Pause video"
+  },
+  "pipNextEpisode": {
+    "message": "Next video"
+  },
+  "pipPlaylist": {
+    "message": "Playlist"
+  },
+  "pipPlaybackSpeed": {
+    "message": "Playback speed $1"
+  },
   "pipCurrentTime": {
     "message": "Current time. Enter a value and press Enter to seek."
   },
-  "pipVolumeControl": { "message": "Volume control" },
-  "pipVolumeValue": { "message": "Volume value" },
-  "pipVolume": { "message": "Volume" },
-  "pipSpeed": { "message": "Playback speed" },
-  "pipTitle": { "message": "PiP Companion" },
-  "pipUnmute": { "message": "Unmute" },
-  "pipMute": { "message": "Mute" },
-  "pipCaptionsOn": { "message": "Captions: on" },
-  "pipCaptionsOff": { "message": "Captions: off" },
-  "pipCooldownSeconds": { "message": "$1 sec" },
-  "pipWaitToSend": { "message": "Please wait $1 seconds before sending." },
-  "pipEnterDanmaku": { "message": "Enter danmaku first." },
+  "pipVolumeControl": {
+    "message": "Volume control"
+  },
+  "pipVolumeValue": {
+    "message": "Volume value"
+  },
+  "pipVolume": {
+    "message": "Volume"
+  },
+  "pipSpeed": {
+    "message": "Playback speed"
+  },
+  "pipTitle": {
+    "message": "PiP Companion"
+  },
+  "pipUnmute": {
+    "message": "Unmute"
+  },
+  "pipMute": {
+    "message": "Mute"
+  },
+  "pipSubtitlesOn": {
+    "message": "Subtitles: on"
+  },
+  "pipSubtitlesOff": {
+    "message": "Subtitles: off"
+  },
+  "pipSubtitlesToggle": {
+    "message": "Show subtitles"
+  },
+  "pipSubtitleTrack": {
+    "message": "Primary subtitles"
+  },
+  "pipSubtitleTrackChoose": {
+    "message": "Select subtitle"
+  },
+  "pipSubtitleTrackNumber": {
+    "message": "Subtitle $1"
+  },
+  "pipCooldownSeconds": {
+    "message": "$1 sec"
+  },
+  "pipWaitToSend": {
+    "message": "Please wait $1 seconds before sending."
+  },
+  "pipEnterDanmaku": {
+    "message": "Enter danmaku first."
+  },
   "pipDanmakuTooLong": {
     "message": "Danmaku exceeds the platform limit ($1 characters)."
   },
-  "pipSendUnavailable": { "message": "Could not send. Check the chat status." },
-  "pipSendFailed": { "message": "Sending failed. Please try again later." },
-  "pipTimeInvalid": { "message": "Invalid time format" },
-  "playlistVideo": { "message": "Video $1" },
-  "playlistEpisode": { "message": "Episode $1" },
-  "youtubeChatFrameTitle": { "message": "YouTube chat message source" },
-  "pipSearchingTitle": { "message": "Searching for a video · PiP Companion" },
-  "pipSearching": { "message": "Searching for a video. Please wait…" },
-  "pipOpening": { "message": "PiP is opening." },
+  "pipSendUnavailable": {
+    "message": "Could not send. Check the chat status."
+  },
+  "pipSendFailed": {
+    "message": "Sending failed. Please try again later."
+  },
+  "pipTimeInvalid": {
+    "message": "Invalid time format"
+  },
+  "playlistVideo": {
+    "message": "Video $1"
+  },
+  "playlistEpisode": {
+    "message": "Episode $1"
+  },
+  "youtubeChatFrameTitle": {
+    "message": "YouTube chat message source"
+  },
+  "pipSearchingTitle": {
+    "message": "Searching for a video · PiP Companion"
+  },
+  "pipSearching": {
+    "message": "Searching for a video. Please wait…"
+  },
+  "pipOpening": {
+    "message": "PiP is opening."
+  },
   "pipCannotFocus": {
     "message": "Could not switch to PiP. Please try again."
   },
@@ -231,14 +489,126 @@
     "message": "No video found. Make sure the player has loaded, then try again."
   },
   "pipGestureRequired": {
-    "message": "The browser requires an action on the page. Close the menu and press your configured shortcut."
+    "message": "The browser requires an action on the page. Close the menu and press the shortcut you configured."
   },
   "pipCannotOpen": {
     "message": "PiP cannot be opened for this video right now. Please try again later."
   },
-  "screenshotSaved": { "message": "Screenshot saved" },
-  "screenshotCrossOrigin": { "message": "Cannot capture a cross-origin video" },
-  "screenshotFailed": { "message": "Screenshot failed" },
-  "screenshotTooltip": { "message": "Screenshot ($1)" },
-  "screenshot": { "message": "Screenshot" }
+  "screenshotSaved": {
+    "message": "Screenshot saved"
+  },
+  "screenshotCrossOrigin": {
+    "message": "Cannot capture a cross-origin video"
+  },
+  "screenshotFailed": {
+    "message": "Screenshot failed"
+  },
+  "screenshotTooltip": {
+    "message": "Screenshot ($1)"
+  },
+  "screenshot": {
+    "message": "Screenshot"
+  },
+  "popupSubtitleTranslation": {
+    "message": "Subtitle translation"
+  },
+  "subtitleTranslationProvider": {
+    "message": "Translation service"
+  },
+  "subtitleTranslationApiKey": {
+    "message": "API key"
+  },
+  "subtitleTranslationSetupHint": {
+    "message": "Add an API key, test and save. Then enable translation in PiP's subtitle menu."
+  },
+  "subtitleTranslationHelpLabel": {
+    "message": "Subtitle translation help"
+  },
+  "subtitleTranslationRegion": {
+    "message": "Azure resource region"
+  },
+  "subtitleTranslationSave": {
+    "message": "Save settings"
+  },
+  "subtitleTranslationRemoveKey": {
+    "message": "Remove current service key"
+  },
+  "subtitleTranslationGetKey": {
+    "message": "Get an API key"
+  },
+  "subtitleTranslationTest": {
+    "message": "Test connection"
+  },
+  "subtitleTranslationTesting": {
+    "message": "Testing connection…"
+  },
+  "subtitleTranslationTestSuccess": {
+    "message": "Connection successful."
+  },
+  "subtitleTranslationTestFailed": {
+    "message": "Connection failed. Check your settings or network connection."
+  },
+  "subtitleTranslationNoChange": {
+    "message": "No changes to save."
+  },
+  "subtitleTranslationSettingsSaved": {
+    "message": "Translation service settings saved."
+  },
+  "subtitleTranslationSettingsSaveFailed": {
+    "message": "Could not save translation service settings."
+  },
+  "pipTranslationSettings": {
+    "message": "Subtitle settings"
+  },
+  "pipTranslationSource": {
+    "message": "Translation source"
+  },
+  "pipTranslationSourceHelp": {
+    "message": "Translation services require an API key configured in Settings."
+  },
+  "pipTranslationNoService": {
+    "message": "Native subtitles"
+  },
+  "pipTranslationEnable": {
+    "message": "Second subtitle"
+  },
+  "pipTranslationDisplayMode": {
+    "message": "Display mode"
+  },
+  "pipTranslationOnly": {
+    "message": "Translation only"
+  },
+  "pipTranslationBilingual": {
+    "message": "Original and translation"
+  },
+  "pipTranslationLanguage": {
+    "message": "Target language"
+  },
+  "pipTranslationNoSecondaryTracks": {
+    "message": "PiP can't read other native subtitle tracks."
+  },
+  "pipTranslationChooseSecondaryTrack": {
+    "message": "Choose a second subtitle"
+  },
+  "pipTranslationOriginalAndSecondary": {
+    "message": "Bilingual"
+  },
+  "pipTranslationSecondaryOnly": {
+    "message": "Second subtitle only"
+  },
+  "pipTranslationPreferNative": {
+    "message": "Prefer native subtitles"
+  },
+  "pipTranslationRequestFailed": {
+    "message": "Translation failed. Toggle translation off and on to retry."
+  },
+  "pipTranslationSecondaryUnavailable": {
+    "message": "Couldn't load the selected subtitles. Try another track."
+  },
+  "pipTranslationLanguagesUnavailable": {
+    "message": "Couldn't load the language list. Using built-in options; reopen the panel to retry."
+  },
+  "pipTranslationServiceUnavailable": {
+    "message": "This translation service is not set up yet. Add an API key in the options page."
+  }
 }

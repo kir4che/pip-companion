@@ -50,6 +50,7 @@ function updateAllDanmakuVisibility(): void {
     bilibiliDanmakuController.checkAndBind(null);
   if (DANMAKU_IS_TWITCH || DANMAKU_IS_BAHAMUT || DANMAKU_IS_BILIBILI_LIVE)
     checkAndBindSiteDanmaku();
+  checkAndBindAdditionalBilibiliDanmaku(state.sourceVideo);
 }
 
 function toggleDanmaku(forceState?: boolean): boolean {
@@ -111,7 +112,18 @@ function getMainPlayer(): HTMLElement | null {
     }
     return null;
   }
-  return document.querySelector<HTMLElement>("#movie_player");
+  if (DANMAKU_IS_BILIBILI)
+    return document.querySelector<HTMLElement>(
+      "#bilibili-player, .bpx-player, .bilibili-player",
+    );
+  if (DANMAKU_IS_YOUTUBE)
+    return document.querySelector<HTMLElement>("#movie_player");
+  const video =
+    state.sourceVideo ?? globalThis.PipCompanion.ContentVideo.findVideo();
+  const player = video?.closest<HTMLElement>(
+    "video-js, .video-js, [data-uia='player'], .watch-video, #ani_video, .anime_video_area",
+  );
+  return player ?? video?.parentElement ?? null;
 }
 
 function ensureMainRenderer(): DanmakuRendererHandle | null {
@@ -138,7 +150,7 @@ function initDanmakuInPip(
   win: Window | null,
   video: HTMLVideoElement | null,
 ): void {
-  if (!DANMAKU_IS_SUPPORTED_SITE || !win || win.closed) return;
+  if (!win || win.closed) return;
   const screen =
     win.document.querySelector<HTMLElement>(".screen") || win.document.body;
   if (!screen) return;
@@ -201,6 +213,21 @@ const danmakuSourcesController =
     broadcast: broadcastDanmaku,
     clear: clearDanmaku,
   });
+const additionalBilibiliDanmakuController =
+  globalThis.PipCompanion.ContentAdditionalBilibiliDanmaku.create({
+    isVisible: isDanmakuVisible,
+    isSourceAvailable: (video) =>
+      !DANMAKU_IS_BAHAMUT &&
+      !(
+        DANMAKU_IS_BILIBILI_LIVE ||
+        (!(DANMAKU_IS_YOUTUBE || DANMAKU_IS_TWITCH) &&
+          (globalThis.PipCompanion.ContentPlayback?.isLiveStream?.(
+            video ?? state.sourceVideo,
+          ) ??
+            false))
+      ),
+    broadcast: broadcastDanmaku,
+  });
 const youtubeDanmakuController =
   globalThis.PipCompanion.ContentYouTubeDanmaku.create({
     lateToleranceSeconds: REPLAY_LATE_TOLERANCE_SECONDS,
@@ -223,74 +250,70 @@ function checkAndBindSiteDanmaku(): void {
   danmakuSourcesController.checkAndBind();
 }
 
-if (DANMAKU_IS_SUPPORTED_SITE) {
-  try {
-    if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
-      chrome.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName !== "local") return;
-        if (changes[DANMAKU_STYLE_STORAGE_KEY]) {
-          if (!danmakuSettingsLoaded) danmakuStyleChangedDuringLoad = true;
-          danmakuStyle = globalThis.PipCompanion.danmakuSettings.normalize(
-            changes[DANMAKU_STYLE_STORAGE_KEY].newValue,
-          );
-          updateAllDanmakuStyles();
-        }
-        if (changes[DANMAKU_STORAGE_KEY]) {
-          if (!danmakuSettingsLoaded) danmakuEnabledChangedDuringLoad = true;
-          const change = changes[DANMAKU_STORAGE_KEY];
-          const val =
-            change && typeof change === "object" && "newValue" in change
-              ? change.newValue
-              : change;
-          danmakuEnabled = val === undefined ? true : Boolean(val);
-          updateAllDanmakuVisibility();
-        }
-        if (changes[DANMAKU_VISIBILITY_STORAGE_KEY]) {
-          if (!danmakuSettingsLoaded) danmakuVisibilityChangedDuringLoad = true;
-          const change = changes[DANMAKU_VISIBILITY_STORAGE_KEY];
-          const val =
-            change && typeof change === "object" && "newValue" in change
-              ? change.newValue
-              : change;
-          danmakuVisible = val === undefined ? true : Boolean(val);
-          updateAllDanmakuVisibility();
-        }
-      });
-    }
+function checkAndBindAdditionalBilibiliDanmaku(
+  video: HTMLVideoElement | null,
+): void {
+  additionalBilibiliDanmakuController.checkAndBind(video);
+}
 
-    chrome.storage.local.get(
-      [
-        DANMAKU_STORAGE_KEY,
-        DANMAKU_VISIBILITY_STORAGE_KEY,
-        DANMAKU_STYLE_STORAGE_KEY,
-      ],
-      (result) => {
-        if (!danmakuEnabledChangedDuringLoad) {
-          const storedValue = result?.[DANMAKU_STORAGE_KEY];
-          danmakuEnabled =
-            storedValue === undefined ? true : Boolean(storedValue);
-        }
-        if (!danmakuVisibilityChangedDuringLoad) {
-          const storedVisibility = result?.[DANMAKU_VISIBILITY_STORAGE_KEY];
-          danmakuVisible =
-            storedVisibility === undefined ? true : Boolean(storedVisibility);
-        }
-        if (!danmakuStyleChangedDuringLoad)
-          danmakuStyle = globalThis.PipCompanion.danmakuSettings.normalize(
-            result?.[DANMAKU_STYLE_STORAGE_KEY],
-          );
-        danmakuSettingsLoaded = true;
+try {
+  if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "local") return;
+      if (changes[DANMAKU_STYLE_STORAGE_KEY]) {
+        if (!danmakuSettingsLoaded) danmakuStyleChangedDuringLoad = true;
+        danmakuStyle = globalThis.PipCompanion.danmakuSettings.normalize(
+          changes[DANMAKU_STYLE_STORAGE_KEY].newValue,
+        );
         updateAllDanmakuStyles();
+      }
+      if (changes[DANMAKU_STORAGE_KEY]) {
+        if (!danmakuSettingsLoaded) danmakuEnabledChangedDuringLoad = true;
+        const val = changes[DANMAKU_STORAGE_KEY].newValue;
+        danmakuEnabled = val === undefined ? true : Boolean(val);
         updateAllDanmakuVisibility();
-      },
-    );
-  } catch {
-    danmakuEnabled = true;
-    danmakuVisible = true;
-    danmakuSettingsLoaded = true;
-    updateAllDanmakuStyles();
-    updateAllDanmakuVisibility();
+      }
+      if (changes[DANMAKU_VISIBILITY_STORAGE_KEY]) {
+        if (!danmakuSettingsLoaded) danmakuVisibilityChangedDuringLoad = true;
+        const val = changes[DANMAKU_VISIBILITY_STORAGE_KEY].newValue;
+        danmakuVisible = val === undefined ? true : Boolean(val);
+        updateAllDanmakuVisibility();
+      }
+    });
   }
+
+  chrome.storage.local.get(
+    [
+      DANMAKU_STORAGE_KEY,
+      DANMAKU_VISIBILITY_STORAGE_KEY,
+      DANMAKU_STYLE_STORAGE_KEY,
+    ],
+    (result) => {
+      if (!danmakuEnabledChangedDuringLoad) {
+        const storedValue = result?.[DANMAKU_STORAGE_KEY];
+        danmakuEnabled =
+          storedValue === undefined ? true : Boolean(storedValue);
+      }
+      if (!danmakuVisibilityChangedDuringLoad) {
+        const storedVisibility = result?.[DANMAKU_VISIBILITY_STORAGE_KEY];
+        danmakuVisible =
+          storedVisibility === undefined ? true : Boolean(storedVisibility);
+      }
+      if (!danmakuStyleChangedDuringLoad)
+        danmakuStyle = globalThis.PipCompanion.danmakuSettings.normalize(
+          result?.[DANMAKU_STYLE_STORAGE_KEY],
+        );
+      danmakuSettingsLoaded = true;
+      updateAllDanmakuStyles();
+      updateAllDanmakuVisibility();
+    },
+  );
+} catch {
+  danmakuEnabled = true;
+  danmakuVisible = true;
+  danmakuSettingsLoaded = true;
+  updateAllDanmakuStyles();
+  updateAllDanmakuVisibility();
 }
 
 Object.assign(globalThis, {

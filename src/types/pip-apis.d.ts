@@ -90,7 +90,27 @@ interface PipUiActions {
   showVolumeFeedback(): void;
   showFrameStepIcon(backward: boolean): void;
   getVolumePercent(): number;
-  toggleCaptions(): void;
+  toggleSubtitles(): void;
+  getSubtitlesEnabled(): boolean;
+  isSubtitleTranslationSuspended(): boolean;
+  resumeSubtitleTranslation(): void;
+  hasSubtitleSource(): boolean;
+  getSubtitleTracks(): SubtitleTrackOption[];
+  selectSubtitleTrack(id: string): void;
+  getSecondarySubtitleTracks(): SubtitleTrackOption[];
+  getSelectedSecondarySubtitleTrack(): string;
+  selectSecondarySubtitleTrack(id: string): void;
+  getSubtitleTranslationPreferences(): SubtitleTranslationPreferences;
+  getSubtitleTranslationLanguages(): Promise<
+    SubtitleTranslationLanguageOption[]
+  >;
+  getSubtitleTranslationServices(): Promise<SubtitleTranslationServices | null>;
+  setSubtitleTranslationProvider(
+    provider: SubtitleTranslationProvider,
+  ): Promise<boolean>;
+  setSubtitleTranslationPreferences(
+    preferences: SubtitleTranslationPreferences,
+  ): void;
   toggleComments(): void;
   toggleDanmaku(): void;
   canSendDanmaku: boolean;
@@ -141,10 +161,15 @@ interface PipUiHandle {
   readonly timeTooltip: HTMLElement;
   readonly timeTooltipThumb: HTMLElement;
   readonly timeTooltipText: HTMLElement;
+  dispose(): void;
   refreshLocale(): void;
   refreshShortcuts(): void;
   setDanmakuEnabled(enabled: boolean): void;
   setThumbnailPreviewEnabled(enabled: boolean): void;
+  refreshSubtitleTracks(): void;
+  refreshSubtitleTranslationPreferences(): void;
+  refreshSubtitleTranslationLanguages(): void;
+  refreshSubtitleTranslationServices(): void;
 }
 
 interface PipUiApi {
@@ -164,12 +189,57 @@ interface DanmakuSettingsApi {
   normalize(value: unknown): DanmakuStyleSettings;
 }
 
-interface CaptionSettingsApi {
+interface SubtitleSettingsApi {
   STORAGE_KEY: string;
-  FONT_FAMILIES: Record<CaptionFontFamily, string>;
-  DEFAULTS: CaptionStyleSettings;
-  normalize(value: unknown): CaptionStyleSettings;
-  apply(element: HTMLElement, settings: CaptionStyleSettings): void;
+  SECONDARY_STORAGE_KEY: string;
+  LAYOUT_STORAGE_KEY: string;
+  FONT_FAMILIES: Record<SubtitleFontFamily, string>;
+  DEFAULTS: SubtitleStyleSettings;
+  SECONDARY_DEFAULTS: SubtitleStyleSettings;
+  LAYOUT_DEFAULTS: SubtitleLayoutSettings;
+  normalize(
+    value: unknown,
+    defaults?: SubtitleStyleSettings,
+  ): SubtitleStyleSettings;
+  normalizeLayout(value: unknown): SubtitleLayoutSettings;
+  scrubOrphanedStyleFields(
+    stored: unknown,
+    normalized: SubtitleStyleSettings,
+  ): { style: SubtitleStyleSettings; changed: boolean };
+  applyLayout(element: HTMLElement, settings: SubtitleLayoutSettings): void;
+  apply(element: HTMLElement, settings: SubtitleStyleSettings): void;
+}
+
+type SubtitleTranslationProvider = "microsoft" | "google" | "deepl";
+interface SubtitleTranslationServiceOption {
+  provider: SubtitleTranslationProvider;
+  configured: boolean;
+}
+interface SubtitleTranslationServices {
+  provider: SubtitleTranslationProvider;
+  services: SubtitleTranslationServiceOption[];
+}
+type SubtitleTranslationLanguage = string;
+interface SubtitleTranslationLanguageOption {
+  code: SubtitleTranslationLanguage;
+  label: string;
+}
+
+type SubtitleTranslationMode = "translation-only" | "bilingual";
+interface SubtitleTranslationPreferences {
+  enabled: boolean;
+  mode: SubtitleTranslationMode;
+  targetLanguage: SubtitleTranslationLanguage;
+  preferNative: boolean;
+  useNativeSecondaryTrack: boolean;
+}
+interface SubtitleTranslationSettingsApi {
+  PREFERENCES_KEY: string;
+  CONFIG_KEY: string;
+  LANGUAGES: readonly SubtitleTranslationLanguage[];
+  DEFAULT_PREFERENCES: SubtitleTranslationPreferences;
+  normalizePreferences(value: unknown): SubtitleTranslationPreferences;
+  getLanguageLabel(code: SubtitleTranslationLanguage): string;
 }
 
 interface BilibiliDanmakuRenderer {
@@ -217,6 +287,7 @@ interface PipCompanionUtil {
   SEEK_SECONDS_OPTIONS: readonly SeekSeconds[];
   normalizeSeekSeconds(value: unknown): SeekSeconds;
   isRecord(value: unknown): value is Record<string, unknown>;
+  isValidAdditionalDanmakuSourceUrl(value: string): boolean;
   isExtensionMessage(value: unknown): value is ExtensionMessage;
   normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut;
   hasMetaModifier(e: KeyboardEvent): boolean;
@@ -229,7 +300,7 @@ interface PipCompanionUtil {
 
 interface ContentPlatformCapabilities {
   id: "youtube" | "bilibili" | "twitch" | "bahamut" | "generic";
-  captions: boolean;
+  subtitless: boolean;
   danmakuDisplay: boolean;
   danmakuSend: boolean;
   screenshot: boolean;
@@ -244,14 +315,75 @@ interface ContentVideoApi {
   findVideo(includeDeep?: boolean): HTMLVideoElement | null;
 }
 
-interface ContentCaptionsApi {
-  initializeCaptionsOn(): void;
-  prepareNativeCaptions(): void;
+interface SubtitleTranslationRuntime {
+  onConfigChanged(previous: unknown, next: unknown): void;
+  onPreferencesChanged(
+    previous: SubtitleTranslationPreferences | null,
+    next: SubtitleTranslationPreferences,
+  ): void;
+  onSubtitlesEnabledChanged(enabled: boolean): void;
+  getRenderedSubtitleLines(sourceLines: SubtitleLine[]): RenderedSubtitleLine[];
+}
+
+interface SubtitleTranslationApi {
+  create(options: {
+    getPreferences(): SubtitleTranslationPreferences;
+    isSubtitlesEnabled(): boolean;
+    isSubtitleTranslationSuspended(): boolean;
+    isNativeSecondaryActive(): boolean;
+    getNativeSecondaryLines(): SubtitleLine[];
+    hasSupportedTrack(): boolean;
+    prefersNativeSubtitle(targetLanguage: string): boolean;
+    getPreferNativeSecondaryLines(
+      targetLanguage: string,
+    ): SubtitleLine[] | null;
+    showFeedback(message: string): void;
+    render(): void;
+  }): SubtitleTranslationRuntime;
+}
+
+interface NativeSecondarySubtitleTrackController {
+  setVideo(video: HTMLVideoElement | null): void;
+  getTrack(): TextTrack | null;
+  hasTrack(): boolean;
+  select(track: TextTrack, primary: TextTrack | null): boolean;
+  activate(): void;
+  clear(disable?: boolean): void;
+  getLines(currentTime: number): SubtitleLine[];
+}
+
+interface NativeSecondarySubtitleTrackApi {
+  create(options: {
+    rememberMode(track: TextTrack): void;
+    onChange(): void;
+  }): NativeSecondarySubtitleTrackController;
+}
+
+interface ContentSubtitlesApi {
+  initializeSubtitlesOn(): void;
+  setNativeSubtitleVideo(video: HTMLVideoElement | null): void;
+  onTranslationPreferencesChanged(
+    previous: SubtitleTranslationPreferences | null,
+    next: SubtitleTranslationPreferences,
+  ): void;
+  onTranslationConfigChanged(previous: unknown, next: unknown): void;
+  setSubtitleEnabledOverride(enabled: boolean, nativeControl?: boolean): void;
+  setSubtitlesEnabledFromPipShortcut(enabled: boolean): void;
+  cancelSubtitleInitialization(): void;
+  isSubtitleTranslationSuspended(): boolean;
+  resumeSubtitleTranslation(): void;
+  hasSubtitleSource(): boolean;
+  getNativeSubtitleTracks(): SubtitleTrackOption[];
+  selectNativeSubtitleTrack(id: string): void;
+  getSecondarySubtitleTracks(): SubtitleTrackOption[];
+  getSelectedSecondarySubtitleTrack(): string;
+  selectSecondarySubtitleTrack(id: string): void;
+  prepareNativeSubtitles(): void;
   refreshSubtitle(force?: boolean): void;
-  restoreNativeCaptionModes(): void;
-  syncNativeCaptions(): void;
+  restoreNativeSubtitleModes(): void;
+  syncNativeSubtitles(): void;
   renderSubtitle(): void;
-  suppressNativeCaptions(): void;
+  suppressNativeSubtitles(): void;
 }
 
 interface ContentFeedbackApi {
@@ -277,7 +409,7 @@ interface ContentPlaybackApi {
   adjustPlaybackRate(direction: number): void;
   togglePlaybackRate(): void;
   toggleMute(): void;
-  toggleCaptions(): void;
+  toggleSubtitles(): void;
   toggleDanmakuFromShortcut(): void;
   isLiveStream(video: HTMLVideoElement | null): boolean;
   resizePipWindow(
@@ -340,6 +472,7 @@ interface PipCompanionSiteUtils {
   isTwitchHost(hostname: string): boolean;
   isBahamutHost(hostname: string): boolean;
   isNetflixHost(hostname: string): boolean;
+  isHahowHost(hostname: string): boolean;
   isGamerHost(hostname: string): boolean;
   parseYouTubeVideoId(href: string): string | null;
   parseBilibiliVideoPath(pathname: string): BilibiliVideoPath | null;
@@ -349,13 +482,30 @@ interface LocaleMessage {
   message: string;
 }
 
+interface CustomSelectApi {
+  enhance(select: HTMLSelectElement): void;
+  enhanceAll(root?: ParentNode): void;
+  containsTarget(
+    select: HTMLSelectElement,
+    target: EventTarget | null,
+  ): boolean;
+  closeForSelect(select: HTMLSelectElement): void;
+  disposeForSelect(select: HTMLSelectElement): void;
+  isOpenForTarget(target: EventTarget | null): boolean;
+}
+
 interface PipCompanionGlobal {
   locales: Record<"en" | "zh_TW" | "zh_CN", Record<string, LocaleMessage>>;
+  customSelect: CustomSelectApi;
   PipAudio: PipAudioApi;
   PipUI: PipUiApi;
   ContentVideo: ContentVideoApi;
   ContentPlatform: ContentPlatformApi;
-  ContentCaptions: ContentCaptionsApi;
+  ContentSubtitles: ContentSubtitlesApi;
+  BilibiliSubtitles: typeof bilibiliSubtitles;
+  NativeSecondarySubtitleTrack: NativeSecondarySubtitleTrackApi;
+  standardTextTrack: StandardTextTrackProvider;
+  SubtitleTranslation: SubtitleTranslationApi;
   ContentFeedback: ContentFeedbackApi;
   ContentPlayback: ContentPlaybackApi;
   ContentPlaylist: ContentPlaylistApi;
@@ -363,6 +513,7 @@ interface PipCompanionGlobal {
   ContentScreenshot: ContentScreenshotApi;
   ContentPipLifecycle: ContentPipLifecycleApi;
   ContentBilibiliDanmaku: ContentBilibiliDanmakuApi;
+  ContentAdditionalBilibiliDanmaku: ContentAdditionalBilibiliDanmakuApi;
   ContentBahamutDanmakuSender: ContentBahamutDanmakuSenderApi;
   ContentBilibiliDanmakuSender: ContentBilibiliDanmakuSenderApi;
   ContentYouTubeDanmakuSender: ContentYouTubeDanmakuSenderApi;
@@ -372,7 +523,8 @@ interface PipCompanionGlobal {
   ContentYouTubeDanmaku: ContentYouTubeDanmakuApi;
   bilibiliDanmakuConfig: BilibiliDanmakuConfigApi;
   danmakuSettings: DanmakuSettingsApi;
-  captionSettings: CaptionSettingsApi;
+  subtitleSettings: SubtitleSettingsApi;
+  subtitleTranslationSettings: SubtitleTranslationSettingsApi;
   site: PipCompanionSiteUtils;
   util: PipCompanionUtil;
 }

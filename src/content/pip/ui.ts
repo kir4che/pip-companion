@@ -27,6 +27,25 @@ globalThis.PipCompanion.PipUI = (() => {
         box-sizing: border-box;
         -webkit-user-select: none;
         user-select: none;
+        scrollbar-color: #ffffff55 transparent;
+        scrollbar-width: thin;
+      }
+      *::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      *::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      *::-webkit-scrollbar-thumb {
+        border: 1px solid transparent;
+        border-radius: 999px;
+        background: #ffffff55;
+        background-clip: padding-box;
+      }
+      *::-webkit-scrollbar-thumb:hover {
+        background: #ffffff88;
+        background-clip: padding-box;
       }
       input[type="text"] {
         -webkit-user-select: text;
@@ -463,8 +482,6 @@ globalThis.PipCompanion.PipUI = (() => {
         background: #171719;
         box-shadow: 0 12px 32px #000b;
         color: #f4f4f5;
-        scrollbar-color: #ffffff38 transparent;
-        scrollbar-width: thin;
       }
       .custom-select-option {
         display: block;
@@ -522,24 +539,6 @@ globalThis.PipCompanion.PipUI = (() => {
         border-radius: 10px;
         background: #111f;
         box-shadow: 0 8px 28px #000b;
-        scrollbar-width: thin;
-        scrollbar-color: #ffffff55 transparent;
-      }
-      .playlist-panel::-webkit-scrollbar {
-        width: 6px;
-      }
-      .playlist-panel::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      .playlist-panel::-webkit-scrollbar-thumb {
-        border: 1px solid transparent;
-        border-radius: 999px;
-        background: #ffffff55;
-        background-clip: padding-box;
-      }
-      .playlist-panel::-webkit-scrollbar-thumb:hover {
-        background: #ffffff88;
-        background-clip: padding-box;
       }
       .subtitle-translation-panel {
         position: absolute;
@@ -1014,6 +1013,7 @@ globalThis.PipCompanion.PipUI = (() => {
     const translationButton = doc.createElement("button");
     translationButton.type = "button";
     translationButton.className = "translation-button";
+    translationButton.hidden = true;
     translationButton.setAttribute("aria-expanded", "false");
     translationButton.setAttribute("aria-haspopup", "true");
     const translationIcon = doc.createElementNS(
@@ -1056,13 +1056,13 @@ globalThis.PipCompanion.PipUI = (() => {
     translationServiceHintIcon.textContent = "?";
     translationServiceHintIcon.setAttribute(
       "data-tip",
-      t("pipTranslationServiceUnavailable"),
+      t("pipTranslationSourceHelp"),
     );
     translationServiceHintIcon.tabIndex = 0;
     translationServiceHintIcon.setAttribute("role", "img");
     translationServiceHintIcon.setAttribute(
       "aria-label",
-      t("pipTranslationServiceUnavailable"),
+      t("pipTranslationSourceHelp"),
     );
     const translationServiceHintTooltip = doc.createElement("div");
     translationServiceHintTooltip.id = "pip-subtitle-translation-hint";
@@ -1070,9 +1070,7 @@ globalThis.PipCompanion.PipUI = (() => {
       "subtitle-translation-hint-tooltip";
     translationServiceHintTooltip.setAttribute("role", "tooltip");
     translationServiceHintTooltip.hidden = true;
-    translationServiceHintTooltip.textContent = t(
-      "pipTranslationServiceUnavailable",
-    );
+    translationServiceHintTooltip.textContent = t("pipTranslationSourceHelp");
     translationServiceHintIcon.setAttribute(
       "aria-describedby",
       translationServiceHintTooltip.id,
@@ -1171,8 +1169,8 @@ globalThis.PipCompanion.PipUI = (() => {
     preferNative.setAttribute("aria-label", t("pipTranslationPreferNative"));
     preferNativeRow.append(preferNativeText, preferNative);
     translationPanel.append(
-      subtitlePrimaryRow,
       subtitlesEnabledRow,
+      subtitlePrimaryRow,
       translationEnabledRow,
       translationServiceRow,
       translationLanguageRow,
@@ -1333,13 +1331,19 @@ globalThis.PipCompanion.PipUI = (() => {
       const tracks = actions.getSubtitleTracks();
       if (actions.getSubtitleTranslationPreferences().useNativeSecondaryTrack)
         refreshSubtitleTranslationPreferences();
-      translationButton.hidden = tracks.length === 0;
+      const hasSubtitleSource = actions.hasSubtitleSource();
+      translationButton.hidden = !hasSubtitleSource;
       if (translationButton.hidden) {
         translationPanel.hidden = true;
         translationButton.setAttribute("aria-expanded", "false");
       }
-      subtitlePrimaryRow.hidden = tracks.length < 2;
-      if (subtitlePrimaryRow.hidden) return;
+      subtitlePrimaryRow.hidden = tracks.length === 0;
+      subtitlePrimaryTrack.disabled = tracks.length < 2;
+      if (subtitlePrimaryRow.hidden) {
+        subtitlePrimaryTrack.replaceChildren();
+        subtitlePrimaryTrack.dataset.signature = "";
+        return;
+      }
       const signature = [t("pipSubtitleTrackChoose")]
         .concat(
           tracks.map((track) => `${track.id}:${track.label}:${track.selected}`),
@@ -1348,7 +1352,7 @@ globalThis.PipCompanion.PipUI = (() => {
       if (subtitlePrimaryTrack.dataset.signature === signature) return;
       subtitlePrimaryTrack.dataset.signature = signature;
       subtitlePrimaryTrack.replaceChildren();
-      if (!tracks.some((track) => track.selected)) {
+      if (tracks.length > 1 && !tracks.some((track) => track.selected)) {
         const placeholder = doc.createElement("option");
         placeholder.value = "";
         placeholder.textContent = t("pipSubtitleTrackChoose");
@@ -1359,7 +1363,7 @@ globalThis.PipCompanion.PipUI = (() => {
         const option = doc.createElement("option");
         option.value = track.id;
         option.textContent = track.label;
-        option.selected = track.selected;
+        option.selected = track.selected || tracks.length === 1;
         subtitlePrimaryTrack.append(option);
       }
     };
@@ -1441,24 +1445,25 @@ globalThis.PipCompanion.PipUI = (() => {
       }
       void actions.getSubtitleTranslationServices().then((result) => {
         if (requestId !== translationServicesRequestId) return;
-        activeTranslationServiceConfigured = false;
-        for (const option of Array.from(translationService.options)) {
-          if (option.value === "none") {
-            option.disabled = false;
-            continue;
+        if (result) {
+          activeTranslationServiceConfigured = false;
+          for (const option of Array.from(translationService.options)) {
+            if (option.value === "none") {
+              option.disabled = false;
+              continue;
+            }
+            const service = result.services.find(
+              (item) => item.provider === option.value,
+            );
+            option.disabled = service?.configured !== true;
+            if (result.provider === option.value)
+              activeTranslationServiceConfigured = service?.configured === true;
           }
-          const service = result?.services.find(
-            (item) => item.provider === option.value,
-          );
-          option.disabled = service?.configured !== true;
-          if (result?.provider === option.value)
-            activeTranslationServiceConfigured = service?.configured === true;
-        }
-        if (result)
           translationService.value = actions.getSubtitleTranslationPreferences()
             .useNativeSecondaryTrack
             ? "none"
             : result.provider;
+        }
         translationService.disabled = false;
         refreshSubtitleTranslationPreferences();
       });
@@ -1476,7 +1481,8 @@ globalThis.PipCompanion.PipUI = (() => {
       const canUseSelectedSource = preferences.useNativeSecondaryTrack
         ? hasNativeSecondaryTracks
         : activeTranslationServiceConfigured;
-      translationEnabled.checked = preferences.enabled;
+      translationEnabled.checked =
+        preferences.enabled && !actions.isSubtitleTranslationSuspended();
       subtitlesEnabled.checked = subtitlesEnabledValue;
       translationMode.value = preferences.mode;
       if (!preferences.useNativeSecondaryTrack)
@@ -1494,25 +1500,25 @@ globalThis.PipCompanion.PipUI = (() => {
           : "pipTranslationOnly",
       );
       translationLanguageText.textContent = t("pipTranslationLanguage");
-      preferNativeRow.hidden =
-        !preferences.enabled || preferences.useNativeSecondaryTrack;
-      translationLanguageRow.hidden = !preferences.enabled;
-      translationModeRow.hidden = !preferences.enabled;
+      preferNativeRow.hidden = preferences.useNativeSecondaryTrack;
+      translationLanguageRow.hidden = false;
+      translationModeRow.hidden = false;
       translationEnabled.disabled =
         !subtitlesEnabledValue || !canUseSelectedSource;
       subtitlesEnabled.disabled = false;
       translationMode.disabled =
-        !subtitlesEnabledValue || !preferences.enabled || !canUseSelectedSource;
+        !subtitlesEnabledValue || !canUseSelectedSource;
       translationLanguage.disabled =
-        !subtitlesEnabledValue || !preferences.enabled || !canUseSelectedSource;
+        !subtitlesEnabledValue || !canUseSelectedSource;
       preferNative.disabled =
         !subtitlesEnabledValue ||
-        !preferences.enabled ||
         preferences.useNativeSecondaryTrack ||
         !canUseSelectedSource;
       translationButton.setAttribute(
         "aria-pressed",
-        String(preferences.enabled),
+        String(
+          preferences.enabled && !actions.isSubtitleTranslationSuspended(),
+        ),
       );
     };
     const positionTranslationServiceHintTooltip = () => {
@@ -1584,10 +1590,7 @@ globalThis.PipCompanion.PipUI = (() => {
         return;
       void actions.getSubtitleTranslationLanguages().then((languages) => {
         if (requestId !== translationLanguageRequestId) return;
-        if (!languages.length) {
-          actions.showFeedback(t("pipTranslationLanguagesUnavailable"));
-          return;
-        }
+        if (!languages.length) return;
         subtitleTranslationLanguages = languages;
         refreshTranslationLanguageOptions();
       });
@@ -1624,6 +1627,7 @@ globalThis.PipCompanion.PipUI = (() => {
       const provider = translationService.value as SubtitleTranslationProvider;
       translationService.disabled = true;
       void actions.setSubtitleTranslationProvider(provider).then((saved) => {
+        activeTranslationServiceConfigured = saved;
         if (!saved) actions.showFeedback(t("pipTranslationServiceUnavailable"));
         else {
           // 切到機器翻譯時，把已選原生軌的語言帶成目標語言，帶不過去才保留原值。
@@ -1649,11 +1653,11 @@ globalThis.PipCompanion.PipUI = (() => {
       });
     });
     translationEnabled.addEventListener("change", () => {
-      saveSubtitleTranslationPreferences({
-        enabled: translationEnabled.checked,
-      });
+      const enabled = translationEnabled.checked;
+      if (enabled) actions.resumeSubtitleTranslation();
+      saveSubtitleTranslationPreferences({ enabled });
       if (
-        translationEnabled.checked &&
+        enabled &&
         !actions.getSubtitleTranslationPreferences().useNativeSecondaryTrack
       )
         refreshAvailableTranslationLanguages();
@@ -1808,14 +1812,12 @@ globalThis.PipCompanion.PipUI = (() => {
       translationServiceLabel.textContent = t("pipTranslationSource");
       translationServiceHintIcon.setAttribute(
         "data-tip",
-        t("pipTranslationServiceUnavailable"),
+        t("pipTranslationSourceHelp"),
       );
-      translationServiceHintTooltip.textContent = t(
-        "pipTranslationServiceUnavailable",
-      );
+      translationServiceHintTooltip.textContent = t("pipTranslationSourceHelp");
       translationServiceHintIcon.setAttribute(
         "aria-label",
-        t("pipTranslationServiceUnavailable"),
+        t("pipTranslationSourceHelp"),
       );
       translationService.setAttribute("aria-label", t("pipTranslationSource"));
       nativeSubtitleOption.textContent = t("pipTranslationNoService");
@@ -1878,6 +1880,10 @@ globalThis.PipCompanion.PipUI = (() => {
       timeTooltip,
       timeTooltipThumb,
       timeTooltipText,
+      dispose: () => {
+        for (const select of pipSelects)
+          globalThis.PipCompanion.customSelect.disposeForSelect(select);
+      },
       refreshLocale,
       refreshShortcuts,
       refreshSubtitleTranslationPreferences,

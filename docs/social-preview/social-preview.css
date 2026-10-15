@@ -458,7 +458,7 @@ h1 span {
   content: "";
 }
 
-.pip-caption {
+.pip-subtitle {
   position: absolute;
   z-index: 1;
   right: 5px;

@@ -446,7 +446,7 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
     ): void {
       if (response.legacyFallback)
         console.warn(
-          "[Caption PiP] This long Bilibili video uses the legacy XML danmaku fallback; coverage may be incomplete.",
+          "[Subtitle PiP] This long Bilibili video uses the legacy XML danmaku fallback; coverage may be incomplete.",
         );
       if (Array.isArray(response.unavailableSegments)) {
         const otherUnavailable = response.unavailableSegments.filter(
@@ -457,13 +457,13 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
             .map(({ segment, status }) => `#${segment} HTTP ${status}`)
             .join(", ");
           console.warn(
-            `[Caption PiP] Bilibili danmaku segments still unavailable: ${unavailable}.`,
+            `[Subtitle PiP] Bilibili danmaku segments still unavailable: ${unavailable}.`,
           );
         }
       }
       if (response.fallbackError)
         console.warn(
-          "[Caption PiP] Legacy Bilibili danmaku fallback failed:",
+          "[Subtitle PiP] Legacy Bilibili danmaku fallback failed:",
           response.fallbackError,
         );
     }
@@ -565,7 +565,7 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
             } else processBilibiliDanmaku(playbackVideo);
           }
         })
-        .catch((error) => {
+        .catch(() => {
           if (
             requestGeneration !== bilibiliRequestGeneration ||
             identity.key !== bilibiliPageKey
@@ -576,10 +576,6 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
           for (let segment = requestStart; segment <= requestEnd; segment++) {
             bilibiliSegmentRetryAt.set(segment, retryAt);
           }
-          console.warn(
-            "[Caption PiP] Could not load Bilibili danmaku segment:",
-            error,
-          );
         })
         .finally(() => {
           if (requestGeneration !== bilibiliRequestGeneration) return;

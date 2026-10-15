@@ -28,7 +28,9 @@ const {
   normalizeShortcut,
   matchesShortcut,
 } = globalThis.PipCompanion.util;
-const captionSettings = globalThis.PipCompanion.captionSettings;
+const subtitleSettings = globalThis.PipCompanion.subtitleSettings;
+const subtitleTranslationSettings =
+  globalThis.PipCompanion.subtitleTranslationSettings;
 let pipHandoffRetryAfter = 0;
 const PIP_HANDOFF_RETRY_DELAY_MS = 1500;
 let pipSourceRecoveryStartedAt = 0;
@@ -46,8 +48,8 @@ const state: State = {
   sourceVideo: null,
   sourceAbort: null,
   videoStash: null,
-  nativeCaptionTracks: null,
-  youtubeCaptionsInitiallyEnabled: null,
+  nativeSubtitleTracks: null,
+  youtubeSubtitlesInitiallyEnabled: null,
   pipSession: { phase: "closed" },
   get pipWindow() {
     const session = this.pipSession;
@@ -62,17 +64,21 @@ const state: State = {
   globalPipOpen: false,
   globalPipSourcePlaying: true,
   pipHandoffPending: false,
-  captionNode: null,
-  captionExtract: null,
-  captionObserver: null,
-  captionLines: [],
-  captionStyle: { ...captionSettings.DEFAULTS },
-  captionsOn: true,
+  subtitleNode: null,
+  subtitleExtract: null,
+  subtitleObserver: null,
+  subtitleLines: [],
+  subtitleStyle: { ...subtitleSettings.DEFAULTS },
+  secondarySubtitleStyle: { ...subtitleSettings.SECONDARY_DEFAULTS },
+  subtitleLayout: { ...subtitleSettings.LAYOUT_DEFAULTS },
+  subtitleTranslationPreferences: {
+    ...subtitleTranslationSettings.DEFAULT_PREFERENCES,
+  },
+  subtitlessOn: false,
   feedbackTimer: 0,
   lastDeepScan: 0,
   deepVideoCache: null,
-  lastCaptionScan: 0,
-  captionEmptyCount: 0,
+  lastSubtitleScan: 0,
   pageToastEl: null,
   pageToastTimer: 0,
   nextControlCacheAt: 0,
@@ -84,7 +90,10 @@ const state: State = {
   nextVideoSourceKey: "",
   scanTimer: 0,
 };
-let captionStyleRevision = 0;
+let subtitleStyleRevision = 0;
+let secondarySubtitleStyleRevision = 0;
+let subtitleLayoutRevision = 0;
+let subtitleTranslationRevision = 0;
 
 void loadSettings();
 chrome.storage.onChanged.addListener((changes, areaName) => {
@@ -129,18 +138,67 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes.seekSeconds)
     state.seekSeconds = normalizeSeekSeconds(changes.seekSeconds.newValue);
-  const captionStyleChange = changes[captionSettings.STORAGE_KEY];
-  if (captionStyleChange) {
-    captionStyleRevision++;
-    state.captionStyle = captionSettings.normalize(captionStyleChange.newValue);
-    globalThis.PipCompanion.ContentCaptions.renderSubtitle();
+  const subtitleStyleChange = changes[subtitleSettings.STORAGE_KEY];
+  if (subtitleStyleChange) {
+    subtitleStyleRevision++;
+    state.subtitleStyle = subtitleSettings.normalize(
+      subtitleStyleChange.newValue,
+    );
+    globalThis.PipCompanion.ContentSubtitles.renderSubtitle();
+  }
+  const secondarySubtitleStyleChange =
+    changes[subtitleSettings.SECONDARY_STORAGE_KEY];
+  if (secondarySubtitleStyleChange) {
+    secondarySubtitleStyleRevision++;
+    state.secondarySubtitleStyle = subtitleSettings.normalize(
+      secondarySubtitleStyleChange.newValue,
+      subtitleSettings.SECONDARY_DEFAULTS,
+    );
+    globalThis.PipCompanion.ContentSubtitles.renderSubtitle();
+  }
+  const subtitleLayoutChange = changes[subtitleSettings.LAYOUT_STORAGE_KEY];
+  if (subtitleLayoutChange) {
+    subtitleLayoutRevision++;
+    state.subtitleLayout = subtitleSettings.normalizeLayout(
+      subtitleLayoutChange.newValue,
+    );
+    globalThis.PipCompanion.ContentSubtitles.renderSubtitle();
+  }
+  if (changes[subtitleTranslationSettings.CONFIG_KEY]) {
+    const change = changes[subtitleTranslationSettings.CONFIG_KEY]!;
+    globalThis.PipCompanion.ContentSubtitles.onTranslationConfigChanged(
+      change.oldValue,
+      change.newValue,
+    );
+    state.pipUi?.refreshSubtitleTranslationServices();
+    state.pipUi?.refreshSubtitleTranslationLanguages();
+    globalThis.PipCompanion.ContentSubtitles.renderSubtitle();
+  }
+  const translationPreferencesChange =
+    changes[subtitleTranslationSettings.PREFERENCES_KEY];
+  if (translationPreferencesChange) {
+    subtitleTranslationRevision++;
+    const previous = state.subtitleTranslationPreferences;
+    state.subtitleTranslationPreferences =
+      subtitleTranslationSettings.normalizePreferences(
+        translationPreferencesChange.newValue,
+      );
+    globalThis.PipCompanion.ContentSubtitles.onTranslationPreferencesChanged(
+      previous,
+      state.subtitleTranslationPreferences,
+    );
+    state.pipUi?.refreshSubtitleTranslationPreferences();
+    globalThis.PipCompanion.ContentSubtitles.renderSubtitle();
   }
   if (shortcutChanged || changes.commentsEnabled || changes.screenshotEnabled)
     nudgeScan();
 });
 
 async function loadSettings() {
-  const styleRevision = captionStyleRevision;
+  const styleRevision = subtitleStyleRevision;
+  const secondaryStyleRevision = secondarySubtitleStyleRevision;
+  const layoutRevision = subtitleLayoutRevision;
+  const translationRevision = subtitleTranslationRevision;
   try {
     const stored = await chrome.storage.local.get({
       ...SHORTCUT_DEFAULTS,
@@ -151,7 +209,12 @@ async function loadSettings() {
       followPlaybackPip: false,
       seekSeconds: DEFAULT_SEEK_SECONDS,
       uiLanguage: "auto",
-      [captionSettings.STORAGE_KEY]: captionSettings.DEFAULTS,
+      [subtitleSettings.STORAGE_KEY]: subtitleSettings.DEFAULTS,
+      [subtitleSettings.SECONDARY_STORAGE_KEY]:
+        subtitleSettings.SECONDARY_DEFAULTS,
+      [subtitleSettings.LAYOUT_STORAGE_KEY]: subtitleSettings.LAYOUT_DEFAULTS,
+      [subtitleTranslationSettings.PREFERENCES_KEY]:
+        subtitleTranslationSettings.DEFAULT_PREFERENCES,
     });
     globalThis.PipCompanion.util.setLanguagePreference(stored.uiLanguage);
     for (const key of SHORTCUT_KEYS) {
@@ -166,10 +229,31 @@ async function loadSettings() {
     state.thumbnailPreviewEnabled = stored.thumbnailPreviewEnabled !== false;
     state.followPlaybackPip = stored.followPlaybackPip === true;
     state.seekSeconds = normalizeSeekSeconds(stored.seekSeconds);
-    if (styleRevision === captionStyleRevision)
-      state.captionStyle = captionSettings.normalize(
-        stored[captionSettings.STORAGE_KEY],
+    if (styleRevision === subtitleStyleRevision)
+      state.subtitleStyle = subtitleSettings.normalize(
+        stored[subtitleSettings.STORAGE_KEY],
       );
+    if (secondaryStyleRevision === secondarySubtitleStyleRevision)
+      state.secondarySubtitleStyle = subtitleSettings.normalize(
+        stored[subtitleSettings.SECONDARY_STORAGE_KEY],
+        subtitleSettings.SECONDARY_DEFAULTS,
+      );
+    if (layoutRevision === subtitleLayoutRevision)
+      state.subtitleLayout = subtitleSettings.normalizeLayout(
+        stored[subtitleSettings.LAYOUT_STORAGE_KEY] ??
+          stored[subtitleSettings.STORAGE_KEY],
+      );
+    if (translationRevision === subtitleTranslationRevision) {
+      const previous = state.subtitleTranslationPreferences;
+      state.subtitleTranslationPreferences =
+        subtitleTranslationSettings.normalizePreferences(
+          stored[subtitleTranslationSettings.PREFERENCES_KEY],
+        );
+      globalThis.PipCompanion.ContentSubtitles.onTranslationPreferencesChanged(
+        previous,
+        state.subtitleTranslationPreferences,
+      );
+    }
   } catch {
     state.shortcuts = { ...SHORTCUT_DEFAULTS };
     state.commentsEnabled = true;
@@ -178,14 +262,31 @@ async function loadSettings() {
     state.thumbnailPreviewEnabled = true;
     state.followPlaybackPip = false;
     state.seekSeconds = DEFAULT_SEEK_SECONDS;
-    if (styleRevision === captionStyleRevision)
-      state.captionStyle = { ...captionSettings.DEFAULTS };
+    if (styleRevision === subtitleStyleRevision)
+      state.subtitleStyle = { ...subtitleSettings.DEFAULTS };
+    if (secondaryStyleRevision === secondarySubtitleStyleRevision)
+      state.secondarySubtitleStyle = {
+        ...subtitleSettings.SECONDARY_DEFAULTS,
+      };
+    if (layoutRevision === subtitleLayoutRevision)
+      state.subtitleLayout = { ...subtitleSettings.LAYOUT_DEFAULTS };
+    if (translationRevision === subtitleTranslationRevision) {
+      const previous = state.subtitleTranslationPreferences;
+      state.subtitleTranslationPreferences = {
+        ...subtitleTranslationSettings.DEFAULT_PREFERENCES,
+      };
+      globalThis.PipCompanion.ContentSubtitles.onTranslationPreferencesChanged(
+        previous,
+        state.subtitleTranslationPreferences,
+      );
+    }
   }
 
   state.pipUi?.setThumbnailPreviewEnabled(state.thumbnailPreviewEnabled);
+  state.pipUi?.refreshSubtitleTranslationPreferences();
   if (state.thumbnailPreviewEnabled)
     globalThis.PipCompanion.ContentStoryboard.preload(state.sourceVideo);
-  globalThis.PipCompanion.ContentCaptions.renderSubtitle();
+  globalThis.PipCompanion.ContentSubtitles.renderSubtitle();
   nudgeScan();
   void requestPipHandoff();
 }
@@ -394,7 +495,9 @@ function scanPage() {
       state.sourceAbort?.abort();
       state.sourceAbort = null;
       state.sourceVideo = null;
+      globalThis.PipCompanion.ContentSubtitles.setNativeSubtitleVideo(null);
     }
+    checkAndBindAdditionalBilibiliDanmaku(null);
     return;
   }
 
@@ -412,7 +515,8 @@ function scanPage() {
   }
   if (IS_BILIBILI && !isBilibiliLivePage())
     checkAndBindBilibiliDanmaku(state.sourceVideo);
-  globalThis.PipCompanion.ContentCaptions.refreshSubtitle();
+  checkAndBindAdditionalBilibiliDanmaku(state.sourceVideo);
+  globalThis.PipCompanion.ContentSubtitles.refreshSubtitle();
   globalThis.PipCompanion.ContentPlayback.updatePlaybackUi();
 }
 

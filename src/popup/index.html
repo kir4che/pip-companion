@@ -22,37 +22,61 @@
             <label class="danmaku-label" for="danmaku-toggle"
               >__MSG_popupDanmaku__</label
             >
-            <button
-              class="settings-open"
-              id="danmaku-settings-open"
-              type="button"
-              aria-label="__MSG_popupDanmakuDisplaySettings__"
-              title="__MSG_popupDanmakuDisplaySettings__"
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                width="17"
-                height="17"
-              >
-                <use href="assets/settings-icon.svg#settings" />
-              </svg>
-            </button>
-            <input
-              class="danmaku-switch"
-              type="checkbox"
-              id="danmaku-toggle"
-              checked
-            />
+            <div class="danmaku-toggle-controls">
+              <div class="danmaku-action-buttons">
+                <button
+                  class="settings-open"
+                  id="danmaku-settings-open"
+                  type="button"
+                  aria-label="__MSG_popupDanmakuDisplaySettings__"
+                  title="__MSG_popupDanmakuDisplaySettings__"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    width="17"
+                    height="17"
+                  >
+                    <use href="assets/settings-icon.svg#settings" />
+                  </svg>
+                </button>
+                <button
+                  class="settings-open"
+                  id="additional-danmaku-open"
+                  type="button"
+                  aria-label="__MSG_popupAdditionalDanmakuSettings__"
+                  title="__MSG_popupAdditionalDanmakuSettings__"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    width="17"
+                    height="17"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  >
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                </button>
+              </div>
+              <input
+                class="danmaku-switch"
+                type="checkbox"
+                id="danmaku-toggle"
+                checked
+              />
+            </div>
           </div>
           <div class="toggle-row">
-            <span>__MSG_popupCaptionStyle__</span>
+            <span>__MSG_popupSubtitleStyle__</span>
             <button
               class="settings-open"
-              id="caption-settings-open"
+              id="subtitle-settings-open"
               type="button"
-              aria-label="__MSG_popupCaptionStyleSettings__"
-              title="__MSG_popupCaptionStyleSettings__"
+              aria-label="__MSG_popupSubtitleStyleSettings__"
+              title="__MSG_popupSubtitleStyleSettings__"
             >
               <svg
                 aria-hidden="true"
@@ -77,6 +101,7 @@
             <input type="checkbox" id="follow-playback-pip-toggle" />
           </label>
         </div>
+        <p id="status" role="status"></p>
         <footer class="menu-footer">
           <span class="menu-version" id="ext-version"></span>
           <div class="footer-actions">
@@ -358,15 +383,15 @@
         </div>
       </section>
       <section
-        id="caption-settings-view"
+        id="subtitle-settings-view"
         class="popup-view settings-subview"
-        aria-labelledby="caption-settings-title"
+        aria-labelledby="subtitle-settings-title"
         hidden
       >
         <header class="settings-page-header">
           <button
             class="back-button"
-            id="caption-settings-back"
+            id="subtitle-settings-back"
             type="button"
             aria-label="__MSG_popupBackToMenu__"
           >
@@ -384,164 +409,374 @@
               <path d="m15 18-6-6 6-6" />
             </svg>
           </button>
-          <h1 id="caption-settings-title">__MSG_popupCaptionStyle__</h1>
+          <h1 id="subtitle-settings-title">__MSG_popupSubtitleStyle__</h1>
         </header>
         <div class="settings-content">
           <div
             class="subtitle-preview"
-            aria-label="__MSG_popupCaptionPreview__"
+            aria-label="__MSG_popupSubtitlePreview__"
           >
-            <div class="subtitle-preview-caption" id="caption-preview">
-              <span class="subtitle-preview-segment"
-                >__MSG_popupCaptionPreviewText__</span
+            <div class="subtitle-preview-subtitle" id="subtitle-preview">
+              <span
+                class="subtitle-preview-segment"
+                id="subtitle-preview-primary"
+                >__MSG_popupSubtitlePreviewText__</span
               >
-              <span class="subtitle-preview-segment"
-                >__MSG_popupCaptionPreviewSecondLine__</span
+              <span
+                class="subtitle-preview-segment"
+                id="subtitle-preview-secondary"
+                >__MSG_popupSubtitlePreviewSecondLine__</span
               >
             </div>
           </div>
-          <label class="range-row" for="caption-size">
-            <span
-              >__MSG_popupFontSize__
-              <output id="caption-size-value">100%</output></span
+          <div class="subtitle-style-tabs" role="tablist">
+            <button
+              class="subtitle-style-tab is-active"
+              id="subtitle-primary-tab"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="subtitle-primary-panel"
+              data-subtitle-tab="primary"
             >
-            <input id="caption-size" type="range" min="50" max="200" step="5" />
-          </label>
-          <label class="color-row" for="caption-text-color">
-            <span>__MSG_popupTextColor__</span>
-            <input
-              id="caption-text-color"
-              type="color"
-              aria-label="__MSG_popupTextColor__"
-            />
-          </label>
-          <label class="color-row" for="caption-background-color">
-            <span>__MSG_popupBackgroundColor__</span>
-            <input
-              id="caption-background-color"
-              type="color"
-              aria-label="__MSG_popupBackgroundColor__"
-            />
-          </label>
-          <label class="range-row" for="caption-background-opacity">
-            <span
-              >__MSG_popupBackgroundOpacity__
-              <output id="caption-background-opacity-value">75%</output></span
+              __MSG_popupPrimarySubtitleStyle__
+            </button>
+            <button
+              class="subtitle-style-tab"
+              id="subtitle-secondary-tab"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="subtitle-secondary-panel"
+              data-subtitle-tab="secondary"
             >
-            <input
-              id="caption-background-opacity"
-              type="range"
-              min="0"
-              max="100"
-              step="5"
-            />
-          </label>
-          <label class="range-row" for="caption-position">
-            <span
-              >__MSG_popupVerticalPosition__
-              <output id="caption-position-value">10%</output></span
-            >
-            <input
-              id="caption-position"
-              type="range"
-              min="0"
-              max="100"
-              step="1"
-            />
-          </label>
-          <label class="range-row" for="caption-font-family">
-            <span>__MSG_popupFont__</span>
-            <select id="caption-font-family">
-              <optgroup label="__MSG_popupFontGeneral__">
-                <option value="default">__MSG_popupSystemDefault__</option>
-                <option value="sansSerif">__MSG_popupSansSerif__</option>
-                <option value="serif">__MSG_popupSerif__</option>
-                <option value="monospace">__MSG_popupMonospace__</option>
-              </optgroup>
-              <optgroup label="__MSG_popupFontAdvanced__">
-                <option value="arial">__MSG_popupArialLatin__</option>
-                <option value="notoSansTC">Noto Sans TC</option>
-                <option value="microsoftJhengHei">
-                  __MSG_popupBlackFont__
-                </option>
-                <option value="song">__MSG_popupSongFont__</option>
-                <option value="fangSong">__MSG_popupFangSongFont__</option>
-                <option value="kai">__MSG_popupKaiFont__</option>
-              </optgroup>
-            </select>
-          </label>
-          <label class="range-row" for="caption-edge-style">
-            <span>__MSG_popupTextEdge__</span>
-            <select id="caption-edge-style">
-              <option value="none">__MSG_popupNone__</option>
-              <option value="shadow">__MSG_popupShadow__</option>
-              <option value="raised">__MSG_popupRaised__</option>
-              <option value="depressed">__MSG_popupDepressed__</option>
-              <option value="outline">__MSG_popupOutline__</option>
-            </select>
-          </label>
-          <label class="color-row" for="caption-edge-color">
-            <span>__MSG_popupEdgeColor__</span>
-            <input
-              id="caption-edge-color"
-              type="color"
-              aria-label="__MSG_popupEdgeColor__"
-            />
-          </label>
-          <label
-            id="caption-outline-width-row"
-            class="range-row"
-            for="caption-outline-width"
+              __MSG_popupSecondarySubtitleStyle__
+            </button>
+          </div>
+          <div
+            class="subtitle-style-panel"
+            id="subtitle-primary-panel"
+            role="tabpanel"
+            aria-labelledby="subtitle-primary-tab"
+            data-subtitle-panel="primary"
           >
-            <span
-              >__MSG_popupOutlineWidth__
-              <output id="caption-outline-width-value">1px</output></span
+            <label class="range-row" for="primary-subtitle-size">
+              <span
+                >__MSG_popupFontSize__
+                <output id="primary-subtitle-size-value">100%</output></span
+              >
+              <input
+                id="primary-subtitle-size"
+                type="range"
+                min="50"
+                max="200"
+                step="5"
+              />
+            </label>
+            <label class="color-row" for="primary-subtitle-text-color">
+              <span>__MSG_popupTextColor__</span>
+              <input
+                id="primary-subtitle-text-color"
+                type="color"
+                aria-label="__MSG_popupTextColor__"
+              />
+            </label>
+            <label class="range-row" for="primary-subtitle-font-family">
+              <span>__MSG_popupFont__</span>
+              <select id="primary-subtitle-font-family">
+                <optgroup label="__MSG_popupFontGeneral__">
+                  <option value="default">__MSG_popupSystemDefault__</option>
+                  <option value="sansSerif">__MSG_popupSansSerif__</option>
+                  <option value="serif">__MSG_popupSerif__</option>
+                  <option value="monospace">__MSG_popupMonospace__</option>
+                </optgroup>
+                <optgroup label="__MSG_popupFontAdvanced__">
+                  <option value="arial">__MSG_popupArialLatin__</option>
+                  <option value="notoSansTC">Noto Sans TC</option>
+                  <option value="microsoftJhengHei">
+                    __MSG_popupBlackFont__
+                  </option>
+                  <option value="song">__MSG_popupSongFont__</option>
+                  <option value="fangSong">__MSG_popupFangSongFont__</option>
+                  <option value="kai">__MSG_popupKaiFont__</option>
+                </optgroup>
+              </select>
+            </label>
+            <label class="range-row" for="primary-subtitle-edge-style">
+              <span>__MSG_popupTextEdge__</span>
+              <select id="primary-subtitle-edge-style">
+                <option value="none">__MSG_popupNone__</option>
+                <option value="shadow">__MSG_popupShadow__</option>
+                <option value="raised">__MSG_popupRaised__</option>
+                <option value="depressed">__MSG_popupDepressed__</option>
+                <option value="outline">__MSG_popupOutline__</option>
+              </select>
+            </label>
+            <label class="color-row" for="primary-subtitle-edge-color">
+              <span>__MSG_popupEdgeColor__</span>
+              <input
+                id="primary-subtitle-edge-color"
+                type="color"
+                aria-label="__MSG_popupEdgeColor__"
+              />
+            </label>
+            <label
+              class="range-row"
+              for="primary-subtitle-edge-intensity"
+              data-subtitle-edge-intensity-row="primary"
             >
-            <input
-              id="caption-outline-width"
-              type="range"
-              min="0.5"
-              max="3"
-              step="0.5"
-            />
-          </label>
-          <label class="range-row" for="caption-font-weight">
-            <span
-              >__MSG_popupFontWeight__
-              <output id="caption-font-weight-value">400</output></span
+              <span
+                >__MSG_popupEdgeIntensity__
+                <output id="primary-subtitle-edge-intensity-value"
+                  >1</output
+                ></span
+              >
+              <input
+                id="primary-subtitle-edge-intensity"
+                type="range"
+                min="0.5"
+                max="3"
+                step="0.5"
+              />
+            </label>
+            <label class="range-row" for="primary-subtitle-font-weight">
+              <span
+                >__MSG_popupFontWeight__
+                <output id="primary-subtitle-font-weight-value"
+                  >400</output
+                ></span
+              >
+              <input
+                id="primary-subtitle-font-weight"
+                type="range"
+                min="100"
+                max="900"
+                step="100"
+              />
+            </label>
+            <label class="range-row" for="primary-subtitle-line-height">
+              <span
+                >__MSG_popupLineHeight__
+                <output id="primary-subtitle-line-height-value"
+                  >100%</output
+                ></span
+              >
+              <input
+                id="primary-subtitle-line-height"
+                type="range"
+                min="100"
+                max="200"
+                step="5"
+              />
+            </label>
+          </div>
+          <div
+            class="subtitle-style-panel"
+            id="subtitle-secondary-panel"
+            role="tabpanel"
+            aria-labelledby="subtitle-secondary-tab"
+            data-subtitle-panel="secondary"
+            hidden
+          >
+            <label class="range-row" for="secondary-subtitle-size">
+              <span
+                >__MSG_popupFontSize__
+                <output id="secondary-subtitle-size-value">90%</output></span
+              >
+              <input
+                id="secondary-subtitle-size"
+                type="range"
+                min="50"
+                max="200"
+                step="5"
+              />
+            </label>
+            <label class="color-row" for="secondary-subtitle-text-color">
+              <span>__MSG_popupTextColor__</span>
+              <input
+                id="secondary-subtitle-text-color"
+                type="color"
+                aria-label="__MSG_popupTextColor__"
+              />
+            </label>
+            <label class="range-row" for="secondary-subtitle-font-family">
+              <span>__MSG_popupFont__</span>
+              <select id="secondary-subtitle-font-family">
+                <optgroup label="__MSG_popupFontGeneral__">
+                  <option value="default">__MSG_popupSystemDefault__</option>
+                  <option value="sansSerif">__MSG_popupSansSerif__</option>
+                  <option value="serif">__MSG_popupSerif__</option>
+                  <option value="monospace">__MSG_popupMonospace__</option>
+                </optgroup>
+                <optgroup label="__MSG_popupFontAdvanced__">
+                  <option value="arial">__MSG_popupArialLatin__</option>
+                  <option value="notoSansTC">Noto Sans TC</option>
+                  <option value="microsoftJhengHei">
+                    __MSG_popupBlackFont__
+                  </option>
+                  <option value="song">__MSG_popupSongFont__</option>
+                  <option value="fangSong">__MSG_popupFangSongFont__</option>
+                  <option value="kai">__MSG_popupKaiFont__</option>
+                </optgroup>
+              </select>
+            </label>
+            <label class="range-row" for="secondary-subtitle-edge-style">
+              <span>__MSG_popupTextEdge__</span>
+              <select id="secondary-subtitle-edge-style">
+                <option value="none">__MSG_popupNone__</option>
+                <option value="shadow">__MSG_popupShadow__</option>
+                <option value="raised">__MSG_popupRaised__</option>
+                <option value="depressed">__MSG_popupDepressed__</option>
+                <option value="outline">__MSG_popupOutline__</option>
+              </select>
+            </label>
+            <label class="color-row" for="secondary-subtitle-edge-color">
+              <span>__MSG_popupEdgeColor__</span>
+              <input
+                id="secondary-subtitle-edge-color"
+                type="color"
+                aria-label="__MSG_popupEdgeColor__"
+              />
+            </label>
+            <label
+              class="range-row"
+              for="secondary-subtitle-edge-intensity"
+              data-subtitle-edge-intensity-row="secondary"
             >
-            <input
-              id="caption-font-weight"
-              type="range"
-              min="100"
-              max="900"
-              step="100"
-            />
-          </label>
-          <label class="range-row" for="caption-line-height">
-            <span
-              >__MSG_popupLineHeight__
-              <output id="caption-line-height-value">100%</output></span
+              <span
+                >__MSG_popupEdgeIntensity__
+                <output id="secondary-subtitle-edge-intensity-value"
+                  >1</output
+                ></span
+              >
+              <input
+                id="secondary-subtitle-edge-intensity"
+                type="range"
+                min="0.5"
+                max="3"
+                step="0.5"
+              />
+            </label>
+            <label class="range-row" for="secondary-subtitle-font-weight">
+              <span
+                >__MSG_popupFontWeight__
+                <output id="secondary-subtitle-font-weight-value"
+                  >500</output
+                ></span
+              >
+              <input
+                id="secondary-subtitle-font-weight"
+                type="range"
+                min="100"
+                max="900"
+                step="100"
+              />
+            </label>
+            <label class="range-row" for="secondary-subtitle-line-height">
+              <span
+                >__MSG_popupLineHeight__
+                <output id="secondary-subtitle-line-height-value"
+                  >100%</output
+                ></span
+              >
+              <input
+                id="secondary-subtitle-line-height"
+                type="range"
+                min="100"
+                max="200"
+                step="5"
+              />
+            </label>
+          </div>
+          <div class="subtitle-style-actions">
+            <button
+              id="subtitle-style-reset-current"
+              class="secondary"
+              type="button"
             >
-            <input
-              id="caption-line-height"
-              type="range"
-              min="100"
-              max="200"
-              step="5"
-            />
-          </label>
-          <button id="caption-style-reset" class="secondary" type="button">
-            __MSG_popupResetCaptionStyle__
-          </button>
+              __MSG_popupResetCurrentSubtitleStyle__
+            </button>
+          </div>
+          <section class="subtitle-layout-section">
+            <h2>__MSG_popupSharedSubtitleLayout__</h2>
+            <label class="color-row" for="subtitle-layout-background-color">
+              <span>__MSG_popupBackgroundColor__</span>
+              <input
+                id="subtitle-layout-background-color"
+                type="color"
+                aria-label="__MSG_popupBackgroundColor__"
+              />
+            </label>
+            <label class="range-row" for="subtitle-layout-background-opacity">
+              <span
+                >__MSG_popupBackgroundOpacity__
+                <output id="subtitle-layout-background-opacity-value"
+                  >50%</output
+                ></span
+              >
+              <input
+                id="subtitle-layout-background-opacity"
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+              />
+            </label>
+            <label class="range-row" for="subtitle-layout-pair-gap">
+              <span
+                >__MSG_popupSubtitlePairGap__
+                <output id="subtitle-layout-pair-gap-value"
+                  >0.35em</output
+                ></span
+              >
+              <input
+                id="subtitle-layout-pair-gap"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+              />
+            </label>
+            <label class="range-row" for="subtitle-layout-letter-spacing">
+              <span
+                >__MSG_popupLetterSpacing__
+                <output id="subtitle-layout-letter-spacing-value"
+                  >0.00em</output
+                ></span
+              >
+              <input
+                id="subtitle-layout-letter-spacing"
+                type="range"
+                min="0"
+                max="30"
+                step="1"
+              />
+            </label>
+            <label class="range-row" for="subtitle-layout-position">
+              <span
+                >__MSG_popupVerticalPosition__
+                <output id="subtitle-layout-position-value">10%</output></span
+              >
+              <input
+                id="subtitle-layout-position"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+              />
+            </label>
+            <button id="subtitle-layout-reset" class="secondary" type="button">
+              __MSG_popupResetSubtitleLayout__
+            </button>
+          </section>
         </div>
       </section>
-      <p id="status" role="status"></p>
     </main>
     <script src="shared/locales.js"></script>
     <script src="shared/utils.js"></script>
     <script src="shared/danmaku-settings.js"></script>
-    <script src="shared/caption-settings.js"></script>
+    <script src="shared/subtitle-settings.js"></script>
+    <script src="shared/custom-select.js"></script>
     <script type="module" src="popup/index.js"></script>
   </body>
 </html>

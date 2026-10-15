@@ -44,16 +44,18 @@ interface State {
   pipHandoffPending: boolean;
 
   // 字幕來源與顯示狀態
-  nativeCaptionTracks: Map<TextTrack, TextTrackMode> | null;
-  youtubeCaptionsInitiallyEnabled: boolean | null;
-  captionNode: HTMLElement | null;
-  captionExtract: CaptionExtract | null;
-  captionObserver: MutationObserver | null;
-  captionLines: CaptionLine[];
-  captionStyle: CaptionStyleSettings;
-  captionsOn: boolean;
-  lastCaptionScan: number;
-  captionEmptyCount: number;
+  nativeSubtitleTracks: Map<TextTrack, TextTrackMode> | null;
+  youtubeSubtitlesInitiallyEnabled: boolean | null;
+  subtitleNode: HTMLElement | null;
+  subtitleExtract: SubtitleExtract | null;
+  subtitleObserver: MutationObserver | null;
+  subtitleLines: SubtitleLine[];
+  subtitleStyle: SubtitleStyleSettings;
+  secondarySubtitleStyle: SubtitleStyleSettings;
+  subtitleLayout: SubtitleLayoutSettings;
+  subtitleTranslationPreferences: SubtitleTranslationPreferences;
+  subtitlessOn: boolean;
+  lastSubtitleScan: number;
 
   // 頁面提示、播放控制與掃描排程
   feedbackTimer: number;

@@ -10,7 +10,9 @@ try {
 }
 util.setLanguagePreference(uiLanguage);
 const danmakuSettings = globalThis.PipCompanion.danmakuSettings;
-const captionSettings = globalThis.PipCompanion.captionSettings;
+const subtitleSettings = globalThis.PipCompanion.subtitleSettings;
+const subtitleTranslationSettings =
+  globalThis.PipCompanion.subtitleTranslationSettings;
 const t = util.getMessage;
 const messagePlaceholder = /__MSG_([A-Za-z0-9_@]+)__/g;
 const localizeText = (value: string) =>
@@ -42,6 +44,7 @@ function refreshLocalizedMarkup() {
 }
 
 refreshLocalizedMarkup();
+globalThis.PipCompanion.customSelect.enhanceAll();
 
 const statusEl = document.querySelector("#status") as HTMLElement;
 let statusClearTimer: ReturnType<typeof setTimeout> | undefined;
@@ -94,7 +97,305 @@ function refreshOptionsLocale() {
   renderShortcuts();
   renderShortcutActionButtons();
   renderDanmakuStyle();
-  renderCaptionStyle();
+  renderSubtitleStyle();
+  renderSubtitleTranslationConfig();
+}
+
+const subtitleTranslationProvider = document.querySelector(
+  "#subtitle-translation-provider",
+) as HTMLSelectElement;
+const microsoftTranslationConfig = document.querySelector(
+  "#microsoft-translation-config",
+) as HTMLElement;
+const googleTranslationConfig = document.querySelector(
+  "#google-translation-config",
+) as HTMLElement;
+const deeplTranslationConfig = document.querySelector(
+  "#deepl-translation-config",
+) as HTMLElement;
+const microsoftTranslationKey = document.querySelector(
+  "#microsoft-translation-key",
+) as HTMLInputElement;
+const microsoftTranslationRegion = document.querySelector(
+  "#microsoft-translation-region",
+) as HTMLInputElement;
+const googleTranslationKey = document.querySelector(
+  "#google-translation-key",
+) as HTMLInputElement;
+const deeplTranslationKey = document.querySelector(
+  "#deepl-translation-key",
+) as HTMLInputElement;
+const microsoftTranslationKeyDisplay = document.querySelector(
+  "#microsoft-translation-key-display",
+) as HTMLOutputElement;
+const googleTranslationKeyDisplay = document.querySelector(
+  "#google-translation-key-display",
+) as HTMLOutputElement;
+const deeplTranslationKeyDisplay = document.querySelector(
+  "#deepl-translation-key-display",
+) as HTMLOutputElement;
+const microsoftTranslationKeyLabel = document.querySelector(
+  "#microsoft-translation-key-label",
+) as HTMLLabelElement;
+const googleTranslationKeyLabel = document.querySelector(
+  "#google-translation-key-label",
+) as HTMLLabelElement;
+const deeplTranslationKeyLabel = document.querySelector(
+  "#deepl-translation-key-label",
+) as HTMLLabelElement;
+const translationTestButton = document.querySelector(
+  "#subtitle-translation-test",
+) as HTMLButtonElement;
+const translationSaveButton = document.querySelector(
+  "#subtitle-translation-save",
+) as HTMLButtonElement;
+const translationRemoveButton = document.querySelector(
+  "#subtitle-translation-remove",
+) as HTMLButtonElement;
+let translationTestInProgress = false;
+let subtitleTranslationConfig: SubtitleTranslationConfig = {
+  provider: "microsoft",
+  microsoftKey: "",
+  microsoftRegion: "",
+  googleKey: "",
+  deeplKey: "",
+};
+
+function normalizeSubtitleTranslationConfig(
+  value: unknown,
+): SubtitleTranslationConfig {
+  const config = util.isRecord(value) ? value : {};
+  return {
+    provider:
+      config.provider === "google" || config.provider === "deepl"
+        ? config.provider
+        : "microsoft",
+    microsoftKey:
+      typeof config.microsoftKey === "string" &&
+      config.microsoftKey.length <= 4096
+        ? config.microsoftKey
+        : "",
+    microsoftRegion:
+      typeof config.microsoftRegion === "string" &&
+      config.microsoftRegion.length <= 100
+        ? config.microsoftRegion
+        : "",
+    googleKey:
+      typeof config.googleKey === "string" && config.googleKey.length <= 4096
+        ? config.googleKey
+        : "",
+    deeplKey:
+      typeof config.deeplKey === "string" && config.deeplKey.length <= 4096
+        ? config.deeplKey
+        : "",
+  };
+}
+
+function maskApiKey(key: string): string {
+  const head = key.slice(0, 4);
+  const tail = key.length > 8 ? key.slice(-4) : "";
+  return tail ? `${head}••••${tail}` : `${head}••••`;
+}
+
+function renderTranslationActions() {
+  const provider = subtitleTranslationConfig.provider;
+  const keyInput =
+    provider === "google"
+      ? googleTranslationKey
+      : provider === "deepl"
+        ? deeplTranslationKey
+        : microsoftTranslationKey;
+  const storedKey = (
+    provider === "google"
+      ? subtitleTranslationConfig.googleKey
+      : provider === "deepl"
+        ? subtitleTranslationConfig.deeplKey
+        : subtitleTranslationConfig.microsoftKey
+  ).trim();
+  const hasStoredKey = storedKey !== "";
+  const keyDirty = !hasStoredKey && keyInput.value.trim() !== "";
+  const region = microsoftTranslationRegion.value.trim();
+  const hasRequiredCredentials =
+    Boolean(keyDirty || hasStoredKey) &&
+    (provider !== "microsoft" ||
+      /^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/i.test(region));
+  const regionDirty =
+    provider === "microsoft" &&
+    region !== subtitleTranslationConfig.microsoftRegion;
+  translationSaveButton.hidden = !(keyDirty || regionDirty);
+  translationRemoveButton.hidden = !hasStoredKey;
+  translationTestButton.disabled =
+    translationTestInProgress || !hasRequiredCredentials;
+}
+
+function renderSubtitleTranslationConfig() {
+  subtitleTranslationProvider.value = subtitleTranslationConfig.provider;
+  for (const [input, display, label, key] of [
+    [
+      microsoftTranslationKey,
+      microsoftTranslationKeyDisplay,
+      microsoftTranslationKeyLabel,
+      subtitleTranslationConfig.microsoftKey,
+    ],
+    [
+      googleTranslationKey,
+      googleTranslationKeyDisplay,
+      googleTranslationKeyLabel,
+      subtitleTranslationConfig.googleKey,
+    ],
+    [
+      deeplTranslationKey,
+      deeplTranslationKeyDisplay,
+      deeplTranslationKeyLabel,
+      subtitleTranslationConfig.deeplKey,
+    ],
+  ] as const) {
+    const hasStoredKey = key.trim() !== "";
+    input.hidden = hasStoredKey;
+    display.hidden = !hasStoredKey;
+    label.htmlFor = hasStoredKey ? "" : input.id;
+    display.textContent = hasStoredKey ? maskApiKey(key) : "";
+  }
+  microsoftTranslationConfig.hidden =
+    subtitleTranslationConfig.provider !== "microsoft";
+  googleTranslationConfig.hidden =
+    subtitleTranslationConfig.provider !== "google";
+  deeplTranslationConfig.hidden =
+    subtitleTranslationConfig.provider !== "deepl";
+  renderTranslationActions();
+}
+
+async function saveSubtitleTranslationConfig(
+  config: SubtitleTranslationConfig,
+  clearKeyInputs = true,
+  silent = false,
+) {
+  try {
+    await chrome.storage.local.set({
+      [subtitleTranslationSettings.CONFIG_KEY]: config,
+    });
+    subtitleTranslationConfig = config;
+    if (clearKeyInputs) {
+      microsoftTranslationKey.value = "";
+      googleTranslationKey.value = "";
+      deeplTranslationKey.value = "";
+    }
+    renderSubtitleTranslationConfig();
+    if (!silent) showStatus(t("subtitleTranslationSettingsSaved"));
+  } catch {
+    showStatus(t("subtitleTranslationSettingsSaveFailed"), true);
+  }
+}
+
+subtitleTranslationProvider.addEventListener("change", () => {
+  subtitleTranslationConfig = {
+    ...subtitleTranslationConfig,
+    provider:
+      subtitleTranslationProvider.value === "google" ||
+      subtitleTranslationProvider.value === "deepl"
+        ? subtitleTranslationProvider.value
+        : "microsoft",
+  };
+  renderSubtitleTranslationConfig();
+  void saveSubtitleTranslationConfig(subtitleTranslationConfig, false, true);
+});
+
+function getSubtitleTranslationConfigWithInputKey(): SubtitleTranslationConfig {
+  const config = { ...subtitleTranslationConfig };
+  const keyField = `${config.provider}Key` as const;
+  const input = {
+    microsoft: microsoftTranslationKey,
+    google: googleTranslationKey,
+    deepl: deeplTranslationKey,
+  }[config.provider];
+  const key = input.value.trim();
+  if (!config[keyField].trim() && key) config[keyField] = key;
+  return config;
+}
+
+translationSaveButton.addEventListener("click", () => {
+  const config = getSubtitleTranslationConfigWithInputKey();
+  if (config.provider === "microsoft")
+    config.microsoftRegion = microsoftTranslationRegion.value.trim();
+  if (
+    config.provider === subtitleTranslationConfig.provider &&
+    config.microsoftKey === subtitleTranslationConfig.microsoftKey &&
+    config.microsoftRegion === subtitleTranslationConfig.microsoftRegion &&
+    config.googleKey === subtitleTranslationConfig.googleKey &&
+    config.deeplKey === subtitleTranslationConfig.deeplKey
+  ) {
+    showStatus(t("subtitleTranslationNoChange"));
+    return;
+  }
+  void saveSubtitleTranslationConfig(config);
+});
+translationTestButton.addEventListener("click", () => {
+  const config = getSubtitleTranslationConfigWithInputKey();
+  if (config.provider === "microsoft") {
+    const region = microsoftTranslationRegion.value.trim();
+    if (region) config.microsoftRegion = region;
+  }
+  translationTestInProgress = true;
+  renderTranslationActions();
+  showStatus(t("subtitleTranslationTesting"));
+  void chrome.runtime
+    .sendMessage({
+      type: "TEST_SUBTITLE_TRANSLATION",
+      provider: config.provider,
+      config,
+    } satisfies ExtensionMessage)
+    .then(
+      (result) =>
+        showStatus(
+          t(
+            result?.ok
+              ? "subtitleTranslationTestSuccess"
+              : "subtitleTranslationTestFailed",
+          ),
+          !result?.ok,
+        ),
+      () => showStatus(t("subtitleTranslationTestFailed"), true),
+    )
+    .finally(() => {
+      translationTestInProgress = false;
+      renderTranslationActions();
+    });
+});
+translationRemoveButton.addEventListener("click", () => {
+  const config = { ...subtitleTranslationConfig };
+  if (config.provider === "microsoft") {
+    config.microsoftKey = "";
+  } else if (config.provider === "google") {
+    config.googleKey = "";
+  } else {
+    config.deeplKey = "";
+  }
+  void saveSubtitleTranslationConfig(config, true, true);
+});
+
+for (const input of [
+  microsoftTranslationKey,
+  googleTranslationKey,
+  deeplTranslationKey,
+  microsoftTranslationRegion,
+]) {
+  input.addEventListener("input", renderTranslationActions);
+}
+
+async function loadSubtitleTranslationConfig() {
+  try {
+    const stored = await chrome.storage.local.get(
+      subtitleTranslationSettings.CONFIG_KEY,
+    );
+    subtitleTranslationConfig = normalizeSubtitleTranslationConfig(
+      stored[subtitleTranslationSettings.CONFIG_KEY],
+    );
+    microsoftTranslationRegion.value =
+      subtitleTranslationConfig.microsoftRegion;
+  } catch {
+    subtitleTranslationConfig = normalizeSubtitleTranslationConfig(null);
+  }
+  renderSubtitleTranslationConfig();
 }
 
 // 快捷鍵
@@ -681,218 +982,431 @@ danmakuStyleReset.addEventListener("click", () => {
 });
 
 // 字幕設定
-const captionFontFamily = document.querySelector(
-  "#caption-font-family",
+const subtitleFontFamily = document.querySelector(
+  "#subtitle-font-family",
 ) as HTMLSelectElement;
-const captionTextColor = document.querySelector(
-  "#caption-text-color",
+const subtitleTextColor = document.querySelector(
+  "#subtitle-text-color",
 ) as HTMLInputElement;
-const captionBackgroundColor = document.querySelector(
-  "#caption-background-color",
+const subtitleBackgroundColor = document.querySelector(
+  "#subtitle-background-color",
 ) as HTMLInputElement;
-const captionBackgroundOpacity = document.querySelector(
-  "#caption-background-opacity",
+const subtitleBackgroundOpacity = document.querySelector(
+  "#subtitle-background-opacity",
 ) as HTMLInputElement;
-const captionEdgeStyle = document.querySelector(
-  "#caption-edge-style",
+const subtitleBackgroundOpacityValue = document.querySelector(
+  "#subtitle-background-opacity-value",
+) as HTMLOutputElement;
+const subtitleEdgeStyle = document.querySelector(
+  "#subtitle-edge-style",
 ) as HTMLSelectElement;
-const captionEdgeColor = document.querySelector(
-  "#caption-edge-color",
+const subtitleEdgeColor = document.querySelector(
+  "#subtitle-edge-color",
 ) as HTMLInputElement;
-const captionOutlineWidthRow = document.querySelector(
-  "#caption-outline-width-row",
+const subtitleOutlineWidthRow = document.querySelector(
+  "#subtitle-edge-intensity-row",
 ) as HTMLElement;
-const captionPreview = document.querySelector(
-  "#caption-preview",
+const subtitlePosition = document.querySelector(
+  "#subtitle-position",
+) as HTMLInputElement;
+const subtitlePositionValue = document.querySelector(
+  "#subtitle-position-value",
+) as HTMLOutputElement;
+const subtitlePreview = document.querySelector(
+  "#subtitle-preview",
 ) as HTMLElement;
+const subtitlePreviewPrimary = document.querySelector(
+  "#subtitle-preview-primary",
+) as HTMLElement;
+const subtitlePreviewSecondary = document.querySelector(
+  "#subtitle-preview-secondary",
+) as HTMLElement;
+const subtitlePairGap = document.querySelector(
+  "#subtitle-pair-gap",
+) as HTMLInputElement;
+const subtitlePairGapValue = document.querySelector(
+  "#subtitle-pair-gap-value",
+) as HTMLOutputElement;
+const subtitleLetterSpacing = document.querySelector(
+  "#subtitle-letter-spacing",
+) as HTMLInputElement;
+const subtitleLetterSpacingValue = document.querySelector(
+  "#subtitle-letter-spacing-value",
+) as HTMLOutputElement;
 
-const captionStyleControls = [
+const subtitleStyleTargets = ["primary", "secondary"] as const;
+type SubtitleStyleTarget = (typeof subtitleStyleTargets)[number];
+const subtitleStyleStorageKeys: Record<SubtitleStyleTarget, string> = {
+  primary: subtitleSettings.STORAGE_KEY,
+  secondary: subtitleSettings.SECONDARY_STORAGE_KEY,
+};
+const subtitleStyleDefaults: Record<
+  SubtitleStyleTarget,
+  SubtitleStyleSettings
+> = {
+  primary: subtitleSettings.DEFAULTS,
+  secondary: subtitleSettings.SECONDARY_DEFAULTS,
+};
+const subtitleStyleButtons: Record<SubtitleStyleTarget, HTMLButtonElement> = {
+  primary: document.querySelector(
+    "#subtitle-style-primary",
+  ) as HTMLButtonElement,
+  secondary: document.querySelector(
+    "#subtitle-style-secondary",
+  ) as HTMLButtonElement,
+};
+
+const subtitleStyleControls = [
   {
     key: "fontWeight",
-    input: document.querySelector("#caption-font-weight") as HTMLInputElement,
+    input: document.querySelector("#subtitle-font-weight") as HTMLInputElement,
     output: document.querySelector(
-      "#caption-font-weight-value",
+      "#subtitle-font-weight-value",
     ) as HTMLOutputElement,
   },
   {
     key: "lineHeightScale",
-    input: document.querySelector("#caption-line-height") as HTMLInputElement,
+    input: document.querySelector("#subtitle-line-height") as HTMLInputElement,
     output: document.querySelector(
-      "#caption-line-height-value",
+      "#subtitle-line-height-value",
     ) as HTMLOutputElement,
   },
   {
     key: "fontSizeScale",
-    input: document.querySelector("#caption-size") as HTMLInputElement,
-    output: document.querySelector("#caption-size-value") as HTMLOutputElement,
+    input: document.querySelector("#subtitle-size") as HTMLInputElement,
+    output: document.querySelector("#subtitle-size-value") as HTMLOutputElement,
   },
   {
-    key: "backgroundOpacity",
-    input: captionBackgroundOpacity,
+    key: "edgeIntensity",
+    input: document.querySelector(
+      "#subtitle-edge-intensity",
+    ) as HTMLInputElement,
     output: document.querySelector(
-      "#caption-background-opacity-value",
-    ) as HTMLOutputElement,
-  },
-  {
-    key: "outlineWidth",
-    input: document.querySelector("#caption-outline-width") as HTMLInputElement,
-    output: document.querySelector(
-      "#caption-outline-width-value",
-    ) as HTMLOutputElement,
-  },
-  {
-    key: "bottomOffset",
-    input: document.querySelector("#caption-position") as HTMLInputElement,
-    output: document.querySelector(
-      "#caption-position-value",
+      "#subtitle-edge-intensity-value",
     ) as HTMLOutputElement,
   },
 ] as const;
-const captionStyleReset = document.querySelector(
-  "#caption-style-reset",
+const subtitleStyleReset = document.querySelector(
+  "#subtitle-style-reset",
+) as HTMLButtonElement;
+const subtitleLayoutReset = document.querySelector(
+  "#subtitle-layout-reset",
 ) as HTMLButtonElement;
 
-let popupCaptionStyle = { ...captionSettings.DEFAULTS };
-let popupCaptionStyleRevision = 0;
-let popupCaptionStyleDirty = false;
-let captionStyleSaveQueue: Promise<void> = Promise.resolve();
-let captionStyleSaveTimer: ReturnType<typeof setTimeout> | undefined;
+let activeSubtitleStyleTarget: SubtitleStyleTarget = "primary";
+let subtitleStyleControlsLoaded = false;
+let subtitleLayoutLoaded = false;
+const popupSubtitleStyles: Record<SubtitleStyleTarget, SubtitleStyleSettings> =
+  {
+    primary: { ...subtitleSettings.DEFAULTS },
+    secondary: { ...subtitleSettings.SECONDARY_DEFAULTS },
+  };
+const subtitleStyleRevisions: Record<SubtitleStyleTarget, number> = {
+  primary: 0,
+  secondary: 0,
+};
+const subtitleStyleDirty: Record<SubtitleStyleTarget, boolean> = {
+  primary: false,
+  secondary: false,
+};
+const subtitleStyleSaveQueues: Record<SubtitleStyleTarget, Promise<void>> = {
+  primary: Promise.resolve(),
+  secondary: Promise.resolve(),
+};
+const subtitleStyleSaveTimers: Record<
+  SubtitleStyleTarget,
+  ReturnType<typeof setTimeout> | undefined
+> = { primary: undefined, secondary: undefined };
+let subtitleLayout = { ...subtitleSettings.LAYOUT_DEFAULTS };
+let subtitleLayoutRevision = 0;
+let subtitleLayoutDirty = false;
+let subtitleLayoutSaveQueue: Promise<void> = Promise.resolve();
+let subtitleLayoutSaveTimer: ReturnType<typeof setTimeout> | undefined;
 
-function setCaptionStyleControlsDisabled(disabled: boolean) {
-  captionFontFamily.disabled = disabled;
-  captionTextColor.disabled = disabled;
-  captionBackgroundColor.disabled = disabled;
-  captionBackgroundOpacity.disabled = disabled;
-  captionEdgeStyle.disabled = disabled;
-  captionEdgeColor.disabled = disabled;
-  for (const control of captionStyleControls) control.input.disabled = disabled;
-  captionStyleReset.disabled = disabled;
+function setSubtitleStyleControlsDisabled() {
+  const styleDisabled = !subtitleStyleControlsLoaded;
+  const layoutDisabled = !subtitleLayoutLoaded;
+  subtitleFontFamily.disabled = styleDisabled;
+  subtitleTextColor.disabled = styleDisabled;
+  subtitleEdgeStyle.disabled = styleDisabled;
+  subtitleEdgeColor.disabled = styleDisabled;
+  subtitleBackgroundColor.disabled = layoutDisabled;
+  subtitleBackgroundOpacity.disabled = layoutDisabled;
+  subtitlePairGap.disabled = layoutDisabled;
+  subtitleLetterSpacing.disabled = layoutDisabled;
+  subtitlePosition.disabled = layoutDisabled;
+  subtitleLayoutReset.disabled = layoutDisabled;
+  for (const control of subtitleStyleControls)
+    control.input.disabled = styleDisabled;
+  subtitleStyleReset.disabled = styleDisabled;
+  for (const button of Object.values(subtitleStyleButtons))
+    button.disabled = styleDisabled;
 }
 
-function renderCaptionStyle() {
-  for (const control of captionStyleControls) {
-    const value = popupCaptionStyle[control.key];
+function renderSubtitleStyle() {
+  const style = popupSubtitleStyles[activeSubtitleStyleTarget];
+  for (const control of subtitleStyleControls) {
+    const value = style[control.key];
     control.input.value = String(value);
     control.output.value =
-      control.key === "outlineWidth"
-        ? `${value}px`
+      control.key === "edgeIntensity"
+        ? String(value)
         : control.key === "fontWeight"
           ? String(value)
           : `${value}%`;
   }
-  captionFontFamily.value = popupCaptionStyle.fontFamily;
-  captionTextColor.value = popupCaptionStyle.textColor;
-  captionBackgroundColor.value = popupCaptionStyle.backgroundColor;
-  captionEdgeStyle.value = popupCaptionStyle.edgeStyle;
-  captionEdgeColor.value = popupCaptionStyle.edgeColor;
-  const edgeEnabled = popupCaptionStyle.edgeStyle !== "none";
-  captionEdgeColor.disabled = !edgeEnabled;
-  const outlineEnabled = popupCaptionStyle.edgeStyle === "outline";
-  const outlineControl = captionStyleControls.find(
-    (control) => control.key === "outlineWidth",
+  subtitleFontFamily.value = style.fontFamily;
+  subtitleTextColor.value = style.textColor;
+  subtitleEdgeStyle.value = style.edgeStyle;
+  subtitleEdgeColor.value = style.edgeColor;
+  subtitleEdgeColor.disabled =
+    !subtitleStyleControlsLoaded || style.edgeStyle === "none";
+  const edgeEnabled = style.edgeStyle !== "none";
+  const outlineControl = subtitleStyleControls.find(
+    (control) => control.key === "edgeIntensity",
   );
-  if (outlineControl) outlineControl.input.disabled = !outlineEnabled;
-  captionOutlineWidthRow.hidden = !outlineEnabled;
-  captionSettings.apply(captionPreview, popupCaptionStyle);
+  if (outlineControl)
+    outlineControl.input.disabled =
+      !subtitleStyleControlsLoaded || !edgeEnabled;
+  subtitleOutlineWidthRow.hidden = !edgeEnabled;
+  for (const target of subtitleStyleTargets)
+    subtitleStyleButtons[target].setAttribute(
+      "aria-pressed",
+      String(target === activeSubtitleStyleTarget),
+    );
+  subtitleSettings.apply(subtitlePreview, popupSubtitleStyles.primary);
+  subtitleSettings.apply(subtitlePreviewPrimary, popupSubtitleStyles.primary);
+  subtitleSettings.apply(
+    subtitlePreviewSecondary,
+    popupSubtitleStyles.secondary,
+  );
+  subtitlePairGap.value = String(subtitleLayout.pairGap);
+  subtitlePairGapValue.value = `${(subtitleLayout.pairGap / 100).toFixed(2)}em`;
+  subtitleLetterSpacing.value = String(subtitleLayout.letterSpacing);
+  subtitleLetterSpacingValue.value = `${(subtitleLayout.letterSpacing / 100).toFixed(2)}em`;
+  subtitleBackgroundColor.value = subtitleLayout.backgroundColor;
+  subtitleBackgroundOpacity.value = String(subtitleLayout.backgroundOpacity);
+  subtitleBackgroundOpacityValue.value = `${subtitleLayout.backgroundOpacity}%`;
+  subtitlePosition.value = String(subtitleLayout.bottomOffset);
+  subtitlePositionValue.value = `${subtitleLayout.bottomOffset}%`;
+  subtitleSettings.applyLayout(subtitlePreview, subtitleLayout);
 }
 
-function updateCaptionStyle(value: unknown) {
-  popupCaptionStyle = captionSettings.normalize(value);
-  popupCaptionStyleRevision++;
-  popupCaptionStyleDirty = true;
-  renderCaptionStyle();
+function updateSubtitleStyle(target: SubtitleStyleTarget, value: unknown) {
+  popupSubtitleStyles[target] = subtitleSettings.normalize(
+    value,
+    subtitleStyleDefaults[target],
+  );
+  subtitleStyleRevisions[target]++;
+  subtitleStyleDirty[target] = true;
+  renderSubtitleStyle();
 }
 
-async function saveCaptionStyle() {
-  const style = { ...popupCaptionStyle };
-  const revision = popupCaptionStyleRevision;
-  const save = captionStyleSaveQueue.then(() =>
+async function saveSubtitleStyle(target: SubtitleStyleTarget) {
+  const style = { ...popupSubtitleStyles[target] };
+  const revision = subtitleStyleRevisions[target];
+  const save = subtitleStyleSaveQueues[target].then(() =>
     chrome.storage.local.set({
-      [captionSettings.STORAGE_KEY]: style,
+      [subtitleStyleStorageKeys[target]]: style,
     }),
   );
-  captionStyleSaveQueue = save.catch(() => {});
+  subtitleStyleSaveQueues[target] = save.catch(() => {});
   try {
     await save;
-    if (revision === popupCaptionStyleRevision) popupCaptionStyleDirty = false;
+    if (revision === subtitleStyleRevisions[target])
+      subtitleStyleDirty[target] = false;
     showStatus("");
   } catch {
-    showStatus(t("popupCannotSaveCaption"), true);
+    showStatus(t("popupCannotSaveSubtitle"), true);
   }
 }
 
-function scheduleCaptionStyleSave() {
-  if (captionStyleSaveTimer) clearTimeout(captionStyleSaveTimer);
-  captionStyleSaveTimer = setTimeout(() => {
-    captionStyleSaveTimer = undefined;
-    void saveCaptionStyle();
+function scheduleSubtitleStyleSave(target: SubtitleStyleTarget) {
+  const previousTimer = subtitleStyleSaveTimers[target];
+  if (previousTimer) clearTimeout(previousTimer);
+  subtitleStyleSaveTimers[target] = setTimeout(() => {
+    subtitleStyleSaveTimers[target] = undefined;
+    void saveSubtitleStyle(target);
   }, 120);
 }
 
-async function loadCaptionStyle() {
-  const revision = popupCaptionStyleRevision;
-  let style: typeof popupCaptionStyle;
-  try {
-    const stored = await chrome.storage.local.get(captionSettings.STORAGE_KEY);
-    style = captionSettings.normalize(stored[captionSettings.STORAGE_KEY]);
-  } catch {
-    style = { ...captionSettings.DEFAULTS };
-  }
-  if (revision === popupCaptionStyleRevision) popupCaptionStyle = style;
-  setCaptionStyleControlsDisabled(false);
-  renderCaptionStyle();
+function saveSubtitleStyleImmediately(target: SubtitleStyleTarget) {
+  const timer = subtitleStyleSaveTimers[target];
+  if (timer) clearTimeout(timer);
+  subtitleStyleSaveTimers[target] = undefined;
+  void saveSubtitleStyle(target);
 }
 
-for (const control of captionStyleControls) {
+function updateSubtitleLayout(value: unknown) {
+  subtitleLayout = subtitleSettings.normalizeLayout(value);
+  subtitleLayoutRevision++;
+  subtitleLayoutDirty = true;
+  renderSubtitleStyle();
+}
+
+async function saveSubtitleLayout() {
+  const layout = { ...subtitleLayout };
+  const revision = subtitleLayoutRevision;
+  const save = subtitleLayoutSaveQueue.then(() =>
+    chrome.storage.local.set({
+      [subtitleSettings.LAYOUT_STORAGE_KEY]: layout,
+    }),
+  );
+  subtitleLayoutSaveQueue = save.catch(() => {});
+  try {
+    await save;
+    if (revision === subtitleLayoutRevision) subtitleLayoutDirty = false;
+    showStatus("");
+  } catch {
+    showStatus(t("popupCannotSaveSubtitle"), true);
+  }
+}
+
+function scheduleSubtitleLayoutSave() {
+  if (subtitleLayoutSaveTimer) clearTimeout(subtitleLayoutSaveTimer);
+  subtitleLayoutSaveTimer = setTimeout(() => {
+    subtitleLayoutSaveTimer = undefined;
+    void saveSubtitleLayout();
+  }, 120);
+}
+
+async function loadSubtitleLayout() {
+  const revision = subtitleLayoutRevision;
+  try {
+    const stored = await chrome.storage.local.get(
+      subtitleSettings.LAYOUT_STORAGE_KEY,
+    );
+    if (revision === subtitleLayoutRevision)
+      subtitleLayout = subtitleSettings.normalizeLayout(
+        stored[subtitleSettings.LAYOUT_STORAGE_KEY],
+      );
+  } catch {
+    if (revision === subtitleLayoutRevision)
+      subtitleLayout = { ...subtitleSettings.LAYOUT_DEFAULTS };
+  }
+  subtitleLayoutLoaded = true;
+  setSubtitleStyleControlsDisabled();
+  renderSubtitleStyle();
+}
+
+async function loadSubtitleStyles() {
+  const revisions = { ...subtitleStyleRevisions };
+  try {
+    const stored = await chrome.storage.local.get({
+      [subtitleSettings.STORAGE_KEY]: subtitleSettings.DEFAULTS,
+      [subtitleSettings.SECONDARY_STORAGE_KEY]:
+        subtitleSettings.SECONDARY_DEFAULTS,
+    });
+    for (const target of subtitleStyleTargets) {
+      if (revisions[target] === subtitleStyleRevisions[target]) {
+        const scrubbed = subtitleSettings.scrubOrphanedStyleFields(
+          stored[subtitleStyleStorageKeys[target]],
+          subtitleSettings.normalize(
+            stored[subtitleStyleStorageKeys[target]],
+            subtitleStyleDefaults[target],
+          ),
+        );
+        popupSubtitleStyles[target] = scrubbed.style;
+        if (scrubbed.changed)
+          void chrome.storage.local.set({
+            [subtitleStyleStorageKeys[target]]: scrubbed.style,
+          });
+      }
+    }
+  } catch {
+    for (const target of subtitleStyleTargets) {
+      if (revisions[target] === subtitleStyleRevisions[target])
+        popupSubtitleStyles[target] = {
+          ...subtitleStyleDefaults[target],
+        };
+    }
+  }
+  subtitleStyleControlsLoaded = true;
+  setSubtitleStyleControlsDisabled();
+  renderSubtitleStyle();
+}
+
+for (const control of subtitleStyleControls) {
   control.input.addEventListener("input", () => {
-    updateCaptionStyle({
-      ...popupCaptionStyle,
+    const target = activeSubtitleStyleTarget;
+    updateSubtitleStyle(target, {
+      ...popupSubtitleStyles[target],
       [control.key]: Number(control.input.value),
     });
-    scheduleCaptionStyleSave();
+    scheduleSubtitleStyleSave(target);
   });
-  control.input.addEventListener("change", () => {
-    if (captionStyleSaveTimer) clearTimeout(captionStyleSaveTimer);
-    captionStyleSaveTimer = undefined;
-    void saveCaptionStyle();
+  control.input.addEventListener("change", () =>
+    saveSubtitleStyleImmediately(activeSubtitleStyleTarget),
+  );
+}
+
+for (const [input, key] of [
+  [subtitleBackgroundColor, "backgroundColor"],
+  [subtitleBackgroundOpacity, "backgroundOpacity"],
+  [subtitlePairGap, "pairGap"],
+  [subtitleLetterSpacing, "letterSpacing"],
+  [subtitlePosition, "bottomOffset"],
+] as const) {
+  input.addEventListener("input", () => {
+    updateSubtitleLayout({
+      ...subtitleLayout,
+      [key]: key === "backgroundColor" ? input.value : Number(input.value),
+    });
+    scheduleSubtitleLayoutSave();
+  });
+  input.addEventListener("change", () => {
+    if (subtitleLayoutSaveTimer) clearTimeout(subtitleLayoutSaveTimer);
+    subtitleLayoutSaveTimer = undefined;
+    void saveSubtitleLayout();
   });
 }
 
-captionFontFamily.addEventListener("change", () => {
-  updateCaptionStyle({
-    ...popupCaptionStyle,
-    fontFamily: captionFontFamily.value,
+for (const target of subtitleStyleTargets)
+  subtitleStyleButtons[target].addEventListener("click", () => {
+    activeSubtitleStyleTarget = target;
+    renderSubtitleStyle();
   });
-  void saveCaptionStyle();
+
+subtitleFontFamily.addEventListener("change", () => {
+  const target = activeSubtitleStyleTarget;
+  updateSubtitleStyle(target, {
+    ...popupSubtitleStyles[target],
+    fontFamily: subtitleFontFamily.value,
+  });
+  void saveSubtitleStyle(target);
 });
-captionEdgeStyle.addEventListener("change", () => {
-  updateCaptionStyle({
-    ...popupCaptionStyle,
-    edgeStyle: captionEdgeStyle.value,
+subtitleEdgeStyle.addEventListener("change", () => {
+  const target = activeSubtitleStyleTarget;
+  updateSubtitleStyle(target, {
+    ...popupSubtitleStyles[target],
+    edgeStyle: subtitleEdgeStyle.value,
   });
-  void saveCaptionStyle();
+  void saveSubtitleStyle(target);
 });
 for (const [input, key] of [
-  [captionTextColor, "textColor"],
-  [captionBackgroundColor, "backgroundColor"],
-  [captionEdgeColor, "edgeColor"],
+  [subtitleTextColor, "textColor"],
+  [subtitleEdgeColor, "edgeColor"],
 ] as const) {
   input.addEventListener("input", () => {
-    updateCaptionStyle({
-      ...popupCaptionStyle,
+    const target = activeSubtitleStyleTarget;
+    updateSubtitleStyle(target, {
+      ...popupSubtitleStyles[target],
       [key]: input.value,
     });
-    scheduleCaptionStyleSave();
+    scheduleSubtitleStyleSave(target);
   });
-  input.addEventListener("change", () => {
-    if (captionStyleSaveTimer) clearTimeout(captionStyleSaveTimer);
-    captionStyleSaveTimer = undefined;
-    void saveCaptionStyle();
-  });
+  input.addEventListener("change", () =>
+    saveSubtitleStyleImmediately(activeSubtitleStyleTarget),
+  );
 }
-captionStyleReset.addEventListener("click", () => {
-  updateCaptionStyle(captionSettings.DEFAULTS);
-  void saveCaptionStyle();
+subtitleStyleReset.addEventListener("click", () => {
+  const target = activeSubtitleStyleTarget;
+  updateSubtitleStyle(target, subtitleStyleDefaults[target]);
+  void saveSubtitleStyle(target);
+});
+subtitleLayoutReset.addEventListener("click", () => {
+  updateSubtitleLayout({ ...subtitleSettings.LAYOUT_DEFAULTS });
+  void saveSubtitleLayout();
 });
 
 // 監聽其他頁面存入的 storage 變化
@@ -939,11 +1453,35 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     renderDanmakuStyle();
   }
 
-  const captionChange = changes[captionSettings.STORAGE_KEY];
-  if (captionChange && !popupCaptionStyleDirty) {
-    popupCaptionStyle = captionSettings.normalize(captionChange.newValue);
-    popupCaptionStyleRevision++;
-    renderCaptionStyle();
+  const translationConfigChange =
+    changes[subtitleTranslationSettings.CONFIG_KEY];
+  if (translationConfigChange) {
+    subtitleTranslationConfig = normalizeSubtitleTranslationConfig(
+      translationConfigChange.newValue,
+    );
+    microsoftTranslationRegion.value =
+      subtitleTranslationConfig.microsoftRegion;
+    renderSubtitleTranslationConfig();
+  }
+
+  for (const target of subtitleStyleTargets) {
+    const subtitleChange = changes[subtitleStyleStorageKeys[target]];
+    if (subtitleChange && !subtitleStyleDirty[target]) {
+      popupSubtitleStyles[target] = subtitleSettings.normalize(
+        subtitleChange.newValue,
+        subtitleStyleDefaults[target],
+      );
+      subtitleStyleRevisions[target]++;
+      renderSubtitleStyle();
+    }
+  }
+  const subtitleLayoutChange = changes[subtitleSettings.LAYOUT_STORAGE_KEY];
+  if (subtitleLayoutChange && !subtitleLayoutDirty) {
+    subtitleLayout = subtitleSettings.normalizeLayout(
+      subtitleLayoutChange.newValue,
+    );
+    subtitleLayoutRevision++;
+    renderSubtitleStyle();
   }
 });
 
@@ -966,11 +1504,13 @@ window.addEventListener("scroll", () => {
 });
 
 setDanmakuStyleControlsDisabled(true);
-setCaptionStyleControlsDisabled(true);
+setSubtitleStyleControlsDisabled();
 renderDanmakuStyle();
-renderCaptionStyle();
+renderSubtitleStyle();
 void loadShortcuts();
 void loadToggles();
 void loadSeekSeconds();
 void loadDanmakuStyle();
-void loadCaptionStyle();
+void loadSubtitleStyles();
+void loadSubtitleLayout();
+void loadSubtitleTranslationConfig();

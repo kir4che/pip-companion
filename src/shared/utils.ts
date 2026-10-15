@@ -67,7 +67,7 @@ globalThis.PipCompanion.util = (() => {
       shift: false,
       meta: false,
     },
-    pipToggleCaptionsShortcut: {
+    pipToggleSubtitlesShortcut: {
       code: "KeyC",
       ctrl: false,
       alt: false,
@@ -203,6 +203,32 @@ globalThis.PipCompanion.util = (() => {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
 
+  function isValidAdditionalDanmakuSourceUrl(value: string): boolean {
+    try {
+      const url = new URL(value);
+      if (url.protocol !== "https:") return false;
+      if (/(^|\.)bilibili\.com$/i.test(url.hostname)) {
+        const page = Number(url.searchParams.get("p") || 1);
+        return (
+          /^\/video\/(?:BV[\w]{10}|av\d+)\/?$/i.test(url.pathname) &&
+          Number.isInteger(page) &&
+          page >= 1 &&
+          page <= 1000
+        );
+      }
+      if (url.hostname.toLowerCase() === "ani.gamer.com.tw")
+        return (
+          url.pathname === "/animeVideo.php" &&
+          /^\d{1,12}$/.test(url.searchParams.get("sn") || "")
+        );
+      if (/(^|\.)twitch\.tv$/i.test(url.hostname))
+        return /^\/[a-z0-9_]{1,25}$/i.test(url.pathname);
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
   function isExtensionMessage(value: unknown): value is ExtensionMessage {
     if (!isRecord(value) || typeof value.type !== "string") return false;
 
@@ -217,6 +243,7 @@ globalThis.PipCompanion.util = (() => {
       case "OPEN_PIP":
         return true;
       case "SAVE_PIP_BOUNDS":
+      case "CENTER_PIP_BOUNDS":
         return (
           [
             value.innerWidth,
@@ -253,6 +280,71 @@ globalThis.PipCompanion.util = (() => {
         );
       case "PIP_SOURCE_PLAYBACK_CHANGED":
         return typeof value.playing === "boolean";
+      case "GET_ADDITIONAL_DANMAKU_SOURCE":
+        return true;
+      case "GET_BAHAMUT_DANMAKU":
+        return (
+          typeof value.videoSn === "string" &&
+          /^\d{1,12}$/.test(value.videoSn) &&
+          Number(value.videoSn) > 0
+        );
+      case "START_ADDITIONAL_TWITCH_CHAT":
+        return (
+          typeof value.channel === "string" &&
+          /^[a-z0-9_]{1,25}$/i.test(value.channel)
+        );
+      case "STOP_ADDITIONAL_TWITCH_CHAT":
+        return true;
+      case "ADDITIONAL_TWITCH_CHAT_STATUS":
+        return (
+          typeof value.channel === "string" &&
+          /^[a-z0-9_]{1,25}$/i.test(value.channel) &&
+          typeof value.connectionId === "string" &&
+          value.connectionId.length <= 100 &&
+          (value.status === "connected" || value.status === "error") &&
+          (value.error === undefined || typeof value.error === "string")
+        );
+      case "ADDITIONAL_TWITCH_CHAT_MESSAGE":
+        return (
+          typeof value.channel === "string" &&
+          /^[a-z0-9_]{1,25}$/i.test(value.channel) &&
+          typeof value.connectionId === "string" &&
+          value.connectionId.length <= 100 &&
+          isRecord(value.data) &&
+          typeof value.data.text === "string" &&
+          value.data.text.length <= 2000
+        );
+      case "ADDITIONAL_DANMAKU_SOURCE_STATUS":
+        return (
+          (value.error === null || typeof value.error === "string") &&
+          typeof value.revision === "number" &&
+          Number.isInteger(value.revision) &&
+          value.revision >= 0
+        );
+      case "ADDITIONAL_DANMAKU_SOURCE_CHANGED":
+        return (
+          isRecord(value.source) &&
+          typeof value.source.enabled === "boolean" &&
+          typeof value.source.url === "string" &&
+          value.source.url.length <= 2048 &&
+          (value.source.url === "" ||
+            isValidAdditionalDanmakuSourceUrl(value.source.url)) &&
+          (!value.source.enabled || value.source.url !== "") &&
+          typeof value.source.offsetSeconds === "number" &&
+          Number.isFinite(value.source.offsetSeconds) &&
+          Math.abs(value.source.offsetSeconds) <= 3600 &&
+          typeof value.available === "boolean"
+        );
+      case "SET_ADDITIONAL_DANMAKU_SOURCE":
+        return (
+          isRecord(value.source) &&
+          typeof value.source.enabled === "boolean" &&
+          typeof value.source.url === "string" &&
+          typeof value.source.offsetSeconds === "number" &&
+          Number.isFinite(value.source.offsetSeconds)
+        );
+      case "GET_BILIBILI_SUBTITLE_CUES":
+        return typeof value.url === "string" && value.url.length <= 8192;
       case "RESIZE_PIP_WINDOW":
         return (
           typeof value.innerWidth === "number" &&
@@ -419,6 +511,7 @@ globalThis.PipCompanion.util = (() => {
     SEEK_SECONDS_OPTIONS,
     normalizeSeekSeconds,
     isRecord,
+    isValidAdditionalDanmakuSourceUrl,
     isExtensionMessage,
     normalizeShortcut,
     hasMetaModifier,

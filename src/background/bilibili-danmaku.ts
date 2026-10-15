@@ -1,6 +1,10 @@
 import "../shared/bilibili-danmaku-config.js";
 import { parseBilibiliAdvancedDanmaku } from "../shared/bilibili-advanced-danmaku.js";
 import { isRecord } from "../shared/type-guards.js";
+import {
+  isSupportedDanmakuSender,
+  readResponseBytes,
+} from "./danmaku-utils.js";
 
 const BILIBILI_SEGMENT_SECONDS =
   globalThis.PipCompanion.bilibiliDanmakuConfig.segmentSeconds;
@@ -54,7 +58,11 @@ async function fetchWithRetry(
   let lastError: unknown;
   for (let attempt = 0; attempt <= BILIBILI_RETRY_DELAYS_MS.length; attempt++) {
     try {
-      const response = await fetch(input, init);
+      const response = await fetch(input, {
+        ...init,
+        referrer: "https://www.bilibili.com/",
+        referrerPolicy: "strict-origin-when-cross-origin",
+      });
       if (
         response.ok ||
         ![408, 425, 429, 500, 502, 503, 504].includes(response.status) ||
@@ -152,45 +160,6 @@ function md5(input: string): string {
     .join("");
 }
 
-async function readResponseBytes(
-  response: Response,
-  maxBytes: number,
-  label: string,
-): Promise<Uint8Array> {
-  if (!response.body) {
-    const buffer = await response.arrayBuffer();
-    if (buffer.byteLength > maxBytes)
-      throw new Error(`${label} response is too large`);
-    return new Uint8Array(buffer);
-  }
-
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  try {
-    while (true) {
-      const result = await reader.read();
-      if (result.done) break;
-      total += result.value.byteLength;
-      if (total > maxBytes) {
-        await reader.cancel();
-        throw new Error(`${label} response is too large`);
-      }
-      chunks.push(result.value);
-    }
-  } finally {
-    reader.releaseLock();
-  }
-
-  const bytes = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    bytes.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return bytes;
-}
-
 async function getWbiMixinKey(): Promise<string> {
   if (cachedWbiMixinKey && Date.now() < cachedWbiKeyExpiresAt)
     return cachedWbiMixinKey;
@@ -244,6 +213,88 @@ function createWbiUrl(
     url.searchParams.set(key, String(value));
   url.searchParams.set("w_rid", md5(canonicalQuery + mixinKey));
   return url;
+}
+
+function parseBilibiliInitialState(html: string): unknown {
+  const assignment = /(?:window\.)?__INITIAL_STATE__\s*=\s*/.exec(html);
+  if (!assignment || assignment.index === undefined)
+    throw new Error("Bilibili video page metadata was not found");
+
+  let jsonStart = assignment.index + assignment[0].length;
+  while (/\s/.test(html[jsonStart] || "")) jsonStart++;
+  if (html[jsonStart] !== "{")
+    throw new Error("Bilibili video page metadata is not JSON");
+
+  let jsonEnd = -1;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = jsonStart; index < html.length; index++) {
+    const character = html[index];
+    if (character === undefined) break;
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (character === "\\") escaped = true;
+      else if (character === '"') inString = false;
+    } else if (character === '"') {
+      inString = true;
+    } else if (character === "{") {
+      depth++;
+    } else if (character === "}") {
+      depth--;
+      if (depth === 0) {
+        jsonEnd = index + 1;
+        break;
+      }
+    }
+  }
+  if (jsonEnd < 0 || inString || depth !== 0)
+    throw new Error("Bilibili video page metadata is incomplete");
+  try {
+    return JSON.parse(html.slice(jsonStart, jsonEnd));
+  } catch {
+    throw new Error("Bilibili video page metadata is invalid");
+  }
+}
+
+async function fetchBilibiliPageMetadata(
+  videoId: string,
+  page: number,
+): Promise<{ cid: string; aid: string; duration: number }> {
+  const videoPath = /^BV[\w]{10}$/i.test(videoId) ? videoId : `av${videoId}`;
+  const pageUrl = new URL(`https://www.bilibili.com/video/${videoPath}/`);
+  pageUrl.searchParams.set("p", String(page));
+  const response = await fetchWithRetry(
+    pageUrl,
+    { credentials: "include", cache: "no-store" },
+    "Video page metadata",
+  );
+  if (!response.ok)
+    throw new Error(`Video page metadata HTTP ${response.status}`);
+  const html = new TextDecoder().decode(
+    await readResponseBytes(
+      response,
+      BILIBILI_MAX_SEGMENT_BYTES,
+      "Bilibili video page",
+    ),
+  );
+
+  const state = parseBilibiliInitialState(html);
+  const videoData =
+    isRecord(state) && isRecord(state.videoData) ? state.videoData : null;
+  const pages = Array.isArray(videoData?.pages) ? videoData.pages : [];
+  const part = pages[page - 1];
+  const cid = String(isRecord(part) ? (part.cid ?? "") : "");
+  const aid = String(videoData?.aid ?? "");
+  const duration = Number(isRecord(part) ? part.duration : undefined);
+  if (
+    !/^\d+$/.test(cid) ||
+    !/^\d+$/.test(aid) ||
+    !Number.isFinite(duration) ||
+    duration <= 0
+  )
+    throw new Error("Bilibili video page metadata was not found");
+  return { cid, aid, duration };
 }
 
 function readProtoVarint(
@@ -506,7 +557,6 @@ export function registerBilibiliDanmakuListener() {
     (message: unknown, sender, sendResponse) => {
       if (!isBilibiliDanmakuRequest(message)) return;
 
-      const senderUrl = sender.url || sender.tab?.url || "";
       const bvid = message.bvid || "";
       const avid = message.avid || "";
       const page = message.page;
@@ -516,7 +566,7 @@ export function registerBilibiliDanmakuListener() {
         message.startSegment !== undefined || message.endSegment !== undefined;
 
       if (
-        !/^https:\/\/(www\.)?bilibili\.com\//.test(senderUrl) ||
+        !isSupportedDanmakuSender(sender) ||
         (!/^BV[\w]{10}$/i.test(bvid) && !/^\d+$/.test(avid)) ||
         (Boolean(bvid) && Boolean(avid)) ||
         !Number.isInteger(page) ||
@@ -543,29 +593,41 @@ export function registerBilibiliDanmakuListener() {
             { credentials: "include" },
             "Video info",
           );
-          if (!videoResponse.ok)
-            throw new Error(`Video info HTTP ${videoResponse.status}`);
+          let cid: string;
+          let aid: string;
+          let duration: number;
+          if (videoResponse.status === 412) {
+            ({ cid, aid, duration } = await fetchBilibiliPageMetadata(
+              bvid || avid,
+              page,
+            ));
+          } else {
+            if (!videoResponse.ok)
+              throw new Error(`Video info HTTP ${videoResponse.status}`);
 
-          const videoInfo: unknown = await videoResponse.json();
-          const videoData =
-            isRecord(videoInfo) && isRecord(videoInfo.data)
-              ? videoInfo.data
-              : null;
-          const pages = Array.isArray(videoData?.pages) ? videoData.pages : [];
-          const part = pages[page - 1];
-          const cid = String(isRecord(part) ? (part.cid ?? "") : "");
-          const aid = String(videoData?.aid ?? "");
-          const duration = Number(isRecord(part) ? part.duration : undefined);
+            const videoInfo: unknown = await videoResponse.json();
+            const videoData =
+              isRecord(videoInfo) && isRecord(videoInfo.data)
+                ? videoInfo.data
+                : null;
+            const pages = Array.isArray(videoData?.pages)
+              ? videoData.pages
+              : [];
+            const part = pages[page - 1];
+            cid = String(isRecord(part) ? (part.cid ?? "") : "");
+            aid = String(videoData?.aid ?? "");
+            duration = Number(isRecord(part) ? part.duration : undefined);
 
-          if (
-            !isRecord(videoInfo) ||
-            videoInfo.code !== 0 ||
-            !/^\d+$/.test(cid) ||
-            !/^\d+$/.test(aid) ||
-            !Number.isFinite(duration) ||
-            duration <= 0
-          )
-            throw new Error("Bilibili video part was not found");
+            if (
+              !isRecord(videoInfo) ||
+              videoInfo.code !== 0 ||
+              !/^\d+$/.test(cid) ||
+              !/^\d+$/.test(aid) ||
+              !Number.isFinite(duration) ||
+              duration <= 0
+            )
+              throw new Error("Bilibili video part was not found");
+          }
 
           const segmentCount = Math.ceil(duration / BILIBILI_SEGMENT_SECONDS);
           const segmentStart = rangeRequested
@@ -577,6 +639,34 @@ export function registerBilibiliDanmakuListener() {
                 requestedEndSegment || requestedStartSegment || 1,
               )
             : segmentCount;
+          const sendLegacyFallback = (
+            legacy: Awaited<ReturnType<typeof getCachedLegacyBilibiliDanmaku>>,
+          ) => {
+            const legacyComments = rangeRequested
+              ? legacy.comments.filter((comment) => {
+                  const start = (segmentStart - 1) * BILIBILI_SEGMENT_SECONDS;
+                  const end = Math.min(
+                    segmentEnd * BILIBILI_SEGMENT_SECONDS,
+                    duration,
+                  );
+                  return (
+                    comment.replayTime >= start && comment.replayTime < end
+                  );
+                })
+              : legacy.comments;
+            legacyComments.sort((a, b) => a.replayTime - b.replayTime);
+            sendResponse({
+              ok: true,
+              messages: legacyComments,
+              recoveredSegments: [],
+              unavailableSegments: [],
+              legacyFallback: !rangeRequested,
+              duration,
+              segmentCount,
+              segmentStart,
+              segmentEnd,
+            });
+          };
 
           if (
             segmentStart > segmentCount ||
@@ -587,18 +677,7 @@ export function registerBilibiliDanmakuListener() {
 
           if (segmentCount > BILIBILI_MAX_SEGMENTS) {
             const legacy = await getCachedLegacyBilibiliDanmaku(cid);
-            legacy.comments.sort((a, b) => a.replayTime - b.replayTime);
-            sendResponse({
-              ok: true,
-              messages: legacy.comments,
-              recoveredSegments: [],
-              unavailableSegments: [],
-              legacyFallback: true,
-              duration,
-              segmentCount,
-              segmentStart: 1,
-              segmentEnd: segmentCount,
-            });
+            sendLegacyFallback(legacy);
             return;
           }
 
@@ -652,6 +731,12 @@ export function registerBilibiliDanmakuListener() {
                 },
                 `Danmaku segment ${segmentIndex}/${segmentCount}`,
               );
+
+            if (danmakuResponse.status === 412) {
+              const legacy = await getCachedLegacyBilibiliDanmaku(cid);
+              sendLegacyFallback(legacy);
+              return;
+            }
 
             if (!danmakuResponse.ok) {
               if ([304, 404].includes(danmakuResponse.status)) {

@@ -1,170 +1,674 @@
 {
-  "extName": { "message": "幕伴 PiP · PiP Companion" },
+  "extName": {
+    "message": "幕伴 PiP · PiP Companion"
+  },
   "extDescription": {
     "message": "以画中画模式播放网页视频，支持字幕、弹幕、截图和悬浮评论区。"
   },
-  "popupOpenPip": { "message": "开启画中画" },
-  "popupClosePip": { "message": "关闭画中画" },
-  "popupMainMenu": { "message": "主菜单" },
-  "popupShortcuts": { "message": "快捷键" },
-  "shortcutPlayPause": { "message": "播放 / 暂停" },
-  "shortcutCaptions": { "message": "字幕" },
-  "shortcutMute": { "message": "静音" },
-  "shortcutDanmakuInput": { "message": "弹幕输入" },
-  "shortcutResizePip": { "message": "调整画中画大小" },
-  "popupDanmaku": { "message": "弹幕" },
-  "popupScreenshot": { "message": "截图" },
-  "popupFloatingComments": { "message": "悬浮评论区" },
-  "popupThumbnailPreview": { "message": "缩略图预览" },
-  "popupSeekInterval": { "message": "快进／快退间隔" },
-  "popupSeconds": { "message": "$1 秒" },
-  "popupWheel": { "message": "滚轮" },
-  "popupFeatureSettings": { "message": "功能设置" },
-  "popupGeneralSettings": { "message": "常规设置" },
-  "popupAllSettings": { "message": "所有设置" },
-  "popupReportIssue": { "message": "反馈问题" },
-  "optionsTitle": { "message": "幕伴 PiP 设置" },
-  "optionsBrandTitle": { "message": "幕伴 PiP" },
-  "optionsSupportDevelopment": { "message": "支持幕伴 PiP" },
-  "popupLanguage": { "message": "界面语言" },
-  "popupLanguageSaveFailed": { "message": "无法保存语言设置" },
-  "popupDanmakuDisplaySettings": { "message": "弹幕显示设置" },
-  "popupCaptionStyleSettings": { "message": "字幕样式设置" },
-  "popupFollowPlayback": { "message": "跟随播放中视频" },
-  "popupBackToMenu": { "message": "返回主菜单" },
-  "popupDanmakuStyle": { "message": "弹幕样式" },
-  "popupFontSize": { "message": "字体大小" },
-  "popupScrollSpeed": { "message": "滚动速度" },
-  "speedVerySlow": { "message": "极慢" },
-  "speedSlow": { "message": "较慢" },
-  "speedNormal": { "message": "适中" },
-  "speedFast": { "message": "较快" },
-  "speedVeryFast": { "message": "极快" },
-  "popupOpacity": { "message": "不透明度" },
-  "popupDisplayArea": { "message": "显示区域" },
-  "popupFont": { "message": "字体" },
-  "popupFontGeneral": { "message": "通用" },
-  "popupFontAdvanced": { "message": "高级字体（因设备而异）" },
-  "popupSystemDefault": { "message": "系统默认" },
-  "popupSansSerif": { "message": "无衬线" },
-  "popupSerif": { "message": "衬线" },
-  "popupMonospace": { "message": "等宽" },
-  "popupArialLatin": { "message": "Arial" },
-  "popupBlackFont": { "message": "黑体" },
-  "popupSongFont": { "message": "宋体／明体" },
-  "popupFangSongFont": { "message": "仿宋" },
-  "popupKaiFont": { "message": "楷体" },
-  "popupFontWeight": { "message": "字重" },
-  "popupMaxFontSize": { "message": "最大字体大小" },
-  "popupResetDanmakuStyle": { "message": "重置弹幕样式" },
-  "popupCaptionStyle": { "message": "字幕样式" },
-  "popupCaptionPreview": { "message": "字幕样式预览" },
-  "popupCaptionPreviewText": { "message": "字幕预览示例" },
-  "popupCaptionPreviewSecondLine": { "message": "第二行字幕" },
-  "popupTextColor": { "message": "文字颜色" },
-  "popupBackgroundColor": { "message": "背景颜色" },
-  "popupBackgroundOpacity": { "message": "背景不透明度" },
-  "popupVerticalPosition": { "message": "垂直位置" },
-  "popupTextEdge": { "message": "文字边缘" },
-  "popupNone": { "message": "无" },
-  "popupShadow": { "message": "阴影" },
-  "popupRaised": { "message": "凸起" },
-  "popupDepressed": { "message": "凹陷" },
-  "popupOutline": { "message": "描边" },
-  "popupEdgeColor": { "message": "边缘颜色" },
-  "popupOutlineWidth": { "message": "描边粗细" },
-  "popupLineHeight": { "message": "行高" },
-  "popupResetCaptionStyle": { "message": "重置字幕样式" },
-  "popupCannotSaveToggle": { "message": "无法保存此项设置，请重试。" },
-  "popupCannotSaveDanmaku": { "message": "无法保存弹幕设置，请重试。" },
-  "popupCannotSaveCaption": { "message": "无法保存字幕设置，请重试。" },
-  "popupCannotSaveSeek": { "message": "无法保存跳转秒数，请重试。" },
-  "popupRecordingShortcut": { "message": "按下快捷键…" },
-  "popupRecordingResizeShortcut": { "message": "按住修饰键并滚动鼠标滚轮…" },
-  "popupOtherShortcut": { "message": "其他快捷键" },
-  "popupCheckingPip": { "message": "正在检查画中画状态…" },
-  "popupClosingPip": { "message": "正在关闭画中画…" },
-  "popupCannotClosePip": { "message": "无法关闭画中画" },
-  "popupOpenOnWebpage": { "message": "请在扩展程序可访问的网页上打开视频" },
-  "popupOpeningPip": { "message": "正在开启…" },
+  "popupOpenPip": {
+    "message": "开启画中画"
+  },
+  "popupClosePip": {
+    "message": "关闭画中画"
+  },
+  "popupMainMenu": {
+    "message": "主菜单"
+  },
+  "popupShortcuts": {
+    "message": "快捷键"
+  },
+  "shortcutPlayPause": {
+    "message": "播放 / 暂停"
+  },
+  "shortcutSubtitles": {
+    "message": "字幕"
+  },
+  "shortcutMute": {
+    "message": "静音"
+  },
+  "shortcutDanmakuInput": {
+    "message": "弹幕输入"
+  },
+  "shortcutResizePip": {
+    "message": "调整画中画大小"
+  },
+  "popupDanmaku": {
+    "message": "弹幕"
+  },
+  "popupAdditionalDanmaku": {
+    "message": "额外弹幕"
+  },
+  "popupAdditionalDanmakuScope": {
+    "message": "设置应用范围说明"
+  },
+  "popupAdditionalDanmakuScopeTooltip": {
+    "message": "设置仅应用于当前标签页，切换视频、刷新页面或来源出错时会停用。"
+  },
+  "popupAdditionalDanmakuEnabled": {
+    "message": "显示额外弹幕"
+  },
+  "popupAdditionalDanmakuUrl": {
+    "message": "来源网址（支持 Bilibili、动画疯、Twitch）"
+  },
+  "popupAdditionalDanmakuOffset": {
+    "message": "时间偏移／延迟（秒）"
+  },
+  "popupScreenshot": {
+    "message": "截图"
+  },
+  "popupFloatingComments": {
+    "message": "悬浮评论区"
+  },
+  "popupThumbnailPreview": {
+    "message": "缩略图预览"
+  },
+  "popupSeekInterval": {
+    "message": "快进／快退间隔"
+  },
+  "popupSeconds": {
+    "message": "$1 秒"
+  },
+  "popupWheel": {
+    "message": "滚轮"
+  },
+  "popupFeatureSettings": {
+    "message": "功能设置"
+  },
+  "popupGeneralSettings": {
+    "message": "常规设置"
+  },
+  "popupAllSettings": {
+    "message": "所有设置"
+  },
+  "popupReportIssue": {
+    "message": "反馈问题"
+  },
+  "optionsTitle": {
+    "message": "幕伴 PiP 设置"
+  },
+  "optionsBrandTitle": {
+    "message": "幕伴 PiP"
+  },
+  "optionsSupportDevelopment": {
+    "message": "支持幕伴 PiP"
+  },
+  "popupLanguage": {
+    "message": "界面语言"
+  },
+  "popupLanguageSaveFailed": {
+    "message": "无法保存语言设置"
+  },
+  "popupDanmakuDisplaySettings": {
+    "message": "弹幕显示设置"
+  },
+  "popupSubtitleStyleSettings": {
+    "message": "字幕样式设置"
+  },
+  "popupFollowPlayback": {
+    "message": "跟随播放中视频"
+  },
+  "popupBackToMenu": {
+    "message": "返回主菜单"
+  },
+  "popupDanmakuStyle": {
+    "message": "弹幕样式"
+  },
+  "popupFontSize": {
+    "message": "字体大小"
+  },
+  "popupScrollSpeed": {
+    "message": "滚动速度"
+  },
+  "speedVerySlow": {
+    "message": "极慢"
+  },
+  "speedSlow": {
+    "message": "较慢"
+  },
+  "speedNormal": {
+    "message": "适中"
+  },
+  "speedFast": {
+    "message": "较快"
+  },
+  "speedVeryFast": {
+    "message": "极快"
+  },
+  "popupOpacity": {
+    "message": "不透明度"
+  },
+  "popupDisplayArea": {
+    "message": "显示区域"
+  },
+  "popupFont": {
+    "message": "字体"
+  },
+  "popupFontGeneral": {
+    "message": "通用"
+  },
+  "popupFontAdvanced": {
+    "message": "高级字体（因设备而异）"
+  },
+  "popupSystemDefault": {
+    "message": "系统默认"
+  },
+  "popupSansSerif": {
+    "message": "无衬线"
+  },
+  "popupSerif": {
+    "message": "衬线"
+  },
+  "popupMonospace": {
+    "message": "等宽"
+  },
+  "popupArialLatin": {
+    "message": "Arial"
+  },
+  "popupBlackFont": {
+    "message": "黑体"
+  },
+  "popupSongFont": {
+    "message": "宋体／明体"
+  },
+  "popupFangSongFont": {
+    "message": "仿宋"
+  },
+  "popupKaiFont": {
+    "message": "楷体"
+  },
+  "popupFontWeight": {
+    "message": "字重"
+  },
+  "popupMaxFontSize": {
+    "message": "最大字体大小"
+  },
+  "popupResetDanmakuStyle": {
+    "message": "重置弹幕样式"
+  },
+  "popupSubtitleStyle": {
+    "message": "字幕样式"
+  },
+  "popupPrimarySubtitleStyle": {
+    "message": "主字幕"
+  },
+  "popupSecondarySubtitleStyle": {
+    "message": "第二字幕"
+  },
+  "popupSharedSubtitleLayout": {
+    "message": "共用布局"
+  },
+  "popupResetCurrentSubtitleStyle": {
+    "message": "重置当前样式"
+  },
+  "popupResetSubtitleLayout": {
+    "message": "重置共用版面"
+  },
+  "popupSubtitlePreview": {
+    "message": "字幕样式预览"
+  },
+  "popupSubtitlePreviewText": {
+    "message": "字幕预览示例"
+  },
+  "popupSubtitlePreviewSecondLine": {
+    "message": "第二行字幕"
+  },
+  "popupTextColor": {
+    "message": "文字颜色"
+  },
+  "popupBackgroundColor": {
+    "message": "背景颜色"
+  },
+  "popupBackgroundOpacity": {
+    "message": "背景不透明度"
+  },
+  "popupSubtitlePairGap": {
+    "message": "主副字幕间距"
+  },
+  "popupLetterSpacing": {
+    "message": "字距"
+  },
+  "popupVerticalPosition": {
+    "message": "垂直位置"
+  },
+  "popupTextEdge": {
+    "message": "文字边缘"
+  },
+  "popupNone": {
+    "message": "无"
+  },
+  "popupShadow": {
+    "message": "阴影"
+  },
+  "popupRaised": {
+    "message": "凸起"
+  },
+  "popupDepressed": {
+    "message": "凹陷"
+  },
+  "popupOutline": {
+    "message": "描边"
+  },
+  "popupEdgeColor": {
+    "message": "边缘颜色"
+  },
+  "popupOutlineWidth": {
+    "message": "描边粗细"
+  },
+  "popupEdgeIntensity": {
+    "message": "效果强度"
+  },
+  "popupLineHeight": {
+    "message": "行高"
+  },
+  "popupResetSubtitleStyle": {
+    "message": "重置字幕样式"
+  },
+  "popupCannotSaveToggle": {
+    "message": "无法保存此项设置，请重试。"
+  },
+  "popupCannotSaveDanmaku": {
+    "message": "无法保存弹幕设置，请重试。"
+  },
+  "popupCannotSaveSubtitle": {
+    "message": "无法保存字幕设置，请重试。"
+  },
+  "popupCannotSaveSeek": {
+    "message": "无法保存跳转秒数，请重试。"
+  },
+  "popupRecordingShortcut": {
+    "message": "按下快捷键…"
+  },
+  "popupRecordingResizeShortcut": {
+    "message": "按住修饰键并滚动鼠标滚轮…"
+  },
+  "popupOtherShortcut": {
+    "message": "其他快捷键"
+  },
+  "popupCheckingPip": {
+    "message": "正在检查画中画状态…"
+  },
+  "popupClosingPip": {
+    "message": "正在关闭画中画…"
+  },
+  "popupCannotClosePip": {
+    "message": "无法关闭画中画"
+  },
+  "popupOpenOnWebpage": {
+    "message": "请在扩展程序可访问的网页上打开视频"
+  },
+  "popupOpeningPip": {
+    "message": "正在开启…"
+  },
   "popupCannotOpenPip": {
     "message": "无法开启画中画，请确认页面中有可播放的视频。"
   },
   "popupCannotOperatePip": {
     "message": "无法操作画中画，请确认扩展程序可以访问当前页面。"
   },
-  "popupWinKeyUnsupported": { "message": "不支持使用 Win 键设置快捷键" },
-  "popupModifierKey": { "message": "$1 是修饰键，请按住后再按另一个键。" },
-  "popupUnrecognizedKey": { "message": "无法识别此按键，请换一个。" },
+  "popupWinKeyUnsupported": {
+    "message": "不支持使用 Win 键设置快捷键"
+  },
+  "popupModifierKey": {
+    "message": "$1 是修饰键，请按住后再按另一个键。"
+  },
+  "popupUnrecognizedKey": {
+    "message": "无法识别此按键，请换一个。"
+  },
   "popupNavigationKey": {
     "message": "Tab 等系统导航键不能单独使用"
   },
-  "popupShortcutConflict": { "message": "此快捷键与“$1”冲突，请换一个。" },
-  "popupResetShortcut": { "message": "重置为默认快捷键" },
-  "popupClearShortcut": { "message": "清除快捷键" },
-  "popupShortcutUnassigned": { "message": "未分配" },
-  "popupCannotSaveShortcut": { "message": "无法保存快捷键，请重试。" },
+  "popupShortcutConflict": {
+    "message": "此快捷键与“$1”冲突，请换一个。"
+  },
+  "popupResetShortcut": {
+    "message": "重置为默认快捷键"
+  },
+  "popupClearShortcut": {
+    "message": "清除快捷键"
+  },
+  "popupShortcutUnassigned": {
+    "message": "未分配"
+  },
+  "popupCannotSaveShortcut": {
+    "message": "无法保存快捷键，请重试。"
+  },
   "popupResizeNeedsModifier": {
     "message": "请按住至少一个修饰键再滚动鼠标滚轮"
   },
-  "shortcutStepBackward": { "message": "逐帧后退" },
-  "shortcutStepForward": { "message": "逐帧前进" },
-  "shortcutSlower": { "message": "降低倍速" },
-  "shortcutFaster": { "message": "提高倍速" },
-  "shortcutRewind": { "message": "快退" },
-  "shortcutForward": { "message": "快进" },
-  "shortcutVolumeUp": { "message": "音量 +10" },
-  "shortcutVolumeDown": { "message": "音量 -10" },
-  "shortcutAutoFit": { "message": "自动调整比例" },
-  "commentsTooltip": { "message": "评论区（$1）" },
-  "commentsClose": { "message": "关闭评论区" },
+  "shortcutStepBackward": {
+    "message": "逐帧后退"
+  },
+  "shortcutStepForward": {
+    "message": "逐帧前进"
+  },
+  "shortcutSlower": {
+    "message": "降低倍速"
+  },
+  "shortcutFaster": {
+    "message": "提高倍速"
+  },
+  "shortcutRewind": {
+    "message": "快退"
+  },
+  "shortcutForward": {
+    "message": "快进"
+  },
+  "shortcutVolumeUp": {
+    "message": "音量 +10"
+  },
+  "shortcutVolumeDown": {
+    "message": "音量 -10"
+  },
+  "shortcutAutoFit": {
+    "message": "自动调整比例"
+  },
+  "commentsTooltip": {
+    "message": "评论区（$1）"
+  },
+  "commentsClose": {
+    "message": "关闭评论区"
+  },
   "contentHandoffFailed": {
     "message": "无法自动切换 PiP，请在此页面按 PiP 快捷键重新打开。"
   },
-  "pipProgress": { "message": "播放进度" },
-  "pipDanmakuInputOpen": { "message": "打开弹幕输入" },
-  "pipDanmakuInputClose": { "message": "关闭弹幕输入" },
-  "pipChatMessage": { "message": "弹幕内容" },
-  "pipSend": { "message": "发送" },
-  "pipPlayVideo": { "message": "播放视频" },
-  "pipPauseVideo": { "message": "暂停视频" },
-  "pipNextEpisode": { "message": "下一个视频" },
-  "pipPlaylist": { "message": "播放列表" },
-  "pipPlaybackSpeed": { "message": "播放速度 $1" },
-  "pipCurrentTime": { "message": "当前时间，输入后按 Enter 跳转。" },
-  "pipVolumeControl": { "message": "音量控制" },
-  "pipVolumeValue": { "message": "音量值" },
-  "pipVolume": { "message": "音量" },
-  "pipSpeed": { "message": "播放速度" },
-  "pipTitle": { "message": "幕伴 PiP" },
-  "pipUnmute": { "message": "取消静音" },
-  "pipMute": { "message": "静音" },
-  "pipCaptionsOn": { "message": "字幕：开" },
-  "pipCaptionsOff": { "message": "字幕：关" },
-  "pipCooldownSeconds": { "message": "$1 秒" },
-  "pipWaitToSend": { "message": "请等待 $1 秒后再发送" },
-  "pipEnterDanmaku": { "message": "请先输入弹幕内容" },
-  "pipDanmakuTooLong": { "message": "弹幕超过平台字数限制（$1 字）" },
-  "pipSendUnavailable": { "message": "无法发送，请确认聊天室状态。" },
-  "pipSendFailed": { "message": "发送失败，请稍后重试。" },
-  "pipTimeInvalid": { "message": "时间格式错误" },
-  "playlistVideo": { "message": "视频 $1" },
-  "playlistEpisode": { "message": "第 $1 集" },
-  "youtubeChatFrameTitle": { "message": "YouTube 聊天室消息来源" },
-  "pipSearchingTitle": { "message": "正在查找视频 · 幕伴 PiP" },
-  "pipSearching": { "message": "正在查找视频，请稍候…" },
-  "pipOpening": { "message": "正在开启画中画。" },
-  "pipCannotFocus": { "message": "无法切换到画中画，请稍后重试。" },
+  "pipProgress": {
+    "message": "播放进度"
+  },
+  "pipDanmakuInputOpen": {
+    "message": "打开弹幕输入"
+  },
+  "pipDanmakuInputClose": {
+    "message": "关闭弹幕输入"
+  },
+  "pipChatMessage": {
+    "message": "弹幕内容"
+  },
+  "pipSend": {
+    "message": "发送"
+  },
+  "pipPlayVideo": {
+    "message": "播放视频"
+  },
+  "pipPauseVideo": {
+    "message": "暂停视频"
+  },
+  "pipNextEpisode": {
+    "message": "下一个视频"
+  },
+  "pipPlaylist": {
+    "message": "播放列表"
+  },
+  "pipPlaybackSpeed": {
+    "message": "播放速度 $1"
+  },
+  "pipCurrentTime": {
+    "message": "当前时间，输入后按 Enter 跳转。"
+  },
+  "pipVolumeControl": {
+    "message": "音量控制"
+  },
+  "pipVolumeValue": {
+    "message": "音量值"
+  },
+  "pipVolume": {
+    "message": "音量"
+  },
+  "pipSpeed": {
+    "message": "播放速度"
+  },
+  "pipTitle": {
+    "message": "幕伴 PiP"
+  },
+  "pipUnmute": {
+    "message": "取消静音"
+  },
+  "pipMute": {
+    "message": "静音"
+  },
+  "pipSubtitlesOn": {
+    "message": "字幕：开"
+  },
+  "pipSubtitlesOff": {
+    "message": "字幕：关"
+  },
+  "pipSubtitlesToggle": {
+    "message": "显示字幕"
+  },
+  "pipSubtitleTrack": {
+    "message": "主字幕"
+  },
+  "pipSubtitleTrackChoose": {
+    "message": "选择字幕"
+  },
+  "pipSubtitleTrackNumber": {
+    "message": "字幕 $1"
+  },
+  "pipCooldownSeconds": {
+    "message": "$1 秒"
+  },
+  "pipWaitToSend": {
+    "message": "请等待 $1 秒后再发送"
+  },
+  "pipEnterDanmaku": {
+    "message": "请先输入弹幕内容"
+  },
+  "pipDanmakuTooLong": {
+    "message": "弹幕超过平台字数限制（$1 字）"
+  },
+  "pipSendUnavailable": {
+    "message": "无法发送，请确认聊天室状态。"
+  },
+  "pipSendFailed": {
+    "message": "发送失败，请稍后重试。"
+  },
+  "pipTimeInvalid": {
+    "message": "时间格式错误"
+  },
+  "playlistVideo": {
+    "message": "视频 $1"
+  },
+  "playlistEpisode": {
+    "message": "第 $1 集"
+  },
+  "youtubeChatFrameTitle": {
+    "message": "YouTube 聊天室消息来源"
+  },
+  "pipSearchingTitle": {
+    "message": "正在查找视频 · 幕伴 PiP"
+  },
+  "pipSearching": {
+    "message": "正在查找视频，请稍候…"
+  },
+  "pipOpening": {
+    "message": "正在开启画中画。"
+  },
+  "pipCannotFocus": {
+    "message": "无法切换到画中画，请稍后重试。"
+  },
   "pipVideoNotFound": {
     "message": "尚未找到视频，请确认播放器加载后再试一次。"
   },
   "pipGestureRequired": {
     "message": "浏览器要求在页面上操作，请关闭菜单后按设置的快捷键。"
   },
-  "pipCannotOpen": { "message": "当前无法为此视频开启画中画，请稍后重试。" },
-  "screenshotSaved": { "message": "截图已保存" },
-  "screenshotCrossOrigin": { "message": "无法截取跨域视频" },
-  "screenshotFailed": { "message": "截图失败" },
-  "screenshotTooltip": { "message": "截图（$1）" },
-  "screenshot": { "message": "截图" }
+  "pipCannotOpen": {
+    "message": "当前无法为此视频开启画中画，请稍后重试。"
+  },
+  "screenshotSaved": {
+    "message": "截图已保存"
+  },
+  "screenshotCrossOrigin": {
+    "message": "无法截取跨域视频"
+  },
+  "screenshotFailed": {
+    "message": "截图失败"
+  },
+  "screenshotTooltip": {
+    "message": "截图（$1）"
+  },
+  "screenshot": {
+    "message": "截图"
+  },
+  "popupSubtitleTranslation": {
+    "message": "字幕翻译"
+  },
+  "subtitleTranslationProvider": {
+    "message": "翻译服务"
+  },
+  "subtitleTranslationApiKey": {
+    "message": "API 密钥"
+  },
+  "subtitleTranslationSetupHint": {
+    "message": "输入 API 密钥，测试连接后保存，之后在 PiP 字幕菜单启用翻译即可。"
+  },
+  "subtitleTranslationHelpLabel": {
+    "message": "字幕翻译说明"
+  },
+  "subtitleTranslationRegion": {
+    "message": "Azure 资源区域"
+  },
+  "subtitleTranslationSave": {
+    "message": "保存设置"
+  },
+  "subtitleTranslationRemoveKey": {
+    "message": "移除当前服务密钥"
+  },
+  "subtitleTranslationGetKey": {
+    "message": "获取 API 密钥"
+  },
+  "subtitleTranslationTest": {
+    "message": "测试连接"
+  },
+  "subtitleTranslationTesting": {
+    "message": "正在测试连接…"
+  },
+  "subtitleTranslationTestSuccess": {
+    "message": "连接成功"
+  },
+  "subtitleTranslationTestFailed": {
+    "message": "连接失败，请检查密钥、区域、额度或网络。"
+  },
+  "subtitleTranslationNoChange": {
+    "message": "设置没有变更"
+  },
+  "subtitleTranslationSettingsSaved": {
+    "message": "翻译服务设置已保存"
+  },
+  "subtitleTranslationSettingsSaveFailed": {
+    "message": "无法保存翻译服务设置"
+  },
+  "pipTranslationSettings": {
+    "message": "字幕设置"
+  },
+  "pipTranslationSource": {
+    "message": "翻译来源"
+  },
+  "pipTranslationSourceHelp": {
+    "message": "翻译服务需先在设置页填写 API 密钥。"
+  },
+  "pipTranslationNoService": {
+    "message": "原生字幕"
+  },
+  "pipTranslationEnable": {
+    "message": "第二字幕"
+  },
+  "pipTranslationDisplayMode": {
+    "message": "显示方式"
+  },
+  "pipTranslationOnly": {
+    "message": "仅翻译"
+  },
+  "pipTranslationBilingual": {
+    "message": "原文和翻译"
+  },
+  "pipTranslationLanguage": {
+    "message": "目标语言"
+  },
+  "pipTranslationNoSecondaryTracks": {
+    "message": "PiP 无法读取其他原生字幕轨的时间轴"
+  },
+  "pipTranslationChooseSecondaryTrack": {
+    "message": "选择第二字幕"
+  },
+  "pipTranslationOriginalAndSecondary": {
+    "message": "双语"
+  },
+  "pipTranslationSecondaryOnly": {
+    "message": "仅第二字幕"
+  },
+  "pipTranslationPreferNative": {
+    "message": "优先使用原生字幕"
+  },
+  "pipTranslationRequestFailed": {
+    "message": "翻译失败，关闭再开启翻译可重试。"
+  },
+  "pipTranslationSecondaryUnavailable": {
+    "message": "无法加载所选字幕的时间轴，请改选其他字幕轨。"
+  },
+  "pipTranslationLanguagesUnavailable": {
+    "message": "语言列表加载失败，暂用内置选项，重开面板可重试。"
+  },
+  "pipTranslationServiceUnavailable": {
+    "message": "此翻译服务尚未设置，请至设置页填写 API 密钥。"
+  },
+  "shortcutCaptions": {
+    "message": "字幕"
+  },
+  "popupAdditionalDanmakuSettings": {
+    "message": "额外弹幕设置"
+  },
+  "popupAdditionalDanmakuUrlPlaceholder": {
+    "message": "Bilibili、动画疯或 twitch.tv/频道名称"
+  },
+  "popupAdditionalDanmakuConnectionFailed": {
+    "message": "无法连接到当前标签页，请刷新视频页面后重试。"
+  },
+  "popupAdditionalDanmakuStorageFailed": {
+    "message": "无法读取此标签页的额外弹幕"
+  },
+  "popupAdditionalDanmakuApplyFailed": {
+    "message": "无法应用此标签页的额外弹幕，请刷新后重试。"
+  },
+  "popupAdditionalDanmakuLoadFailed": {
+    "message": "无法加载额外弹幕，请重新打开设置页。"
+  },
+  "popupAdditionalDanmakuInvalidUrl": {
+    "message": "请输入有效的 Bilibili、巴哈动画疯或 Twitch 视频网址"
+  },
+  "popupAdditionalDanmakuInvalidOffset": {
+    "message": "时间偏移须介于 -3600 至 3600 秒"
+  },
+  "popupAdditionalDanmakuDisableFailed": {
+    "message": "无法停用当前来源，请刷新视频页面后重试。"
+  },
+  "popupAdditionalDanmakuSaveFailed": {
+    "message": "保存失败，请刷新视频页面后重试。"
+  },
+  "popupCaptionStyleSettings": {
+    "message": "字幕样式设置"
+  },
+  "popupCaptionStyle": {
+    "message": "字幕样式"
+  },
+  "popupCaptionPreview": {
+    "message": "字幕样式预览"
+  },
+  "popupCaptionPreviewText": {
+    "message": "字幕预览示例"
+  },
+  "popupCaptionPreviewSecondLine": {
+    "message": "第二行字幕"
+  },
+  "popupResetCaptionStyle": {
+    "message": "重置字幕样式"
+  },
+  "popupCannotSaveCaption": {
+    "message": "无法保存字幕设置，请重试。"
+  },
+  "pipCaptionsOn": {
+    "message": "字幕：开"
+  },
+  "pipCaptionsOff": {
+    "message": "字幕：关"
+  }
 }

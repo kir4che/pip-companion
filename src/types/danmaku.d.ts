@@ -119,6 +119,27 @@ interface ContentDanmakuRendererApi {
   ): DanmakuRendererHandle;
 }
 
+interface ContentAdditionalBilibiliDanmakuDependencies {
+  isVisible(): boolean;
+  isSourceAvailable(video: HTMLVideoElement | null): boolean;
+  broadcast(data: DanmakuData, options?: DanmakuEmitOptions): void;
+}
+
+interface ContentAdditionalBilibiliDanmakuApi {
+  create(dependencies: ContentAdditionalBilibiliDanmakuDependencies): {
+    checkAndBind(video: HTMLVideoElement | null): void;
+    getSource(): {
+      enabled: boolean;
+      url: string;
+      offsetSeconds: number;
+      available: boolean;
+      error?: string | null;
+      errorRevision?: number;
+    };
+    setSource(value: unknown): void;
+  };
+}
+
 interface ContentDanmakuSourcesDependencies {
   isSettingsLoaded(): boolean;
   isVisible(): boolean;
@@ -171,5 +192,8 @@ declare function setDanmakuPlaybackRate(rate: number): void;
 declare function isDanmakuEnabled(): boolean;
 declare function checkAndBindDanmakuChat(): void;
 declare function checkAndBindBilibiliDanmaku(
+  video: HTMLVideoElement | null,
+): void;
+declare function checkAndBindAdditionalBilibiliDanmaku(
   video: HTMLVideoElement | null,
 ): void;

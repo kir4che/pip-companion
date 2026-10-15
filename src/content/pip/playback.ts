@@ -495,15 +495,13 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     globalThis.PipCompanion.ContentFeedback.showVolumeFeedback();
   }
 
-  function toggleCaptions() {
-    state.captionsOn = !state.captionsOn;
-    if (state.captionsOn) {
-      globalThis.PipCompanion.ContentCaptions.prepareNativeCaptions();
-      globalThis.PipCompanion.ContentCaptions.syncNativeCaptions();
-    }
-    globalThis.PipCompanion.ContentCaptions.renderSubtitle();
+  function toggleSubtitles() {
+    const enabled = !state.subtitlessOn;
+    globalThis.PipCompanion.ContentSubtitles.setSubtitlesEnabledFromPipShortcut(
+      enabled,
+    );
     globalThis.PipCompanion.ContentFeedback.showFeedback(
-      state.captionsOn ? t("pipCaptionsOn") : t("pipCaptionsOff"),
+      enabled ? t("pipSubtitlesOn") : t("pipSubtitlesOff"),
     );
   }
 
@@ -544,7 +542,7 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     adjustPlaybackRate,
     togglePlaybackRate,
     toggleMute,
-    toggleCaptions,
+    toggleSubtitles,
     toggleDanmakuFromShortcut,
     isLiveStream,
     resizePipWindow,

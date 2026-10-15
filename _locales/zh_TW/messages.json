@@ -1,172 +1,674 @@
 {
-  "extName": { "message": "幕伴 PiP · PiP Companion" },
+  "extName": {
+    "message": "幕伴 PiP · PiP Companion"
+  },
   "extDescription": {
     "message": "讓網頁影片在子母畫面中播放，支援字幕、彈幕、截圖與浮動留言區。"
   },
-  "popupOpenPip": { "message": "開啟子母畫面" },
-  "popupClosePip": { "message": "關閉子母畫面" },
-  "popupMainMenu": { "message": "主選單" },
-  "popupShortcuts": { "message": "快捷鍵" },
-  "shortcutPlayPause": { "message": "播放 / 暫停" },
-  "shortcutCaptions": { "message": "字幕" },
-  "shortcutMute": { "message": "靜音" },
-  "shortcutDanmakuInput": { "message": "彈幕輸入" },
-  "shortcutResizePip": { "message": "調整子母畫面大小" },
-  "popupDanmaku": { "message": "彈幕" },
-  "popupScreenshot": { "message": "截圖" },
-  "popupFloatingComments": { "message": "浮動留言區" },
-  "popupThumbnailPreview": { "message": "縮圖預覽" },
-  "popupSeekInterval": { "message": "快轉／倒轉間隔" },
-  "popupSeconds": { "message": "$1 秒" },
-  "popupWheel": { "message": "滑鼠滾輪" },
-  "popupFeatureSettings": { "message": "功能設定" },
-  "popupGeneralSettings": { "message": "一般設定" },
-  "popupAllSettings": { "message": "所有設定" },
-  "popupReportIssue": { "message": "回報問題" },
-  "optionsTitle": { "message": "幕伴 PiP 設定" },
-  "optionsBrandTitle": { "message": "幕伴 PiP" },
-  "optionsSupportDevelopment": { "message": "支持幕伴 PiP" },
-  "popupLanguage": { "message": "介面語言" },
-  "popupLanguageSaveFailed": { "message": "無法儲存語言設定" },
-  "popupDanmakuDisplaySettings": { "message": "彈幕顯示設定" },
-  "popupCaptionStyleSettings": { "message": "字幕樣式設定" },
-  "popupFollowPlayback": { "message": "跟隨播放中影片" },
-  "popupBackToMenu": { "message": "返回主選單" },
-  "popupDanmakuStyle": { "message": "彈幕樣式" },
-  "popupFontSize": { "message": "字體大小" },
-  "popupScrollSpeed": { "message": "滾動速度" },
-  "speedVerySlow": { "message": "超慢" },
-  "speedSlow": { "message": "較慢" },
-  "speedNormal": { "message": "適中" },
-  "speedFast": { "message": "較快" },
-  "speedVeryFast": { "message": "超快" },
-  "popupOpacity": { "message": "不透明度" },
-  "popupDisplayArea": { "message": "顯示區域" },
-  "popupFont": { "message": "字體" },
-  "popupFontGeneral": { "message": "通用" },
-  "popupFontAdvanced": { "message": "進階字體（依裝置支援）" },
-  "popupSystemDefault": { "message": "系統預設" },
-  "popupSansSerif": { "message": "無襯線" },
-  "popupSerif": { "message": "襯線" },
-  "popupMonospace": { "message": "等寬" },
-  "popupArialLatin": { "message": "Arial" },
-  "popupBlackFont": { "message": "黑體" },
-  "popupSongFont": { "message": "宋體／明體" },
-  "popupFangSongFont": { "message": "仿宋" },
-  "popupKaiFont": { "message": "標楷體" },
-  "popupFontWeight": { "message": "字型粗細" },
-  "popupMaxFontSize": { "message": "最大字體大小" },
-  "popupResetDanmakuStyle": { "message": "重設彈幕樣式" },
-  "popupCaptionStyle": { "message": "字幕樣式" },
-  "popupCaptionPreview": { "message": "字幕樣式預覽" },
-  "popupCaptionPreviewText": { "message": "字幕預覽範例" },
-  "popupCaptionPreviewSecondLine": { "message": "第二行字幕" },
-  "popupTextColor": { "message": "文字顏色" },
-  "popupBackgroundColor": { "message": "背景顏色" },
-  "popupBackgroundOpacity": { "message": "背景不透明度" },
-  "popupVerticalPosition": { "message": "上下位置" },
-  "popupTextEdge": { "message": "文字邊緣" },
-  "popupNone": { "message": "無" },
-  "popupShadow": { "message": "陰影" },
-  "popupRaised": { "message": "浮凸" },
-  "popupDepressed": { "message": "內凹" },
-  "popupOutline": { "message": "描邊" },
-  "popupEdgeColor": { "message": "邊緣顏色" },
-  "popupOutlineWidth": { "message": "描邊粗細" },
-  "popupLineHeight": { "message": "行高" },
-  "popupResetCaptionStyle": { "message": "重設字幕樣式" },
-  "popupCannotSaveToggle": { "message": "無法儲存功能開關，請重新嘗試。" },
-  "popupCannotSaveDanmaku": { "message": "無法儲存彈幕設定，請重新嘗試。" },
-  "popupCannotSaveCaption": { "message": "無法儲存字幕設定，請重新嘗試。" },
-  "popupCannotSaveSeek": { "message": "無法儲存跳轉秒數，請重新嘗試。" },
-  "popupRecordingShortcut": { "message": "按下快捷鍵…" },
-  "popupRecordingResizeShortcut": { "message": "按住修飾鍵並滾動滑鼠滾輪…" },
-  "popupOtherShortcut": { "message": "其他快捷鍵" },
-  "popupCheckingPip": { "message": "正在確認子母畫面狀態…" },
-  "popupClosingPip": { "message": "正在關閉子母畫面…" },
-  "popupCannotClosePip": { "message": "無法關閉子母畫面" },
-  "popupOpenOnWebpage": { "message": "請在擴充功能可存取的網頁上開啟影片" },
-  "popupOpeningPip": { "message": "正在開啟…" },
+  "popupOpenPip": {
+    "message": "開啟子母畫面"
+  },
+  "popupClosePip": {
+    "message": "關閉子母畫面"
+  },
+  "popupMainMenu": {
+    "message": "主選單"
+  },
+  "popupShortcuts": {
+    "message": "快捷鍵"
+  },
+  "shortcutPlayPause": {
+    "message": "播放 / 暫停"
+  },
+  "shortcutSubtitles": {
+    "message": "字幕"
+  },
+  "shortcutMute": {
+    "message": "靜音"
+  },
+  "shortcutDanmakuInput": {
+    "message": "彈幕輸入"
+  },
+  "shortcutResizePip": {
+    "message": "調整子母畫面大小"
+  },
+  "popupDanmaku": {
+    "message": "彈幕"
+  },
+  "popupAdditionalDanmaku": {
+    "message": "額外彈幕"
+  },
+  "popupAdditionalDanmakuScope": {
+    "message": "設定套用範圍說明"
+  },
+  "popupAdditionalDanmakuScopeTooltip": {
+    "message": "設定只套用目前分頁，切換影片、重新整理或來源錯誤時會停用。"
+  },
+  "popupAdditionalDanmakuEnabled": {
+    "message": "顯示額外彈幕"
+  },
+  "popupAdditionalDanmakuUrl": {
+    "message": "來源網址（支援 Bilibili、動畫瘋、Twitch）"
+  },
+  "popupAdditionalDanmakuOffset": {
+    "message": "時間偏移／延遲（秒）"
+  },
+  "popupScreenshot": {
+    "message": "截圖"
+  },
+  "popupFloatingComments": {
+    "message": "浮動留言區"
+  },
+  "popupThumbnailPreview": {
+    "message": "縮圖預覽"
+  },
+  "popupSeekInterval": {
+    "message": "快轉／倒轉間隔"
+  },
+  "popupSeconds": {
+    "message": "$1 秒"
+  },
+  "popupWheel": {
+    "message": "滑鼠滾輪"
+  },
+  "popupFeatureSettings": {
+    "message": "功能設定"
+  },
+  "popupGeneralSettings": {
+    "message": "一般設定"
+  },
+  "popupAllSettings": {
+    "message": "所有設定"
+  },
+  "popupReportIssue": {
+    "message": "回報問題"
+  },
+  "optionsTitle": {
+    "message": "幕伴 PiP 設定"
+  },
+  "optionsBrandTitle": {
+    "message": "幕伴 PiP"
+  },
+  "optionsSupportDevelopment": {
+    "message": "支持幕伴 PiP"
+  },
+  "popupLanguage": {
+    "message": "介面語言"
+  },
+  "popupLanguageSaveFailed": {
+    "message": "無法儲存語言設定"
+  },
+  "popupDanmakuDisplaySettings": {
+    "message": "彈幕顯示設定"
+  },
+  "popupSubtitleStyleSettings": {
+    "message": "字幕樣式設定"
+  },
+  "popupFollowPlayback": {
+    "message": "跟隨播放中影片"
+  },
+  "popupBackToMenu": {
+    "message": "返回主選單"
+  },
+  "popupDanmakuStyle": {
+    "message": "彈幕樣式"
+  },
+  "popupFontSize": {
+    "message": "字體大小"
+  },
+  "popupScrollSpeed": {
+    "message": "滾動速度"
+  },
+  "speedVerySlow": {
+    "message": "超慢"
+  },
+  "speedSlow": {
+    "message": "較慢"
+  },
+  "speedNormal": {
+    "message": "適中"
+  },
+  "speedFast": {
+    "message": "較快"
+  },
+  "speedVeryFast": {
+    "message": "超快"
+  },
+  "popupOpacity": {
+    "message": "不透明度"
+  },
+  "popupDisplayArea": {
+    "message": "顯示區域"
+  },
+  "popupFont": {
+    "message": "字體"
+  },
+  "popupFontGeneral": {
+    "message": "通用"
+  },
+  "popupFontAdvanced": {
+    "message": "進階字體（依裝置支援）"
+  },
+  "popupSystemDefault": {
+    "message": "系統預設"
+  },
+  "popupSansSerif": {
+    "message": "無襯線"
+  },
+  "popupSerif": {
+    "message": "襯線"
+  },
+  "popupMonospace": {
+    "message": "等寬"
+  },
+  "popupArialLatin": {
+    "message": "Arial"
+  },
+  "popupBlackFont": {
+    "message": "黑體"
+  },
+  "popupSongFont": {
+    "message": "宋體／明體"
+  },
+  "popupFangSongFont": {
+    "message": "仿宋"
+  },
+  "popupKaiFont": {
+    "message": "標楷體"
+  },
+  "popupFontWeight": {
+    "message": "字型粗細"
+  },
+  "popupMaxFontSize": {
+    "message": "最大字體大小"
+  },
+  "popupResetDanmakuStyle": {
+    "message": "重設彈幕樣式"
+  },
+  "popupSubtitleStyle": {
+    "message": "字幕樣式"
+  },
+  "popupPrimarySubtitleStyle": {
+    "message": "主字幕"
+  },
+  "popupSecondarySubtitleStyle": {
+    "message": "第二字幕"
+  },
+  "popupSharedSubtitleLayout": {
+    "message": "共用版面"
+  },
+  "popupResetCurrentSubtitleStyle": {
+    "message": "重設當前樣式"
+  },
+  "popupResetSubtitleLayout": {
+    "message": "重設共用版面"
+  },
+  "popupSubtitlePreview": {
+    "message": "字幕樣式預覽"
+  },
+  "popupSubtitlePreviewText": {
+    "message": "字幕預覽範例"
+  },
+  "popupSubtitlePreviewSecondLine": {
+    "message": "第二行字幕"
+  },
+  "popupTextColor": {
+    "message": "文字顏色"
+  },
+  "popupBackgroundColor": {
+    "message": "背景顏色"
+  },
+  "popupBackgroundOpacity": {
+    "message": "背景不透明度"
+  },
+  "popupSubtitlePairGap": {
+    "message": "主副字幕間距"
+  },
+  "popupLetterSpacing": {
+    "message": "字距"
+  },
+  "popupVerticalPosition": {
+    "message": "上下位置"
+  },
+  "popupTextEdge": {
+    "message": "文字邊緣"
+  },
+  "popupNone": {
+    "message": "無"
+  },
+  "popupShadow": {
+    "message": "陰影"
+  },
+  "popupRaised": {
+    "message": "浮凸"
+  },
+  "popupDepressed": {
+    "message": "內凹"
+  },
+  "popupOutline": {
+    "message": "描邊"
+  },
+  "popupEdgeColor": {
+    "message": "邊緣顏色"
+  },
+  "popupOutlineWidth": {
+    "message": "描邊粗細"
+  },
+  "popupEdgeIntensity": {
+    "message": "效果強度"
+  },
+  "popupLineHeight": {
+    "message": "行高"
+  },
+  "popupResetSubtitleStyle": {
+    "message": "重設字幕樣式"
+  },
+  "popupCannotSaveToggle": {
+    "message": "無法儲存功能開關，請重新嘗試。"
+  },
+  "popupCannotSaveDanmaku": {
+    "message": "無法儲存彈幕設定，請重新嘗試。"
+  },
+  "popupCannotSaveSubtitle": {
+    "message": "無法儲存字幕設定，請重新嘗試。"
+  },
+  "popupCannotSaveSeek": {
+    "message": "無法儲存跳轉秒數，請重新嘗試。"
+  },
+  "popupRecordingShortcut": {
+    "message": "按下快捷鍵…"
+  },
+  "popupRecordingResizeShortcut": {
+    "message": "按住修飾鍵並滾動滑鼠滾輪…"
+  },
+  "popupOtherShortcut": {
+    "message": "其他快捷鍵"
+  },
+  "popupCheckingPip": {
+    "message": "正在確認子母畫面狀態…"
+  },
+  "popupClosingPip": {
+    "message": "正在關閉子母畫面…"
+  },
+  "popupCannotClosePip": {
+    "message": "無法關閉子母畫面"
+  },
+  "popupOpenOnWebpage": {
+    "message": "請在擴充功能可存取的網頁上開啟影片"
+  },
+  "popupOpeningPip": {
+    "message": "正在開啟…"
+  },
   "popupCannotOpenPip": {
     "message": "無法開啟子母畫面，請確認頁面中有可播放的影片。"
   },
   "popupCannotOperatePip": {
     "message": "無法操作子母畫面，請確認目前頁面允許擴充功能存取。"
   },
-  "popupWinKeyUnsupported": { "message": "不支援使用 Win 鍵設定快捷鍵" },
-  "popupModifierKey": { "message": "$1 是修飾鍵，請按住後再按另一個按鍵。" },
-  "popupUnrecognizedKey": { "message": "無法辨識此按鍵，請改用其他按鍵。" },
+  "popupWinKeyUnsupported": {
+    "message": "不支援使用 Win 鍵設定快捷鍵"
+  },
+  "popupModifierKey": {
+    "message": "$1 是修飾鍵，請按住後再按另一個按鍵。"
+  },
+  "popupUnrecognizedKey": {
+    "message": "無法辨識此按鍵，請改用其他按鍵。"
+  },
   "popupNavigationKey": {
     "message": "Tab 等系統導覽鍵不可單獨使用"
   },
   "popupShortcutConflict": {
     "message": "此快捷鍵與「$1」衝突，請改用其他按鍵。"
   },
-  "popupResetShortcut": { "message": "重設為預設快捷鍵" },
-  "popupClearShortcut": { "message": "清除快捷鍵" },
-  "popupShortcutUnassigned": { "message": "未指派" },
-  "popupCannotSaveShortcut": { "message": "無法儲存快捷鍵，請重新嘗試。" },
+  "popupResetShortcut": {
+    "message": "重設為預設快捷鍵"
+  },
+  "popupClearShortcut": {
+    "message": "清除快捷鍵"
+  },
+  "popupShortcutUnassigned": {
+    "message": "未指派"
+  },
+  "popupCannotSaveShortcut": {
+    "message": "無法儲存快捷鍵，請重新嘗試。"
+  },
   "popupResizeNeedsModifier": {
     "message": "請按住至少一個修飾鍵再滾動滑鼠滾輪"
   },
-  "shortcutStepBackward": { "message": "逐格後退" },
-  "shortcutStepForward": { "message": "逐格前進" },
-  "shortcutSlower": { "message": "降低倍速" },
-  "shortcutFaster": { "message": "提高倍速" },
-  "shortcutRewind": { "message": "快退" },
-  "shortcutForward": { "message": "快轉" },
-  "shortcutVolumeUp": { "message": "音量 +10" },
-  "shortcutVolumeDown": { "message": "音量 -10" },
-  "shortcutAutoFit": { "message": "自動調整比例" },
-  "commentsTooltip": { "message": "留言區（$1）" },
-  "commentsClose": { "message": "關閉留言區" },
+  "shortcutStepBackward": {
+    "message": "逐格後退"
+  },
+  "shortcutStepForward": {
+    "message": "逐格前進"
+  },
+  "shortcutSlower": {
+    "message": "降低倍速"
+  },
+  "shortcutFaster": {
+    "message": "提高倍速"
+  },
+  "shortcutRewind": {
+    "message": "快退"
+  },
+  "shortcutForward": {
+    "message": "快轉"
+  },
+  "shortcutVolumeUp": {
+    "message": "音量 +10"
+  },
+  "shortcutVolumeDown": {
+    "message": "音量 -10"
+  },
+  "shortcutAutoFit": {
+    "message": "自動調整比例"
+  },
+  "commentsTooltip": {
+    "message": "留言區（$1）"
+  },
+  "commentsClose": {
+    "message": "關閉留言區"
+  },
   "contentHandoffFailed": {
     "message": "無法自動切換 PiP，請在此頁按 PiP 快捷鍵重新開啟。"
   },
-  "pipProgress": { "message": "播放進度" },
-  "pipDanmakuInputOpen": { "message": "開啟彈幕輸入" },
-  "pipDanmakuInputClose": { "message": "關閉彈幕輸入" },
-  "pipChatMessage": { "message": "彈幕內容" },
-  "pipSend": { "message": "送出" },
-  "pipPlayVideo": { "message": "播放影片" },
-  "pipPauseVideo": { "message": "暫停影片" },
-  "pipNextEpisode": { "message": "下一集影片" },
-  "pipPlaylist": { "message": "播放清單" },
-  "pipPlaybackSpeed": { "message": "播放速度 $1" },
-  "pipCurrentTime": { "message": "目前時間，輸入後按 Enter 跳轉。" },
-  "pipVolumeControl": { "message": "音量控制" },
-  "pipVolumeValue": { "message": "音量數值" },
-  "pipVolume": { "message": "音量" },
-  "pipSpeed": { "message": "播放速度" },
-  "pipTitle": { "message": "幕伴 PiP" },
-  "pipUnmute": { "message": "取消靜音" },
-  "pipMute": { "message": "靜音" },
-  "pipCaptionsOn": { "message": "字幕：開" },
-  "pipCaptionsOff": { "message": "字幕：關" },
-  "pipCooldownSeconds": { "message": "$1 秒" },
-  "pipWaitToSend": { "message": "請稍候 $1 秒再發送" },
-  "pipEnterDanmaku": { "message": "請先輸入彈幕內容" },
-  "pipDanmakuTooLong": { "message": "彈幕超過平台字數限制（$1 字）" },
-  "pipSendUnavailable": { "message": "無法發送，請確認聊天室狀態。" },
-  "pipSendFailed": { "message": "發送失敗，請稍後再試。" },
-  "pipTimeInvalid": { "message": "時間格式錯誤" },
-  "playlistVideo": { "message": "影片 $1" },
-  "playlistEpisode": { "message": "第 $1 集" },
-  "youtubeChatFrameTitle": { "message": "YouTube 聊天室訊息來源" },
-  "pipSearchingTitle": { "message": "正在尋找影片 · 幕伴 PiP" },
-  "pipSearching": { "message": "正在尋找影片，請稍候…" },
-  "pipOpening": { "message": "正在開啟子母畫面" },
-  "pipCannotFocus": { "message": "無法切換至子母畫面，請稍後再試。" },
+  "pipProgress": {
+    "message": "播放進度"
+  },
+  "pipDanmakuInputOpen": {
+    "message": "開啟彈幕輸入"
+  },
+  "pipDanmakuInputClose": {
+    "message": "關閉彈幕輸入"
+  },
+  "pipChatMessage": {
+    "message": "彈幕內容"
+  },
+  "pipSend": {
+    "message": "送出"
+  },
+  "pipPlayVideo": {
+    "message": "播放影片"
+  },
+  "pipPauseVideo": {
+    "message": "暫停影片"
+  },
+  "pipNextEpisode": {
+    "message": "下一集影片"
+  },
+  "pipPlaylist": {
+    "message": "播放清單"
+  },
+  "pipPlaybackSpeed": {
+    "message": "播放速度 $1"
+  },
+  "pipCurrentTime": {
+    "message": "目前時間，輸入後按 Enter 跳轉。"
+  },
+  "pipVolumeControl": {
+    "message": "音量控制"
+  },
+  "pipVolumeValue": {
+    "message": "音量數值"
+  },
+  "pipVolume": {
+    "message": "音量"
+  },
+  "pipSpeed": {
+    "message": "播放速度"
+  },
+  "pipTitle": {
+    "message": "幕伴 PiP"
+  },
+  "pipUnmute": {
+    "message": "取消靜音"
+  },
+  "pipMute": {
+    "message": "靜音"
+  },
+  "pipSubtitlesOn": {
+    "message": "字幕：開"
+  },
+  "pipSubtitlesOff": {
+    "message": "字幕：關"
+  },
+  "pipSubtitlesToggle": {
+    "message": "顯示字幕"
+  },
+  "pipSubtitleTrack": {
+    "message": "主字幕"
+  },
+  "pipSubtitleTrackChoose": {
+    "message": "選擇字幕"
+  },
+  "pipSubtitleTrackNumber": {
+    "message": "字幕 $1"
+  },
+  "pipCooldownSeconds": {
+    "message": "$1 秒"
+  },
+  "pipWaitToSend": {
+    "message": "請稍候 $1 秒再發送"
+  },
+  "pipEnterDanmaku": {
+    "message": "請先輸入彈幕內容"
+  },
+  "pipDanmakuTooLong": {
+    "message": "彈幕超過平台字數限制（$1 字）"
+  },
+  "pipSendUnavailable": {
+    "message": "無法發送，請確認聊天室狀態。"
+  },
+  "pipSendFailed": {
+    "message": "發送失敗，請稍後再試。"
+  },
+  "pipTimeInvalid": {
+    "message": "時間格式錯誤"
+  },
+  "playlistVideo": {
+    "message": "影片 $1"
+  },
+  "playlistEpisode": {
+    "message": "第 $1 集"
+  },
+  "youtubeChatFrameTitle": {
+    "message": "YouTube 聊天室訊息來源"
+  },
+  "pipSearchingTitle": {
+    "message": "正在尋找影片 · 幕伴 PiP"
+  },
+  "pipSearching": {
+    "message": "正在尋找影片，請稍候…"
+  },
+  "pipOpening": {
+    "message": "正在開啟子母畫面"
+  },
+  "pipCannotFocus": {
+    "message": "無法切換至子母畫面，請稍後再試。"
+  },
   "pipVideoNotFound": {
     "message": "尚未找到影片，請確認播放器載入後再試一次。"
   },
   "pipGestureRequired": {
     "message": "瀏覽器要求在頁面上操作，請關閉選單後按設定的快捷鍵。"
   },
-  "pipCannotOpen": { "message": "此影片目前無法開啟子母畫面，請稍後再試。" },
-  "screenshotSaved": { "message": "截圖已儲存" },
-  "screenshotCrossOrigin": { "message": "無法截取跨來源影片" },
-  "screenshotFailed": { "message": "截圖失敗" },
-  "screenshotTooltip": { "message": "截圖（$1）" },
-  "screenshot": { "message": "截圖" }
+  "pipCannotOpen": {
+    "message": "此影片目前無法開啟子母畫面，請稍後再試。"
+  },
+  "screenshotSaved": {
+    "message": "截圖已儲存"
+  },
+  "screenshotCrossOrigin": {
+    "message": "無法截取跨來源影片"
+  },
+  "screenshotFailed": {
+    "message": "截圖失敗"
+  },
+  "screenshotTooltip": {
+    "message": "截圖（$1）"
+  },
+  "screenshot": {
+    "message": "截圖"
+  },
+  "popupSubtitleTranslation": {
+    "message": "字幕翻譯"
+  },
+  "subtitleTranslationProvider": {
+    "message": "翻譯服務"
+  },
+  "subtitleTranslationApiKey": {
+    "message": "API 金鑰"
+  },
+  "subtitleTranslationSetupHint": {
+    "message": "輸入 API 金鑰，測試連線後儲存，之後在 PiP 字幕選單啟用翻譯即可。"
+  },
+  "subtitleTranslationHelpLabel": {
+    "message": "字幕翻譯說明"
+  },
+  "subtitleTranslationRegion": {
+    "message": "Azure 資源區域"
+  },
+  "subtitleTranslationSave": {
+    "message": "儲存設定"
+  },
+  "subtitleTranslationRemoveKey": {
+    "message": "移除目前服務金鑰"
+  },
+  "subtitleTranslationGetKey": {
+    "message": "取得 API 金鑰"
+  },
+  "subtitleTranslationTest": {
+    "message": "測試連線"
+  },
+  "subtitleTranslationTesting": {
+    "message": "正在測試連線…"
+  },
+  "subtitleTranslationTestSuccess": {
+    "message": "連線成功"
+  },
+  "subtitleTranslationTestFailed": {
+    "message": "連線失敗，請檢查服務設定或網路連線。"
+  },
+  "subtitleTranslationNoChange": {
+    "message": "設定沒有變更"
+  },
+  "subtitleTranslationSettingsSaved": {
+    "message": "翻譯服務設定已儲存"
+  },
+  "subtitleTranslationSettingsSaveFailed": {
+    "message": "無法儲存翻譯服務設定"
+  },
+  "pipTranslationSettings": {
+    "message": "字幕設定"
+  },
+  "pipTranslationSource": {
+    "message": "翻譯來源"
+  },
+  "pipTranslationSourceHelp": {
+    "message": "翻譯服務需先在設定頁填寫 API 金鑰"
+  },
+  "pipTranslationNoService": {
+    "message": "原生字幕"
+  },
+  "pipTranslationEnable": {
+    "message": "第二字幕"
+  },
+  "pipTranslationDisplayMode": {
+    "message": "顯示方式"
+  },
+  "pipTranslationOnly": {
+    "message": "僅翻譯"
+  },
+  "pipTranslationBilingual": {
+    "message": "原文與翻譯"
+  },
+  "pipTranslationLanguage": {
+    "message": "目標語言"
+  },
+  "pipTranslationNoSecondaryTracks": {
+    "message": "PiP 無法讀取其他原生字幕的時間軸"
+  },
+  "pipTranslationChooseSecondaryTrack": {
+    "message": "選擇第二字幕"
+  },
+  "pipTranslationOriginalAndSecondary": {
+    "message": "雙語"
+  },
+  "pipTranslationSecondaryOnly": {
+    "message": "僅第二字幕"
+  },
+  "pipTranslationPreferNative": {
+    "message": "優先使用原生字幕"
+  },
+  "pipTranslationRequestFailed": {
+    "message": "翻譯失敗，關閉再開啟翻譯可重試。"
+  },
+  "pipTranslationSecondaryUnavailable": {
+    "message": "無法載入所選字幕"
+  },
+  "pipTranslationLanguagesUnavailable": {
+    "message": "語言清單載入失敗，暫用內建選項，重開面板可重試。"
+  },
+  "pipTranslationServiceUnavailable": {
+    "message": "此翻譯服務尚未設定，請至設定頁填寫 API 金鑰。"
+  },
+  "shortcutCaptions": {
+    "message": "字幕"
+  },
+  "popupAdditionalDanmakuSettings": {
+    "message": "額外彈幕設定"
+  },
+  "popupAdditionalDanmakuUrlPlaceholder": {
+    "message": "Bilibili、動畫瘋或 twitch.tv/頻道名稱"
+  },
+  "popupAdditionalDanmakuConnectionFailed": {
+    "message": "無法連線至目前分頁，請重新整理影片頁後再試。"
+  },
+  "popupAdditionalDanmakuStorageFailed": {
+    "message": "無法讀取此分頁的額外彈幕"
+  },
+  "popupAdditionalDanmakuApplyFailed": {
+    "message": "無法套用此分頁的額外彈幕，請重新整理後再試。"
+  },
+  "popupAdditionalDanmakuLoadFailed": {
+    "message": "無法載入額外彈幕，請重新開啟設定頁。"
+  },
+  "popupAdditionalDanmakuInvalidUrl": {
+    "message": "請輸入有效的 Bilibili、巴哈動畫瘋或 Twitch 影片網址"
+  },
+  "popupAdditionalDanmakuInvalidOffset": {
+    "message": "時間偏移須介於 -3600 至 3600 秒"
+  },
+  "popupAdditionalDanmakuDisableFailed": {
+    "message": "無法停用目前來源，請重新整理影片頁後再試。"
+  },
+  "popupAdditionalDanmakuSaveFailed": {
+    "message": "儲存失敗，請重新整理影片頁後再試。"
+  },
+  "popupCaptionStyleSettings": {
+    "message": "字幕樣式設定"
+  },
+  "popupCaptionStyle": {
+    "message": "字幕樣式"
+  },
+  "popupCaptionPreview": {
+    "message": "字幕樣式預覽"
+  },
+  "popupCaptionPreviewText": {
+    "message": "字幕預覽範例"
+  },
+  "popupCaptionPreviewSecondLine": {
+    "message": "第二行字幕"
+  },
+  "popupResetCaptionStyle": {
+    "message": "重設字幕樣式"
+  },
+  "popupCannotSaveCaption": {
+    "message": "無法儲存字幕設定，請重新嘗試。"
+  },
+  "pipCaptionsOn": {
+    "message": "字幕：開"
+  },
+  "pipCaptionsOff": {
+    "message": "字幕：關"
+  }
 }
