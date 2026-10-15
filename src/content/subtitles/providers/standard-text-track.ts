@@ -1,9 +1,61 @@
 "use strict";
 
 const standardTextTrackProvider: StandardTextTrackProvider = (() => {
+  function getCueText(cue: TextTrackCue): string {
+    const text = (cue as TextTrackCue & { text?: unknown }).text;
+    return typeof text === "string"
+      ? text.replace(/<br\s*\/?\s*>/gi, " ").replace(/<[^>]*>/g, "")
+      : "";
+  }
+
+  function hasSubtitleSourcePath(
+    video: HTMLVideoElement,
+    track: TextTrack,
+  ): boolean {
+    return Array.from(video.querySelectorAll("track")).some((element) => {
+      if (element.track !== track) return false;
+      const source = element.getAttribute("src") || element.src;
+      if (!source) return false;
+      try {
+        const path = new URL(source, video.ownerDocument.baseURI).pathname;
+        return path
+          .split("/")
+          .some((segment) =>
+            /^(?:subtitles?|captions?)(?:[._-]|$)/i.test(segment),
+          );
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  function hasReadableTimedCue(track: TextTrack): boolean {
+    return Array.from(track.cues ?? []).some(
+      (cue) =>
+        Number.isFinite(cue.startTime) &&
+        Number.isFinite(cue.endTime) &&
+        cue.endTime > cue.startTime &&
+        Boolean(getCueText(cue).trim()),
+    );
+  }
+
+  function isSubtitleMetadataTrack(
+    video: HTMLVideoElement,
+    track: TextTrack,
+  ): boolean {
+    return (
+      Boolean(track.language.trim()) &&
+      (hasSubtitleSourcePath(video, track) || hasReadableTimedCue(track))
+    );
+  }
+
   function getTracks(video: HTMLVideoElement | null): TextTrack[] {
-    return Array.from(video?.textTracks ?? []).filter(
-      (track) => track.kind === "subtitles" || track.kind === "captions",
+    if (!video) return [];
+    return Array.from(video.textTracks ?? []).filter(
+      (track) =>
+        track.kind === "subtitles" ||
+        track.kind === "captions" ||
+        (track.kind === "metadata" && isSubtitleMetadataTrack(video, track)),
     );
   }
 
@@ -18,13 +70,6 @@ const standardTextTrackProvider: StandardTextTrackProvider = (() => {
       tracks.find((track) => track.mode === "hidden") ??
       null
     );
-  }
-
-  function getCueText(cue: TextTrackCue): string {
-    const text = (cue as TextTrackCue & { text?: unknown }).text;
-    return typeof text === "string"
-      ? text.replace(/<br\s*\/?\s*>/gi, " ").replace(/<[^>]*>/g, "")
-      : "";
   }
 
   function cueLines(cues: Iterable<TextTrackCue>): SubtitleLine[] {

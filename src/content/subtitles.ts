@@ -534,7 +534,6 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       textTracks.length ||
       getNativeSubtitleTracks().length ||
       state.subtitleNode?.isConnected ||
-      findHahowSubtitleNode() ||
       findGenericSubtitleNode()
     )
       subtitleSourceConfirmed = true;
@@ -603,28 +602,24 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
   }
 
   function getNativeSubtitleTracks(): SubtitleTrackOption[] {
-    if (IS_NETFLIX) {
-      if (netflixSubtitleTracks.length)
-        return netflixSubtitleTracks.map((track) => ({
-          id: `netflix:${track.key}`,
-          index: track.index,
-          label:
-            track.label || t("pipSubtitleTrackNumber", String(track.index + 1)),
-          language: track.language,
-          selected: track.key === netflixPrimarySubtitleTrackKey,
-        }));
-    }
+    if (IS_NETFLIX && netflixSubtitleTracks.length)
+      return netflixSubtitleTracks.map((track) => ({
+        id: `netflix:${track.key}`,
+        index: track.index,
+        label:
+          track.label || t("pipSubtitleTrackNumber", String(track.index + 1)),
+        language: track.language,
+        selected: track.key === netflixPrimarySubtitleTrackKey,
+      }));
 
-    if (IS_YOUTUBE) {
-      if (youtubeSubtitleTracks.length)
-        return youtubeSubtitleTracks.map((track, index) => ({
-          id: `youtube:${track.key}`,
-          index,
-          label: track.label || t("pipSubtitleTrackNumber", String(index + 1)),
-          language: track.language,
-          selected: track.selected,
-        }));
-    }
+    if (IS_YOUTUBE && youtubeSubtitleTracks.length)
+      return youtubeSubtitleTracks.map((track, index) => ({
+        id: `youtube:${track.key}`,
+        index,
+        label: track.label || t("pipSubtitleTrackNumber", String(index + 1)),
+        language: track.language,
+        selected: track.selected,
+      }));
 
     const tracks = getSubtitleTracks();
     const candidateTrack = standardTextTrack.getSelectedTrack(
@@ -1178,8 +1173,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       : null;
     setSubtitlesEnabled(
       nativeEnabled ??
-        ((IS_HAHOW && Boolean(findHahowSubtitleNode())) ||
-          tracks.some((track) => track.mode === "showing") ||
+        (tracks.some((track) => track.mode === "showing") ||
           Boolean(findGenericSubtitleNode())),
     );
     if (IS_NETFLIX) {
@@ -1365,16 +1359,16 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
   }
 
   function findGenericSubtitleNode() {
-    if (IS_HAHOW) {
-      const hahowNode = findHahowSubtitleNode();
-      if (hahowNode) return hahowNode;
-    }
     const selector =
       '[class*="subtitle" i], [class*="caption" i], [class*="timedtext" i], [id*="subtitle" i], [id*="caption" i]';
-    const scored: { element: HTMLElement; score: number }[] = [];
+    const scored: {
+      element: HTMLElement;
+      score: number;
+      hasText: boolean;
+    }[] = [];
     for (const element of document.querySelectorAll<HTMLElement>(selector)) {
       const text = (element.innerText || "").trim();
-      if (!text || text.length > 300) continue;
+      if (text.length > 300) continue;
       if (element.querySelector("button, a, input, select, video")) continue;
       const style = getComputedStyle(element);
       if (style.position !== "absolute" && style.position !== "fixed") continue;
@@ -1395,12 +1389,14 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
         )
       )
         score -= 2;
-      scored.push({ element, score });
+      scored.push({ element, score, hasText: Boolean(text) });
     }
 
     if (!scored.length) return null;
-    const best = Math.max(...scored.map((entry) => entry.score));
-    const top = scored
+    const populated = scored.filter((entry) => entry.hasText);
+    const candidates = populated.length ? populated : scored;
+    const best = Math.max(...candidates.map((entry) => entry.score));
+    const top = candidates
       .filter((entry) => entry.score === best)
       .map((entry) => entry.element);
     return (
@@ -1411,26 +1407,6 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       top[0] ??
       null
     );
-  }
-
-  function findHahowSubtitleNode(): HTMLElement | null {
-    if (!IS_HAHOW) return null;
-    const candidates = Array.from(
-      document.querySelectorAll<HTMLElement>(".jw-captions"),
-    ).filter((element) => {
-      if (
-        !element.isConnected ||
-        element.querySelector("button, a, input, select, video")
-      )
-        return false;
-      const rect = element.getBoundingClientRect();
-      return rect.width >= 40 || Boolean((element.innerText || "").trim());
-    });
-    const selected =
-      candidates.find((element) => (element.innerText || "").trim()) ??
-      candidates[0] ??
-      null;
-    return selected;
   }
 
   function extractOverlayLines(node: HTMLElement | null) {
@@ -1562,23 +1538,23 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
   }
 
   function isNativeSecondaryActive(): boolean {
-    const hasSecondaryTrack = IS_YOUTUBE
-      ? Boolean(youtubeSecondarySubtitleTrackKey)
-      : IS_BILIBILI && bilibiliSubtitles.secondaryKey
-        ? bilibiliSubtitles.tracks.some(
-            (track) => track.key === bilibiliSubtitles.secondaryKey,
-          )
-        : IS_NETFLIX
-          ? netflixSubtitleTracks.some(
-              (track) => track.key === netflixSecondarySubtitleTrackKey,
-            )
-          : nativeSecondaryTrack.hasTrack();
-    return Boolean(
-      state.subtitleTranslationPreferences.enabled &&
-      !subtitleTranslationSuspended &&
-      state.subtitleTranslationPreferences.useNativeSecondaryTrack &&
-      hasSecondaryTrack,
-    );
+    if (
+      !state.subtitleTranslationPreferences.enabled ||
+      subtitleTranslationSuspended ||
+      !state.subtitleTranslationPreferences.useNativeSecondaryTrack
+    )
+      return false;
+
+    if (IS_YOUTUBE) return Boolean(youtubeSecondarySubtitleTrackKey);
+    if (IS_BILIBILI && bilibiliSubtitles.secondaryKey)
+      return bilibiliSubtitles.tracks.some(
+        (track) => track.key === bilibiliSubtitles.secondaryKey,
+      );
+    if (IS_NETFLIX)
+      return netflixSubtitleTracks.some(
+        (track) => track.key === netflixSecondarySubtitleTrackKey,
+      );
+    return nativeSecondaryTrack.hasTrack();
   }
 
   function suppressNativeSubtitles() {
