@@ -50,8 +50,19 @@
   }
 
   const blobUrlCache = new Map<string, string>();
+  let storyboardGeneration = 0;
+  let syncTimer: number | null = null;
 
-  async function resolveImagesToBlobs(images: string[]): Promise<string[]> {
+  function releaseBlobUrls(): void {
+    for (const objectUrl of blobUrlCache.values())
+      URL.revokeObjectURL(objectUrl);
+    blobUrlCache.clear();
+  }
+
+  async function resolveImagesToBlobs(
+    images: string[],
+    generation: number,
+  ): Promise<string[]> {
     return Promise.all(
       images.map(async (url) => {
         if (!url || url.startsWith("blob:") || url.startsWith("data:"))
@@ -62,6 +73,10 @@
           if (!res.ok) return url;
           const blob = await res.blob();
           const objUrl = URL.createObjectURL(blob);
+          if (generation !== storyboardGeneration) {
+            URL.revokeObjectURL(objUrl);
+            return url;
+          }
           blobUrlCache.set(url, objUrl);
           return objUrl;
         } catch {
@@ -72,6 +87,8 @@
   }
 
   function resetBahaData() {
+    storyboardGeneration++;
+    releaseBlobUrls();
     if (document.documentElement)
       delete document.documentElement.dataset.pipBahaStoryboard;
     window.postMessage({ type: "PIP_BAHA_RESET" }, "*");
@@ -82,7 +99,9 @@
     if (!opts || !Array.isArray(opts.images) || opts.images.length === 0)
       return;
 
-    const blobImages = await resolveImagesToBlobs(opts.images);
+    const generation = storyboardGeneration;
+    const blobImages = await resolveImagesToBlobs(opts.images, generation);
+    if (generation !== storyboardGeneration) return;
     const data: BahaStoryboardData = {
       sn,
       width: opts.width || 160,
@@ -245,7 +264,33 @@
     passive: true,
   });
 
-  setInterval(syncBahaData, 1000);
+  function startSyncTimer(): void {
+    if (syncTimer !== null) return;
+    syncTimer = window.setInterval(syncBahaData, 1000);
+  }
+
+  function stopSyncTimer(): void {
+    if (syncTimer === null) return;
+    window.clearInterval(syncTimer);
+    syncTimer = null;
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stopSyncTimer();
+    else {
+      startSyncTimer();
+      syncBahaData();
+    }
+  });
+  window.addEventListener("pagehide", () => {
+    stopSyncTimer();
+    storyboardGeneration++;
+    releaseBlobUrls();
+  });
+  window.addEventListener("pageshow", () => {
+    startSyncTimer();
+    syncBahaData();
+  });
 
   document.addEventListener("play", syncBahaData, {
     capture: true,
@@ -259,6 +304,7 @@
   window.addEventListener("popstate", resetBahaData, { passive: true });
   window.addEventListener("hashchange", resetBahaData, { passive: true });
 
+  if (!document.hidden) startSyncTimer();
   if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded", syncBahaData, { once: true });
   else syncBahaData();

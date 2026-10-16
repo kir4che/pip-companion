@@ -1,4 +1,4 @@
-// 補充瀏覽器與 YouTube 播放器的型別定義
+// 站方播放器與瀏覽器 Document PiP
 interface Window {
   animefun?: { videoSn?: string | number };
   videojs?: {

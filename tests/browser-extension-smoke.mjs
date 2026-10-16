@@ -1,0 +1,422 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { createServer } from "node:http";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { setTimeout as delay } from "node:timers/promises";
+import test from "node:test";
+import { chromium } from "playwright";
+
+/* global chrome, document, isSecureContext, location, window */
+
+const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const chromeExecutable = process.env.CHROME_PATH || chromium.executablePath();
+
+function referencedManifestFiles(manifest) {
+  return [
+    ...Object.values(manifest.icons ?? {}),
+    manifest.action?.default_popup,
+    manifest.background?.service_worker,
+    manifest.options_ui?.page,
+    ...(manifest.content_scripts ?? []).flatMap((entry) => [
+      ...(entry.js ?? []),
+      ...(entry.css ?? []),
+    ]),
+    ...(manifest.web_accessible_resources ?? []).flatMap(
+      (entry) => entry.resources ?? [],
+    ),
+  ].filter(Boolean);
+}
+
+function fixtureHtml() {
+  return `<!doctype html>
+<html><head><title>Extension smoke fixture</title></head>
+<body><main id="route" data-route="initial"><video id="source-video" controls></video><div id="subtitle-caption" style="position:absolute;bottom:20px;left:30px;width:400px">Smoke caption</div></main>
+<script>
+  const video = document.querySelector("#source-video");
+  const canvas = document.createElement("canvas");
+  canvas.width = 640;
+  canvas.height = 360;
+  const context = canvas.getContext("2d");
+  function draw() {
+    context.fillStyle = "#162033";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#fff";
+    context.fillRect((Date.now() / 20) % 600, 150, 40, 40);
+    requestAnimationFrame(draw);
+  }
+  draw();
+  video.srcObject = canvas.captureStream(20);
+  video.play().catch(() => {});
+  window.navigateSmokeRoute = () => {
+    history.pushState({}, "", "/spa/next");
+    document.querySelector("#route").dataset.route = "next";
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  };
+</script></body></html>`;
+}
+
+test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA stability", async (t) => {
+  const workDir = mkdtempSync(join(tmpdir(), "pip-companion-browser-smoke-"));
+  const extensionDir = join(workDir, "extension");
+  const userDataDir = join(workDir, "chrome-profile");
+  t.after(() => rmSync(workDir, { recursive: true, force: true }));
+
+  execFileSync(process.execPath, [join(root, "scripts/build.mjs")], {
+    cwd: root,
+    env: { ...process.env, BUILD_OUT_DIR: extensionDir },
+    stdio: "pipe",
+  });
+  execFileSync(
+    process.execPath,
+    [
+      join(root, "node_modules/typescript/bin/tsc"),
+      "-p",
+      "tsconfig.json",
+      "--outDir",
+      extensionDir,
+    ],
+    { cwd: root, stdio: "pipe" },
+  );
+
+  const manifestPath = join(extensionDir, "manifest.json");
+  const productionManifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  await t.test(
+    "build output contains every manifest resource and API permission",
+    () => {
+      for (const path of referencedManifestFiles(productionManifest))
+        assert.ok(
+          existsSync(join(extensionDir, path)),
+          `missing manifest resource: ${path}`,
+        );
+
+      for (const permission of ["storage", "activeTab", "scripting"])
+        assert.ok(
+          productionManifest.permissions.includes(permission),
+          `missing permission: ${permission}`,
+        );
+      for (const host of [
+        "https://api.bilibili.com/*",
+        "https://www.bilibili.com/*",
+        "https://api.gamer.com.tw/*",
+        "wss://irc-ws.chat.twitch.tv/*",
+        "https://aisubtitle.hdslb.com/*",
+      ])
+        assert.ok(
+          productionManifest.host_permissions.includes(host),
+          `missing host permission: ${host}`,
+        );
+      for (const host of [
+        "https://api.cognitive.microsofttranslator.com/*",
+        "https://translation.googleapis.com/*",
+        "https://api-free.deepl.com/*",
+        "https://api.deepl.com/*",
+      ])
+        assert.ok(
+          productionManifest.optional_host_permissions.includes(host),
+          `missing optional host permission: ${host}`,
+        );
+    },
+  );
+
+  if (!chromeExecutable)
+    throw new Error(
+      "Install Playwright Chromium with `npx playwright install chromium`, or set CHROME_PATH.",
+    );
+
+  const testManifest = {
+    ...productionManifest,
+    host_permissions: [
+      ...productionManifest.host_permissions,
+      "http://127.0.0.1/*",
+    ],
+  };
+  writeFileSync(manifestPath, `${JSON.stringify(testManifest, null, 2)}\n`);
+
+  const server = createServer((_request, response) => {
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end(fixtureHtml());
+  });
+  await new Promise((resolveListen) =>
+    server.listen(0, "127.0.0.1", resolveListen),
+  );
+  const address = server.address();
+  assert.ok(address && typeof address === "object");
+  const fixtureUrl = `http://127.0.0.1:${address.port}/`;
+  t.after(() => server.close());
+
+  const context = await chromium.launchPersistentContext(userDataDir, {
+    executablePath: chromeExecutable,
+    headless: false,
+    args: [
+      `--disable-extensions-except=${extensionDir}`,
+      `--load-extension=${extensionDir}`,
+      "--no-first-run",
+      "--no-default-browser-check",
+    ],
+  });
+  t.after(() => context.close());
+
+  let serviceWorker = context
+    .serviceWorkers()
+    .find((worker) => worker.url().includes("/background/index.js"));
+  if (!serviceWorker)
+    serviceWorker = await context.waitForEvent("serviceworker", {
+      predicate: (worker) => worker.url().includes("/background/index.js"),
+      timeout: 15000,
+    });
+  const extensionId = new URL(serviceWorker.url()).host;
+  const fixturePage = await context.newPage();
+  const contentScriptErrors = [];
+  fixturePage.on("pageerror", (error) =>
+    contentScriptErrors.push(error.message),
+  );
+  await fixturePage.goto(fixtureUrl);
+  await fixturePage.waitForFunction(() => {
+    const video = document.querySelector("video");
+    return video?.srcObject && video.readyState >= 2;
+  });
+  const pipSupport = await fixturePage.evaluate(() => ({
+    available: Boolean(window.documentPictureInPicture),
+    secure: isSecureContext,
+    url: location.href,
+    userAgent: navigator.userAgent,
+  }));
+  assert.equal(
+    pipSupport.available,
+    true,
+    `the browser fixture must support Document Picture-in-Picture: ${JSON.stringify(pipSupport)}`,
+  );
+  const originalParentId = await fixturePage
+    .locator("#source-video")
+    .evaluate((video) => video.parentElement.id);
+
+  const popupPage = await context.newPage();
+  await popupPage.addInitScript(() => {
+    window.close = () => {};
+  });
+  await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
+  await popupPage.waitForSelector("#open-pip");
+  await popupPage.evaluate(
+    async ({ tabUrl }) => {
+      const [tab] = await chrome.tabs.query({ url: tabUrl });
+      if (tab?.id === undefined) throw new Error("fixture tab not found");
+      Object.defineProperty(chrome.tabs, "query", {
+        configurable: true,
+        value: async (queryInfo) =>
+          queryInfo?.url === tabUrl ||
+          (queryInfo?.active && queryInfo.currentWindow)
+            ? [{ id: tab.id, url: tabUrl }]
+            : [],
+      });
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        world: "ISOLATED",
+        func: () => {
+          const metrics = {
+            messageListeners: 0,
+            activeIntervals: 0,
+            activeObservers: 0,
+          };
+          const addListener = chrome.runtime.onMessage.addListener.bind(
+            chrome.runtime.onMessage,
+          );
+          chrome.runtime.onMessage.addListener = function (listener) {
+            metrics.messageListeners++;
+            return addListener(listener);
+          };
+          const nativeSetInterval = globalThis.setInterval.bind(globalThis);
+          const nativeClearInterval = globalThis.clearInterval.bind(globalThis);
+          const intervals = new Set();
+          const trackedSetInterval = (...args) => {
+            const id = nativeSetInterval(...args);
+            intervals.add(id);
+            metrics.activeIntervals = intervals.size;
+            return id;
+          };
+          const trackedClearInterval = (id) => {
+            intervals.delete(id);
+            metrics.activeIntervals = intervals.size;
+            return nativeClearInterval(id);
+          };
+          globalThis.setInterval = trackedSetInterval;
+          globalThis.clearInterval = trackedClearInterval;
+          window.setInterval = trackedSetInterval;
+          window.clearInterval = trackedClearInterval;
+          const NativeMutationObserver = globalThis.MutationObserver;
+          globalThis.MutationObserver = class extends NativeMutationObserver {
+            constructor(callback) {
+              super(callback);
+              this.__smokeObserved = false;
+            }
+            observe(...args) {
+              if (!this.__smokeObserved) {
+                this.__smokeObserved = true;
+                metrics.activeObservers++;
+              }
+              return super.observe(...args);
+            }
+            disconnect() {
+              if (this.__smokeObserved) {
+                this.__smokeObserved = false;
+                metrics.activeObservers--;
+              }
+              return super.disconnect();
+            }
+          };
+          globalThis.__pipSmokeMetrics = metrics;
+        },
+      });
+    },
+    { tabUrl: fixtureUrl },
+  );
+
+  await popupPage.locator("#open-pip").click();
+  await popupPage
+    .waitForFunction(
+      () =>
+        chrome.runtime
+          .sendMessage({ type: "GET_PIP_STATE" })
+          .then((state) => state?.pipOpen === true),
+      undefined,
+      { timeout: 15000 },
+    )
+    .catch(async (error) => {
+      const status = await popupPage
+        .locator("#status")
+        .textContent()
+        .catch(() => "popup closed");
+      throw new Error(`popup did not open PiP (${status}): ${error.message}`);
+    });
+  await fixturePage
+    .waitForFunction(
+      () => Boolean(window.documentPictureInPicture?.window),
+      undefined,
+      {
+        timeout: 5000,
+      },
+    )
+    .catch(async (error) => {
+      const pageState = await fixturePage.evaluate(() => ({
+        available: Boolean(window.documentPictureInPicture),
+        pipOpen: Boolean(window.documentPictureInPicture?.window),
+        videoConnected: document.querySelector("#source-video")?.isConnected,
+        videoParent:
+          document.querySelector("#source-video")?.parentElement?.tagName,
+      }));
+      const status = await popupPage.locator("#status").textContent();
+      throw new Error(
+        `PiP window missing; fixture=${JSON.stringify(pageState)}, popup=${status}: ${error.message}`,
+      );
+    });
+
+  await popupPage.evaluate(
+    async ({ tabUrl }) => {
+      const deadline = Date.now() + 5000;
+      for (;;) {
+        const [tab] = await chrome.tabs.query({ url: tabUrl });
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          world: "ISOLATED",
+          func: () => globalThis.__pipSmokeMetrics?.activeIntervals ?? 0,
+        });
+        if (result.result >= 1 || Date.now() >= deadline) return;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    },
+    { tabUrl: fixtureUrl },
+  );
+
+  const baselineMetrics = await popupPage.evaluate(
+    async ({ tabUrl }) => {
+      const [tab] = await chrome.tabs.query({ url: tabUrl });
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        world: "ISOLATED",
+        func: () => ({ ...globalThis.__pipSmokeMetrics }),
+      });
+      return result.result;
+    },
+    { tabUrl: fixtureUrl },
+  );
+  assert.equal(baselineMetrics.messageListeners, 1);
+  assert.ok(baselineMetrics.activeIntervals >= 1);
+  assert.ok(baselineMetrics.activeObservers >= 1);
+  assert.deepEqual(
+    contentScriptErrors,
+    [],
+    "content scripts must load without uncaught errors",
+  );
+  assert.equal(
+    await popupPage.evaluate(
+      async ({ tabUrl }) => {
+        const [tab] = await chrome.tabs.query({ url: tabUrl });
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          world: "ISOLATED",
+          func: () => typeof globalThis.PipCompanion?.ContentSubtitles,
+        });
+        return result.result;
+      },
+      { tabUrl: fixtureUrl },
+    ),
+    "object",
+    "every injected content script module must register on PipCompanion",
+  );
+
+  await fixturePage.evaluate(() => window.navigateSmokeRoute());
+  await fixturePage.waitForFunction(
+    () => document.querySelector("#route")?.dataset.route === "next",
+  );
+  await delay(1200);
+  const afterSpaMetrics = await popupPage.evaluate(
+    async ({ tabUrl }) => {
+      const [tab] = await chrome.tabs.query({ url: tabUrl });
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        world: "ISOLATED",
+        func: () => ({ ...globalThis.__pipSmokeMetrics }),
+      });
+      return result.result;
+    },
+    { tabUrl: fixtureUrl },
+  );
+  assert.deepEqual(
+    afterSpaMetrics,
+    baselineMetrics,
+    "SPA navigation must not register duplicate observers, intervals or runtime listeners",
+  );
+
+  await popupPage.locator("#open-pip").click();
+  await popupPage.waitForFunction(
+    () =>
+      chrome.runtime
+        .sendMessage({ type: "GET_PIP_STATE" })
+        .then((state) => state?.pipOpen === false),
+    undefined,
+    { timeout: 15000 },
+  );
+  await fixturePage.waitForFunction(
+    () => !window.documentPictureInPicture?.window,
+  );
+  assert.equal(
+    await fixturePage
+      .locator("#source-video")
+      .evaluate((video) => video.parentElement.id),
+    originalParentId,
+  );
+  assert.equal(
+    await fixturePage
+      .locator("#source-video")
+      .evaluate((video) => video.isConnected),
+    true,
+  );
+});

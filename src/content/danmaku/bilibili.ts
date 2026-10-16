@@ -441,33 +441,6 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       return (bilibiliSegmentRetryAt.get(segment) || 0) > now;
     }
 
-    function logBilibiliResponse(
-      response: BilibiliDanmakuResponseSuccess,
-    ): void {
-      if (response.legacyFallback)
-        console.warn(
-          "[Subtitle PiP] This long Bilibili video uses the legacy XML danmaku fallback; coverage may be incomplete.",
-        );
-      if (Array.isArray(response.unavailableSegments)) {
-        const otherUnavailable = response.unavailableSegments.filter(
-          ({ status }) => status !== 404 || Boolean(response.fallbackError),
-        );
-        if (otherUnavailable.length) {
-          const unavailable = otherUnavailable
-            .map(({ segment, status }) => `#${segment} HTTP ${status}`)
-            .join(", ");
-          console.warn(
-            `[Subtitle PiP] Bilibili danmaku segments still unavailable: ${unavailable}.`,
-          );
-        }
-      }
-      if (response.fallbackError)
-        console.warn(
-          "[Subtitle PiP] Legacy Bilibili danmaku fallback failed:",
-          response.fallbackError,
-        );
-    }
-
     function requestBilibiliSegments(
       identity: BilibiliVideoIdentity,
       startSegment: number,
@@ -536,7 +509,6 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
 
           bilibiliSegmentCount = response.segmentCount || bilibiliSegmentCount;
           updateBilibiliSegmentAvailability(response);
-          if (initial) logBilibiliResponse(response);
           mergeBilibiliMessages(response.messages);
           bilibiliMessagesLoaded = true;
 

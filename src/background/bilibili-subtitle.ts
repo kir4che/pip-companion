@@ -1,4 +1,5 @@
 import { isRecord } from "../shared/type-guards.js";
+import { runtimeMessageDispatcher } from "./message-dispatcher.js";
 
 const MAX_SUBTITLE_BYTES = 1_000_000;
 const MAX_SUBTITLE_CUES = 5_000;
@@ -58,7 +59,8 @@ function sanitizeSubtitleCues(value: unknown) {
 }
 
 export function registerBilibiliSubtitleListener() {
-  chrome.runtime.onMessage.addListener(
+  runtimeMessageDispatcher.addListener(
+    "GET_BILIBILI_SUBTITLE_CUES",
     (message: unknown, sender, sendResponse) => {
       if (!isBilibiliSubtitleRequest(message)) return false;
 

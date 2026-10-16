@@ -431,6 +431,12 @@
   "pipSubtitlesOff": {
     "message": "字幕：关"
   },
+  "pipDanmakuOn": {
+    "message": "弹幕：开"
+  },
+  "pipDanmakuOff": {
+    "message": "弹幕：关"
+  },
   "pipSubtitlesToggle": {
     "message": "显示字幕"
   },
@@ -521,6 +527,9 @@
   "subtitleTranslationApiKey": {
     "message": "API 密钥"
   },
+  "subtitleTranslationSecurityNote": {
+    "message": "密钥只保存在此浏览器，且只发送给你选择的服务，不会发送给本项目。可随时移除；若可能泄露，请到服务商撤销。"
+  },
   "subtitleTranslationSetupHint": {
     "message": "输入 API 密钥，测试连接后保存，之后在 PiP 字幕菜单启用翻译即可。"
   },
@@ -534,7 +543,10 @@
     "message": "保存设置"
   },
   "subtitleTranslationRemoveKey": {
-    "message": "移除当前服务密钥"
+    "message": "移除当前服务已保存的 API 密钥"
+  },
+  "subtitleTranslationAccessDenied": {
+    "message": "尚未允许浏览器访问。请允许此服务，才能使用翻译功能。"
   },
   "subtitleTranslationGetKey": {
     "message": "获取 API 密钥"

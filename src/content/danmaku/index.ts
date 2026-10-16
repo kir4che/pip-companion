@@ -1,7 +1,6 @@
 "use strict";
 
 const DANMAKU_STORAGE_KEY = "danmakuEnabled";
-const DANMAKU_VISIBILITY_STORAGE_KEY = "danmakuVisible";
 const DANMAKU_STYLE_STORAGE_KEY =
   globalThis.PipCompanion.danmakuSettings.STORAGE_KEY;
 const danmakuSiteUtils = globalThis.PipCompanion.site;
@@ -28,7 +27,6 @@ let danmakuEnabled = false;
 let danmakuVisible = true;
 let danmakuSettingsLoaded = false;
 let danmakuEnabledChangedDuringLoad = false;
-let danmakuVisibilityChangedDuringLoad = false;
 let danmakuStyleChangedDuringLoad = false;
 let danmakuStyle = globalThis.PipCompanion.danmakuSettings.normalize(null);
 let danmakuPlaybackRate = 1;
@@ -54,15 +52,13 @@ function updateAllDanmakuVisibility(): void {
 }
 
 function toggleDanmaku(forceState?: boolean): boolean {
-  if (!DANMAKU_IS_SUPPORTED_SITE || !danmakuEnabled) return false;
-  if (!danmakuSettingsLoaded) danmakuVisibilityChangedDuringLoad = true;
+  if (
+    !DANMAKU_IS_SUPPORTED_SITE ||
+    (!danmakuEnabled && typeof forceState !== "boolean")
+  )
+    return false;
   danmakuVisible =
     typeof forceState === "boolean" ? forceState : !danmakuVisible;
-  try {
-    chrome.storage.local.set({
-      [DANMAKU_VISIBILITY_STORAGE_KEY]: danmakuVisible,
-    });
-  } catch {}
   updateAllDanmakuVisibility();
   return danmakuVisible;
 }
@@ -273,31 +269,16 @@ try {
         danmakuEnabled = val === undefined ? true : Boolean(val);
         updateAllDanmakuVisibility();
       }
-      if (changes[DANMAKU_VISIBILITY_STORAGE_KEY]) {
-        if (!danmakuSettingsLoaded) danmakuVisibilityChangedDuringLoad = true;
-        const val = changes[DANMAKU_VISIBILITY_STORAGE_KEY].newValue;
-        danmakuVisible = val === undefined ? true : Boolean(val);
-        updateAllDanmakuVisibility();
-      }
     });
   }
 
   chrome.storage.local.get(
-    [
-      DANMAKU_STORAGE_KEY,
-      DANMAKU_VISIBILITY_STORAGE_KEY,
-      DANMAKU_STYLE_STORAGE_KEY,
-    ],
+    [DANMAKU_STORAGE_KEY, DANMAKU_STYLE_STORAGE_KEY],
     (result) => {
       if (!danmakuEnabledChangedDuringLoad) {
         const storedValue = result?.[DANMAKU_STORAGE_KEY];
         danmakuEnabled =
           storedValue === undefined ? true : Boolean(storedValue);
-      }
-      if (!danmakuVisibilityChangedDuringLoad) {
-        const storedVisibility = result?.[DANMAKU_VISIBILITY_STORAGE_KEY];
-        danmakuVisible =
-          storedVisibility === undefined ? true : Boolean(storedVisibility);
       }
       if (!danmakuStyleChangedDuringLoad)
         danmakuStyle = globalThis.PipCompanion.danmakuSettings.normalize(

@@ -196,9 +196,29 @@ function background({ delayEnabled = false, ignoreAbort = false } = {}) {
     targetLanguage: "en",
     useNativeSecondaryTrack: false,
   };
+  const messageHandlers = new Map();
+  const runtimeMessageDispatcher = {
+    addListener(types, handler) {
+      for (const type of typeof types === "string" ? [types] : types) {
+        const handlers = messageHandlers.get(type) ?? [];
+        handlers.push(handler);
+        messageHandlers.set(type, handlers);
+      }
+      listener = (message, sender, sendResponse) => {
+        let keepChannelOpen = false;
+        for (const handler of messageHandlers.get(message.type) ?? [])
+          if (handler(message, sender, sendResponse) === true)
+            keepChannelOpen = true;
+        return keepChannelOpen;
+      };
+    },
+  };
   const context = {
     exports: {},
-    require: () => ({ isRecord }),
+    require: (path) =>
+      path.includes("message-dispatcher")
+        ? { runtimeMessageDispatcher }
+        : { isRecord },
     URL,
     AbortController,
     Date: { now: () => now },

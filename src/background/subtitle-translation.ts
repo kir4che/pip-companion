@@ -1,4 +1,5 @@
 import { isRecord } from "../shared/type-guards.js";
+import { runtimeMessageDispatcher } from "./message-dispatcher.js";
 
 const PREFERENCES_KEY = "subtitleTranslationPreferences";
 const CONFIG_KEY = "subtitleTranslationConfig";
@@ -465,7 +466,7 @@ async function fetchWithTimeout<T>(
   }
 }
 
-// Bound paid calls, including explicit connection tests, across the extension.
+// 限制翻譯請求的頻率，避免同時發送多個請求導致服務拒絕。
 let translationInFlight = false;
 let nextTranslationAt = 0;
 let translationFailure = "";
@@ -543,7 +544,7 @@ async function translate(
       }
       return translations;
     } catch (error) {
-      // A timeout may already have been billed. Require explicit recovery, not retries.
+      // timeout 可能是網路不穩定或翻譯服務拒絕，其他錯誤可能是設定錯誤或 API 金鑰失效。
       if (!test && !signal?.aborted)
         translationFailure =
           error instanceof Error ? error.message : "request-failed";
@@ -612,180 +613,234 @@ export function registerSubtitleTranslationListener() {
         translationFailure = "";
     }
   });
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (
-      isRecord(message) &&
-      message.type === "PIP_STATE_CHANGED" &&
-      sender.tab?.id !== undefined
-    ) {
-      const tabId = sender.tab.id;
-      if (message.pipOpen === true) {
-        const enabled = message.subtitlesEnabled === true;
-        if (pipSubtitleStates.get(tabId) !== enabled) translationGeneration++;
-        pipSubtitleStates.set(tabId, enabled);
-        if (!enabled) abortTabTranslations(tabId);
-      } else {
-        // An old session-storage snapshot must not reopen a closed PiP session.
-        pipSubtitleStates.set(tabId, false);
-        translationGeneration++;
-        abortTabTranslations(tabId);
+  runtimeMessageDispatcher.addListener(
+    [
+      "PIP_STATE_CHANGED",
+      "PIP_SUBTITLES_ENABLED_CHANGED",
+      "GET_SUBTITLE_TRANSLATION_LANGUAGES",
+      "GET_SUBTITLE_TRANSLATION_SERVICES",
+      "SET_SUBTITLE_TRANSLATION_PROVIDER",
+      "TRANSLATE_SUBTITLE_CUES",
+      "TEST_SUBTITLE_TRANSLATION",
+    ],
+    (message, sender, sendResponse) => {
+      if (
+        isRecord(message) &&
+        message.type === "PIP_STATE_CHANGED" &&
+        sender.tab?.id !== undefined
+      ) {
+        const tabId = sender.tab.id;
+        if (message.pipOpen === true) {
+          const enabled = message.subtitlesEnabled === true;
+          if (pipSubtitleStates.get(tabId) !== enabled) translationGeneration++;
+          pipSubtitleStates.set(tabId, enabled);
+          if (!enabled) abortTabTranslations(tabId);
+        } else {
+          // 舊的 session-storage 設定已經失效，清除所有 PiP 分頁的翻譯狀態。
+          pipSubtitleStates.set(tabId, false);
+          translationGeneration++;
+          abortTabTranslations(tabId);
+        }
+        return false;
       }
-      return false;
-    }
-    if (
-      isRecord(message) &&
-      message.type === "PIP_SUBTITLES_ENABLED_CHANGED" &&
-      typeof message.enabled === "boolean" &&
-      sender.tab?.id !== undefined
-    ) {
-      const tabId = sender.tab.id;
-      if (pipSubtitleStates.get(tabId) !== message.enabled)
-        translationGeneration++;
-      pipSubtitleStates.set(tabId, message.enabled);
-      if (!message.enabled) abortTabTranslations(tabId);
-      void chrome.storage.session
-        .get("pipTabId")
-        .then(async ({ pipTabId }) => {
-          if (pipTabId !== tabId) return;
-          await chrome.storage.session.set({
-            [pipSubtitlesEnabledStorageKey(tabId)]: message.enabled,
-          });
-        })
-        .catch(() => {});
-      return false;
-    }
-    const languageRequest =
-      isRecord(message) &&
-      message.type === "GET_SUBTITLE_TRANSLATION_LANGUAGES";
-    const servicesRequest =
-      isRecord(message) && message.type === "GET_SUBTITLE_TRANSLATION_SERVICES";
-    const requestedProvider =
-      isRecord(message) &&
-      message.type === "SET_SUBTITLE_TRANSLATION_PROVIDER" &&
-      isTranslationProvider(message.provider)
-        ? message.provider
-        : null;
-    const providerRequest = requestedProvider !== null;
-    const testRequest =
-      isRecord(message) &&
-      message.type === "TEST_SUBTITLE_TRANSLATION" &&
-      isTranslationProvider(message.provider)
-        ? { provider: message.provider, config: readConfig(message.config) }
-        : null;
-    const translationRequest = isTranslationRequest(message) ? message : null;
-    if (
-      !languageRequest &&
-      !servicesRequest &&
-      !providerRequest &&
-      !testRequest &&
-      !translationRequest
-    )
-      return false;
-    const requestGeneration = translationGeneration;
-    void (async () => {
-      try {
-        if (testRequest !== null) {
-          // 設定頁的連線測試：只接受擴充功能頁面呼叫，不經 PiP 分頁檢查。
-          const senderUrl = sender.url ?? "";
+      if (
+        isRecord(message) &&
+        message.type === "PIP_SUBTITLES_ENABLED_CHANGED" &&
+        typeof message.enabled === "boolean" &&
+        sender.tab?.id !== undefined
+      ) {
+        const tabId = sender.tab.id;
+        if (pipSubtitleStates.get(tabId) !== message.enabled)
+          translationGeneration++;
+        pipSubtitleStates.set(tabId, message.enabled);
+        if (!message.enabled) abortTabTranslations(tabId);
+        void chrome.storage.session
+          .get("pipTabId")
+          .then(async ({ pipTabId }) => {
+            if (pipTabId !== tabId) return;
+            await chrome.storage.session.set({
+              [pipSubtitlesEnabledStorageKey(tabId)]: message.enabled,
+            });
+          })
+          .catch(() => {});
+        return false;
+      }
+      const languageRequest =
+        isRecord(message) &&
+        message.type === "GET_SUBTITLE_TRANSLATION_LANGUAGES";
+      const servicesRequest =
+        isRecord(message) &&
+        message.type === "GET_SUBTITLE_TRANSLATION_SERVICES";
+      const requestedProvider =
+        isRecord(message) &&
+        message.type === "SET_SUBTITLE_TRANSLATION_PROVIDER" &&
+        isTranslationProvider(message.provider)
+          ? message.provider
+          : null;
+      const providerRequest = requestedProvider !== null;
+      const testRequest =
+        isRecord(message) &&
+        message.type === "TEST_SUBTITLE_TRANSLATION" &&
+        isTranslationProvider(message.provider)
+          ? { provider: message.provider, config: readConfig(message.config) }
+          : null;
+      const translationRequest = isTranslationRequest(message) ? message : null;
+      if (
+        !languageRequest &&
+        !servicesRequest &&
+        !providerRequest &&
+        !testRequest &&
+        !translationRequest
+      )
+        return false;
+      const requestGeneration = translationGeneration;
+      void (async () => {
+        try {
+          if (testRequest !== null) {
+            // 設定頁的連線測試：只接受擴充功能頁面呼叫，不經 PiP 分頁檢查。
+            if (
+              !testRequest.config ||
+              !isTranslationConfigured(testRequest.config, testRequest.provider)
+            ) {
+              sendResponse({ ok: false, error: "not-configured" });
+              return;
+            }
+            await translate(
+              testRequest.config,
+              "en",
+              ["Hello"],
+              testRequest.provider,
+              undefined,
+              true,
+            );
+            sendResponse({ ok: true });
+            return;
+          }
+          const tabId = sender.tab?.id;
+          if (tabId === undefined) {
+            sendResponse({ ok: false, error: "unavailable" });
+            return;
+          }
+          const [{ pipTabId }, stored] = await Promise.all([
+            chrome.storage.session.get("pipTabId"),
+            chrome.storage.local.get([PREFERENCES_KEY, CONFIG_KEY]),
+          ]);
           if (
-            !senderUrl.startsWith(chrome.runtime.getURL("")) ||
-            !testRequest.config ||
-            !isTranslationConfigured(testRequest.config, testRequest.provider)
+            pipTabId !== tabId ||
+            requestGeneration !== translationGeneration
           ) {
+            sendResponse({ ok: false, error: "unavailable" });
+            return;
+          }
+          const config = readConfig(stored[CONFIG_KEY]);
+          if (servicesRequest) {
+            sendResponse({
+              ok: true,
+              provider: config?.provider ?? "microsoft",
+              services: TRANSLATION_PROVIDERS.map((provider) => ({
+                provider,
+                configured: config
+                  ? isTranslationConfigured(config, provider)
+                  : false,
+              })),
+            });
+            return;
+          }
+          if (requestedProvider !== null) {
+            if (
+              !config ||
+              !isTranslationConfigured(config, requestedProvider)
+            ) {
+              sendResponse({ ok: false, error: "not-configured" });
+              return;
+            }
+            await chrome.storage.local.set({
+              [CONFIG_KEY]: { ...config, provider: requestedProvider },
+            });
+            sendResponse({ ok: true });
+            return;
+          }
+          if (!config) {
             sendResponse({ ok: false, error: "not-configured" });
             return;
           }
-          await translate(
-            testRequest.config,
-            "en",
-            ["Hello"],
-            testRequest.provider,
-            undefined,
-            true,
+          const preferences = stored[PREFERENCES_KEY];
+          const targetLanguage =
+            isRecord(preferences) &&
+            isTranslationLanguage(preferences.targetLanguage)
+              ? preferences.targetLanguage
+              : "zh-Hant";
+          if (
+            !isRecord(preferences) ||
+            preferences.enabled !== true ||
+            preferences.useNativeSecondaryTrack === true ||
+            (translationRequest !== null &&
+              targetLanguage !== translationRequest.targetLanguage)
+          ) {
+            sendResponse({ ok: false, error: "disabled" });
+            return;
+          }
+          const {
+            [pipSubtitlesEnabledStorageKey(tabId)]: storedSubtitlesEnabled,
+          } = await chrome.storage.session.get(
+            pipSubtitlesEnabledStorageKey(tabId),
           );
-          sendResponse({ ok: true });
-          return;
-        }
-        const tabId = sender.tab?.id;
-        if (tabId === undefined) {
-          sendResponse({ ok: false, error: "unavailable" });
-          return;
-        }
-        const [{ pipTabId }, stored] = await Promise.all([
-          chrome.storage.session.get("pipTabId"),
-          chrome.storage.local.get([PREFERENCES_KEY, CONFIG_KEY]),
-        ]);
-        if (pipTabId !== tabId || requestGeneration !== translationGeneration) {
-          sendResponse({ ok: false, error: "unavailable" });
-          return;
-        }
-        const config = readConfig(stored[CONFIG_KEY]);
-        if (servicesRequest) {
-          sendResponse({
-            ok: true,
-            provider: config?.provider ?? "microsoft",
-            services: TRANSLATION_PROVIDERS.map((provider) => ({
-              provider,
-              configured: config
-                ? isTranslationConfigured(config, provider)
-                : false,
-            })),
-          });
-          return;
-        }
-        if (requestedProvider !== null) {
-          if (!config || !isTranslationConfigured(config, requestedProvider)) {
+          const subtitlesEnabled = pipSubtitleStates.has(tabId)
+            ? pipSubtitleStates.get(tabId) === true
+            : storedSubtitlesEnabled === true;
+          if (
+            !subtitlesEnabled ||
+            requestGeneration !== translationGeneration
+          ) {
+            sendResponse({ ok: false, error: "disabled" });
+            return;
+          }
+          if (!pipSubtitleStates.has(tabId)) pipSubtitleStates.set(tabId, true);
+          if (languageRequest) {
+            const controller = new AbortController();
+            const controllers =
+              activeTranslationControllers.get(tabId) ?? new Set();
+            controllers.add(controller);
+            activeTranslationControllers.set(tabId, controllers);
+            try {
+              const languages = await getTranslationLanguages(
+                config,
+                config.provider,
+                controller.signal,
+              );
+              if (
+                pipSubtitleStates.get(tabId) !== true ||
+                requestGeneration !== translationGeneration
+              ) {
+                sendResponse({ ok: false, error: "disabled" });
+                return;
+              }
+              sendResponse({ ok: true, languages });
+            } finally {
+              controllers.delete(controller);
+              if (
+                !controllers.size &&
+                activeTranslationControllers.get(tabId) === controllers
+              )
+                activeTranslationControllers.delete(tabId);
+            }
+            return;
+          }
+          if (!translationRequest) return;
+          if (!isTranslationConfigured(config)) {
             sendResponse({ ok: false, error: "not-configured" });
             return;
           }
-          await chrome.storage.local.set({
-            [CONFIG_KEY]: { ...config, provider: requestedProvider },
-          });
-          sendResponse({ ok: true });
-          return;
-        }
-        if (!config) {
-          sendResponse({ ok: false, error: "not-configured" });
-          return;
-        }
-        const preferences = stored[PREFERENCES_KEY];
-        const targetLanguage =
-          isRecord(preferences) &&
-          isTranslationLanguage(preferences.targetLanguage)
-            ? preferences.targetLanguage
-            : "zh-Hant";
-        if (
-          !isRecord(preferences) ||
-          preferences.enabled !== true ||
-          preferences.useNativeSecondaryTrack === true ||
-          (translationRequest !== null &&
-            targetLanguage !== translationRequest.targetLanguage)
-        ) {
-          sendResponse({ ok: false, error: "disabled" });
-          return;
-        }
-        const {
-          [pipSubtitlesEnabledStorageKey(tabId)]: storedSubtitlesEnabled,
-        } = await chrome.storage.session.get(
-          pipSubtitlesEnabledStorageKey(tabId),
-        );
-        const subtitlesEnabled = pipSubtitleStates.has(tabId)
-          ? pipSubtitleStates.get(tabId) === true
-          : storedSubtitlesEnabled === true;
-        if (!subtitlesEnabled || requestGeneration !== translationGeneration) {
-          sendResponse({ ok: false, error: "disabled" });
-          return;
-        }
-        if (!pipSubtitleStates.has(tabId)) pipSubtitleStates.set(tabId, true);
-        if (languageRequest) {
           const controller = new AbortController();
           const controllers =
             activeTranslationControllers.get(tabId) ?? new Set();
           controllers.add(controller);
           activeTranslationControllers.set(tabId, controllers);
           try {
-            const languages = await getTranslationLanguages(
+            const result = await translate(
               config,
+              translationRequest.targetLanguage,
+              translationRequest.texts,
               config.provider,
               controller.signal,
             );
@@ -796,7 +851,11 @@ export function registerSubtitleTranslationListener() {
               sendResponse({ ok: false, error: "disabled" });
               return;
             }
-            sendResponse({ ok: true, languages });
+            sendResponse({
+              ok: true,
+              translations: result,
+              provider: config.provider,
+            });
           } finally {
             controllers.delete(controller);
             if (
@@ -805,61 +864,25 @@ export function registerSubtitleTranslationListener() {
             )
               activeTranslationControllers.delete(tabId);
           }
-          return;
-        }
-        if (!translationRequest) return;
-        if (!isTranslationConfigured(config)) {
-          sendResponse({ ok: false, error: "not-configured" });
-          return;
-        }
-        const controller = new AbortController();
-        const controllers =
-          activeTranslationControllers.get(tabId) ?? new Set();
-        controllers.add(controller);
-        activeTranslationControllers.set(tabId, controllers);
-        try {
-          const result = await translate(
-            config,
-            translationRequest.targetLanguage,
-            translationRequest.texts,
-            config.provider,
-            controller.signal,
-          );
-          if (
-            pipSubtitleStates.get(tabId) !== true ||
-            requestGeneration !== translationGeneration
-          ) {
-            sendResponse({ ok: false, error: "disabled" });
-            return;
-          }
+        } catch (error) {
+          const code =
+            error instanceof Error &&
+            [
+              "busy",
+              "not-configured",
+              "rate-limited",
+              "quota-exceeded",
+            ].includes(error.message)
+              ? error.message
+              : "request-failed";
           sendResponse({
-            ok: true,
-            translations: result,
-            provider: config.provider,
+            ok: false,
+            error:
+              requestGeneration !== translationGeneration ? "disabled" : code,
           });
-        } finally {
-          controllers.delete(controller);
-          if (
-            !controllers.size &&
-            activeTranslationControllers.get(tabId) === controllers
-          )
-            activeTranslationControllers.delete(tabId);
         }
-      } catch (error) {
-        const code =
-          error instanceof Error &&
-          ["busy", "not-configured", "rate-limited", "quota-exceeded"].includes(
-            error.message,
-          )
-            ? error.message
-            : "request-failed";
-        sendResponse({
-          ok: false,
-          error:
-            requestGeneration !== translationGeneration ? "disabled" : code,
-        });
-      }
-    })();
-    return true;
-  });
+      })();
+      return true;
+    },
+  );
 }

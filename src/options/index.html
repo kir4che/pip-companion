@@ -766,11 +766,13 @@
                 type="password"
                 autocomplete="new-password"
                 maxlength="4096"
+                aria-describedby="microsoft-translation-key-security-note"
               />
               <output
                 id="microsoft-translation-key-display"
                 class="translation-key-display"
                 aria-labelledby="microsoft-translation-key-label"
+                aria-describedby="microsoft-translation-key-security-note"
                 hidden
               ></output>
             </div>
@@ -785,6 +787,12 @@
                 maxlength="100"
               />
             </label>
+            <p
+              id="microsoft-translation-key-security-note"
+              class="translation-security-note"
+            >
+              __MSG_subtitleTranslationSecurityNote__
+            </p>
           </div>
           <div
             id="google-translation-config"
@@ -812,14 +820,22 @@
                 type="password"
                 autocomplete="new-password"
                 maxlength="4096"
+                aria-describedby="google-translation-key-security-note"
               />
               <output
                 id="google-translation-key-display"
                 class="translation-key-display"
                 aria-labelledby="google-translation-key-label"
+                aria-describedby="google-translation-key-security-note"
                 hidden
               ></output>
             </div>
+            <p
+              id="google-translation-key-security-note"
+              class="translation-security-note"
+            >
+              __MSG_subtitleTranslationSecurityNote__
+            </p>
           </div>
           <div
             id="deepl-translation-config"
@@ -847,14 +863,22 @@
                 type="password"
                 autocomplete="new-password"
                 maxlength="4096"
+                aria-describedby="deepl-translation-key-security-note"
               />
               <output
                 id="deepl-translation-key-display"
                 class="translation-key-display"
                 aria-labelledby="deepl-translation-key-label"
+                aria-describedby="deepl-translation-key-security-note"
                 hidden
               ></output>
             </div>
+            <p
+              id="deepl-translation-key-security-note"
+              class="translation-security-note"
+            >
+              __MSG_subtitleTranslationSecurityNote__
+            </p>
           </div>
           <div class="translation-settings-actions">
             <button
@@ -898,10 +922,24 @@
     </div>
 
     <script src="../../shared/locales.js"></script>
+    <script src="../../shared/localized-markup.js"></script>
+    <script src="../../shared/storage.js"></script>
+    <script src="../../shared/extra-danmaku-url.js"></script>
     <script src="../../shared/utils.js"></script>
     <script src="../../shared/danmaku-settings.js"></script>
     <script src="../../shared/subtitle-settings.js"></script>
+    <script src="../../shared/subtitle-style-storage.js"></script>
+    <script src="../../shared/subtitle-style-store.js"></script>
     <script src="../../shared/subtitle-translation-settings.js"></script>
+    <script src="../../shared/subtitle-translation-config.js"></script>
+    <script src="../../shared/shortcut-settings.js"></script>
+    <script src="/options/shortcut-input.js"></script>
+    <script src="/options/shortcut-settings.js"></script>
+    <script src="/options/subtitle-translation-options.js"></script>
+    <script src="/options/subtitle-style-options.js"></script>
+    <script src="../../shared/danmaku-style-rendering.js"></script>
+    <script src="../../shared/danmaku-style-options.js"></script>
+    <script src="/options/subtitle-style-rendering.js"></script>
     <script src="../../shared/custom-select.js"></script>
     <script type="module" src="/options/index.js"></script>
   </body>

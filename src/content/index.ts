@@ -1,11 +1,5 @@
 "use strict";
 
-const contentSiteUtils = globalThis.PipCompanion.site;
-const IS_YOUTUBE = contentSiteUtils.isYouTubeHost(location.hostname);
-const IS_BILIBILI = contentSiteUtils.isBilibiliHost(location.hostname);
-const IS_TWITCH = contentSiteUtils.isTwitchHost(location.hostname);
-const IS_BAHAMUT = contentSiteUtils.isBahamutHost(location.hostname);
-
 function isBilibiliLivePage() {
   return contentSiteUtils.isBilibiliLiveHost(location.hostname);
 }
@@ -20,76 +14,12 @@ function isPointerHoveringVideo(video: HTMLVideoElement): boolean {
   return false;
 }
 
-const {
-  SHORTCUT_DEFAULTS,
-  SHORTCUT_KEYS,
-  DEFAULT_SEEK_SECONDS,
-  normalizeSeekSeconds,
-  normalizeShortcut,
-  matchesShortcut,
-} = globalThis.PipCompanion.util;
-const subtitleSettings = globalThis.PipCompanion.subtitleSettings;
-const subtitleTranslationSettings =
-  globalThis.PipCompanion.subtitleTranslationSettings;
 let pipHandoffRetryAfter = 0;
+let danmakuMediaKey = "";
 const PIP_HANDOFF_RETRY_DELAY_MS = 1500;
 let pipSourceRecoveryStartedAt = 0;
 const PIP_SOURCE_RECOVERY_WAIT_MS = 5000;
 
-const state: State = {
-  shortcuts: { ...SHORTCUT_DEFAULTS },
-  commentsEnabled: true,
-  screenshotEnabled: true,
-  danmakuEnabled: true,
-  thumbnailPreviewEnabled: true,
-  followPlaybackPip: false,
-  seekSeconds: DEFAULT_SEEK_SECONDS,
-  lastNonOneRate: 1.25,
-  sourceVideo: null,
-  sourceAbort: null,
-  videoStash: null,
-  nativeSubtitleTracks: null,
-  youtubeSubtitlesInitiallyEnabled: null,
-  pipSession: { phase: "closed" },
-  get pipWindow() {
-    const session = this.pipSession;
-    return session.phase === "waiting" || session.phase === "active"
-      ? session.window
-      : null;
-  },
-  get pipUi() {
-    const session = this.pipSession;
-    return session.phase === "active" ? session.ui : null;
-  },
-  globalPipOpen: false,
-  globalPipSourcePlaying: true,
-  pipHandoffPending: false,
-  subtitleNode: null,
-  subtitleExtract: null,
-  subtitleObserver: null,
-  subtitleLines: [],
-  subtitleStyle: { ...subtitleSettings.DEFAULTS },
-  secondarySubtitleStyle: { ...subtitleSettings.SECONDARY_DEFAULTS },
-  subtitleLayout: { ...subtitleSettings.LAYOUT_DEFAULTS },
-  subtitleTranslationPreferences: {
-    ...subtitleTranslationSettings.DEFAULT_PREFERENCES,
-  },
-  subtitlessOn: false,
-  feedbackTimer: 0,
-  lastDeepScan: 0,
-  deepVideoCache: null,
-  lastSubtitleScan: 0,
-  pageToastEl: null,
-  pageToastTimer: 0,
-  nextControlCacheAt: 0,
-  nextControlCache: null,
-  nextClickTimer: 0,
-  nextClickPending: false,
-  nextVideoRequested: false,
-  nextPlaybackState: null,
-  nextVideoSourceKey: "",
-  scanTimer: 0,
-};
 let subtitleStyleRevision = 0;
 let secondarySubtitleStyleRevision = 0;
 let subtitleLayoutRevision = 0;
@@ -364,7 +294,14 @@ function onPageKeyDown(e: KeyboardEvent) {
   }
 }
 
-chrome.runtime.onMessage.addListener(
+globalThis.PipCompanion.runtimeMessages.addListener(
+  [
+    "PIP_GLOBAL_STATE",
+    "PIP_SOURCE_PLAYBACK_CHANGED",
+    "PING",
+    "CLOSE_PIP",
+    "OPEN_PIP",
+  ],
   (message: unknown, _sender, sendResponse) => {
     if (!globalThis.PipCompanion.util.isExtensionMessage(message)) return;
     if (message.type === "PIP_GLOBAL_STATE") {
@@ -404,7 +341,28 @@ chrome.runtime.onMessage.addListener(
   },
 );
 
+function resetDanmakuVisibilityOnMediaChange() {
+  const url = new URL(location.href);
+  let nextMediaKey = "";
+  if (IS_YOUTUBE) {
+    const videoId = globalThis.PipCompanion.site.parseYouTubeVideoId(
+      location.href,
+    );
+    if (videoId) nextMediaKey = `youtube:${videoId}`;
+  } else if (IS_BILIBILI) {
+    nextMediaKey = `bilibili:${url.pathname}|${url.searchParams.get("p") || "1"}`;
+  } else {
+    const source = state.sourceVideo?.currentSrc || state.sourceVideo?.src;
+    if (source) nextMediaKey = `${url.pathname}|${source}`;
+  }
+
+  if (!nextMediaKey) return;
+  if (danmakuMediaKey && danmakuMediaKey !== nextMediaKey) toggleDanmaku(true);
+  danmakuMediaKey = nextMediaKey;
+}
+
 function scanPage() {
+  resetDanmakuVisibilityOnMediaChange();
   if (state.pipWindow?.closed)
     globalThis.PipCompanion.ContentPipLifecycle.closePiP(false);
 
@@ -603,6 +561,7 @@ void chrome.runtime
   })
   .catch(() => {});
 window.addEventListener("yt-navigate-finish", () => {
+  resetDanmakuVisibilityOnMediaChange();
   toggleFloatingComments(false);
   nudgeScan();
 });

@@ -66,6 +66,15 @@ function setup(kind, options = {}) {
     setTimeout,
     clearTimeout,
     PipCompanion: {
+      runtimeMessages: {
+        addListener(types, listener) {
+          const messageTypes = typeof types === "string" ? [types] : types;
+          runtimeListeners.push((message, sender, sendResponse) => {
+            if (messageTypes.includes(message.type))
+              return listener(message, sender, sendResponse);
+          });
+        },
+      },
       util: {
         isRecord: (value) =>
           value !== null && typeof value === "object" && !Array.isArray(value),

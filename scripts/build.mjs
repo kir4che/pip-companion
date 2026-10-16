@@ -6,6 +6,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname } from "node:path";
+import { contentScriptFiles } from "./content-script-files.mjs";
 
 const staticFiles = [
   ["manifest.json", "manifest.json"],
@@ -19,7 +20,7 @@ const staticFiles = [
   ],
 ];
 
-const out = "dist";
+const out = process.env.BUILD_OUT_DIR || "dist";
 rmSync(out, { recursive: true, force: true });
 mkdirSync(out, { recursive: true });
 
@@ -30,6 +31,9 @@ for (const [from, to] of staticFiles) {
 }
 cpSync("assets", `${out}/assets`, { recursive: true });
 cpSync("_locales", `${out}/_locales`, { recursive: true });
+const manifest = JSON.parse(readFileSync("manifest.json", "utf8"));
+manifest.content_scripts[0].js = contentScriptFiles;
+writeFileSync(`${out}/manifest.json`, `${JSON.stringify(manifest, null, 2)}\n`);
 const locales = Object.fromEntries(
   ["en", "zh_TW", "zh_CN"].map((locale) => [
     locale,

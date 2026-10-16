@@ -1,6 +1,6 @@
 // 擴充功能彈出視窗與頁面共用的快捷鍵資料
 interface Shortcut {
-  code: string;
+  code: string; // KeyboardEvent.code
   ctrl: boolean;
   alt: boolean;
   shift: boolean;

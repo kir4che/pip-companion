@@ -145,7 +145,7 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
         .slice(0, 20);
       if (!batch.length) return;
       const requestGeneration = generation;
-      // Wait for rolling captions to settle. Keep only the currently visible text.
+      // 等待滾動字幕穩定。只保留目前可見的文字。
       timer = setTimeout(() => {
         timer = null;
         if (!canTranslate() || requestGeneration !== generation) return;
@@ -165,7 +165,7 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
               response.translations.length !== batch.length ||
               !response.translations.every((text) => typeof text === "string")
             ) {
-              // Busy means no upstream request was made; retry only the latest caption.
+              // Busy 代表沒有實際送出上游請求；僅重試最新字幕。
               if (
                 globalThis.PipCompanion.util.isRecord(response) &&
                 ["busy", "disabled", "unavailable"].includes(

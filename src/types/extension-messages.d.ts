@@ -1,3 +1,4 @@
+// 擴充功能內部訊息
 type SimpleExtensionMessageType =
   | "PING"
   | "GET_PIP_STATE"

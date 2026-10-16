@@ -552,7 +552,10 @@ globalThis.PipCompanion.ContentPlayback = (() => {
 
   function toggleDanmakuFromShortcut() {
     if (!isDanmakuEnabled()) return;
-    toggleDanmaku();
+    const visible = toggleDanmaku();
+    globalThis.PipCompanion.ContentFeedback.showFeedback(
+      t(visible ? "pipDanmakuOn" : "pipDanmakuOff"),
+    );
   }
 
   function resizePipWindow(

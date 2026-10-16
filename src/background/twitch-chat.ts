@@ -1,4 +1,5 @@
 import { isRecord } from "../shared/type-guards.js";
+import { runtimeMessageDispatcher } from "./message-dispatcher.js";
 
 const connections = new Map<number, TwitchChatConnection>();
 let nextConnectionId = 0;
@@ -230,41 +231,44 @@ function createMessageParts(
 }
 
 export function registerTwitchChatListener(): void {
-  chrome.runtime.onMessage.addListener((message, sender) => {
-    if (!isRecord(message)) return false;
-    const tabId = sender.tab?.id;
-    const pageUrl = sender.url;
-    if (
-      tabId === undefined ||
-      typeof pageUrl !== "string" ||
-      !/^https?:\/\//i.test(pageUrl)
-    )
-      return false;
+  runtimeMessageDispatcher.addListener(
+    ["START_EXTRA_TWITCH_CHAT", "STOP_EXTRA_TWITCH_CHAT"],
+    (message, sender) => {
+      if (!isRecord(message)) return false;
+      const tabId = sender.tab?.id;
+      const pageUrl = sender.url;
+      if (
+        tabId === undefined ||
+        typeof pageUrl !== "string" ||
+        !/^https?:\/\//i.test(pageUrl)
+      )
+        return false;
 
-    const connection = connections.get(tabId);
-    if (message.type === "STOP_EXTRA_TWITCH_CHAT") {
-      if (connection?.pageUrl !== pageUrl) return false;
-      connection.stop();
-      connections.delete(tabId);
-      return false;
-    }
-    if (
-      message.type !== "START_EXTRA_TWITCH_CHAT" ||
-      !isChannel(message.channel)
-    )
-      return false;
+      const connection = connections.get(tabId);
+      if (message.type === "STOP_EXTRA_TWITCH_CHAT") {
+        if (connection?.pageUrl !== pageUrl) return false;
+        connection.stop();
+        connections.delete(tabId);
+        return false;
+      }
+      if (
+        message.type !== "START_EXTRA_TWITCH_CHAT" ||
+        !isChannel(message.channel)
+      )
+        return false;
 
-    connection?.stop();
-    const nextConnection = new TwitchChatConnection(
-      tabId,
-      pageUrl,
-      message.channel,
-      `${Date.now().toString(36)}-${(++nextConnectionId).toString(36)}`,
-    );
-    connections.set(tabId, nextConnection);
-    nextConnection.start();
-    return false;
-  });
+      connection?.stop();
+      const nextConnection = new TwitchChatConnection(
+        tabId,
+        pageUrl,
+        message.channel,
+        `${Date.now().toString(36)}-${(++nextConnectionId).toString(36)}`,
+      );
+      connections.set(tabId, nextConnection);
+      nextConnection.start();
+      return false;
+    },
+  );
 
   chrome.tabs.onRemoved.addListener((tabId) => {
     connections.get(tabId)?.stop();

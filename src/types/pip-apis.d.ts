@@ -1,3 +1,4 @@
+// 內容腳本、popup、選項頁共用的 API 形狀
 type PipOperationResult =
   { ok: true } | { ok: false; message: string; code?: "GESTURE_REQUIRED" };
 
@@ -49,6 +50,23 @@ interface PlaylistInfo {
   items: PlaylistItem[];
   currentIndex: number;
   currentIndexKnown: boolean;
+}
+
+interface PipProgressMathApi {
+  ratioAt(clientX: number, left: number, width: number): number | null;
+  timeAt(ratio: number, duration: number): number;
+  valueAt(ratio: number, max: number): number;
+}
+
+interface PlaylistRenderingApi {
+  render(
+    doc: Document,
+    panel: HTMLElement,
+    items: PlaylistItem[],
+    currentIndex: number,
+    currentIndexKnown: boolean,
+    onSelect: (index: number) => void,
+  ): HTMLButtonElement | null;
 }
 
 type PlaylistNextItemState = "available" | "unavailable" | "unknown";
@@ -173,6 +191,149 @@ interface PipUiHandle {
   refreshSubtitleTranslationServices(): void;
 }
 
+interface SubtitleTranslationPanelElements {
+  translationButton: HTMLButtonElement;
+  translationPanel: HTMLElement;
+  subtitlePrimaryRow: HTMLLabelElement;
+  subtitlePrimaryText: HTMLSpanElement;
+  subtitlePrimaryTrack: HTMLSelectElement;
+  translationLanguageRow: HTMLLabelElement;
+  translationModeRow: HTMLLabelElement;
+  translationServiceLabel: Text;
+  translationServiceHintIcon: HTMLSpanElement;
+  translationServiceHintTooltip: HTMLDivElement;
+  translationService: HTMLSelectElement;
+  nativeSubtitleOption: HTMLOptionElement;
+  translationEnabledText: HTMLSpanElement;
+  translationEnabled: HTMLInputElement;
+  subtitlesEnabledText: HTMLSpanElement;
+  subtitlesEnabled: HTMLInputElement;
+  translationModeText: HTMLSpanElement;
+  translationMode: HTMLSelectElement;
+  translationLanguageText: HTMLSpanElement;
+  translationLanguage: HTMLSelectElement;
+  subtitleTranslationLanguages: SubtitleTranslationLanguageOption[];
+  preferNativeRow: HTMLLabelElement;
+  preferNativeText: HTMLSpanElement;
+  preferNative: HTMLInputElement;
+}
+
+interface PlaybackControlsElements {
+  speedButton: HTMLButtonElement;
+  timeGroup: HTMLSpanElement;
+  timeCurrent: HTMLInputElement;
+  timeDuration: HTMLSpanElement;
+  progress: HTMLInputElement;
+  progressMax: number;
+  volumeControl: HTMLDivElement;
+  volumeButton: HTMLButtonElement;
+  volumePath: Element;
+  volumeValue: HTMLInputElement;
+  volumeSlider: HTMLInputElement;
+  speedControl: HTMLDivElement;
+  speedSlider: HTMLInputElement;
+}
+
+interface PlaybackControlsApi {
+  create(
+    doc: Document,
+    translate: (key: string, substitutions?: string | string[]) => string,
+    makeButton: (
+      action: string,
+      label: string,
+      ariaLabel: string,
+    ) => HTMLButtonElement,
+    volumeIconPath: string,
+  ): PlaybackControlsElements;
+}
+
+interface DanmakuInputPanelApi {
+  create(
+    doc: Document,
+    t: (key: string) => string,
+    options: {
+      canSend: boolean;
+      makeButton(
+        action: string,
+        label: string,
+        ariaLabel: string,
+      ): HTMLButtonElement;
+    },
+  ): {
+    toggle: HTMLButtonElement;
+    panel: HTMLFormElement;
+    input: HTMLInputElement;
+    count: HTMLSpanElement;
+    submit: HTMLButtonElement;
+    status: HTMLDivElement;
+  };
+}
+
+interface SubtitleTranslationPanelApi {
+  create(
+    doc: Document,
+    translate: (key: string) => string,
+  ): SubtitleTranslationPanelElements;
+}
+
+interface PipEventScope {
+  listen(
+    target: EventTarget,
+    type: string,
+    listener: (event: any) => unknown,
+    options?: boolean | AddEventListenerOptions,
+  ): void;
+  setTimeout(handler: () => void, timeout: number): number;
+  clearTimeout(timer: number): void;
+  dispose(): void;
+}
+
+interface PipEventScopeApi {
+  create(win: Window): PipEventScope;
+}
+
+interface PipTimeInputApi {
+  create(options: {
+    input: HTMLInputElement;
+    eventScope: PipEventScope;
+    parseTime(value: string): number | null;
+    getVideo(): HTMLVideoElement | null;
+    formatTime(seconds: number): string;
+    seek(video: HTMLVideoElement, targetSeconds: number): void;
+    showInvalid(): void;
+  }): {
+    render(): void;
+  };
+}
+
+interface PipPlaylistPanelApi {
+  create(options: {
+    document: Document;
+    window: Window;
+    eventScope: PipEventScope;
+    button: HTMLButtonElement;
+    panel: HTMLElement;
+    getPlaylist(): PlaylistInfo | null;
+    selectItem(index: number): void;
+    close(): void;
+  }): {
+    render(): void;
+  };
+}
+
+interface PipRangeControlsApi {
+  create(options: {
+    eventScope: PipEventScope;
+    volumeSlider: HTMLInputElement;
+    speedSlider: HTMLInputElement;
+    setVolume(volume: number, enabled: boolean): void;
+    getVideo(): HTMLVideoElement | null;
+    cancelNextPlaybackRestore(): void;
+    update(): void;
+    showSpeedFeedback(): void;
+  }): void;
+}
+
 interface PipUiApi {
   create(
     win: Window,
@@ -188,6 +349,25 @@ interface DanmakuSettingsApi {
   SPEED_OPTIONS: readonly { value: number; label: string }[];
   DEFAULTS: DanmakuStyleSettings;
   normalize(value: unknown): DanmakuStyleSettings;
+}
+
+interface SubtitleLineFitApi {
+  calculate(
+    naturalWidth: number,
+    availableWidth: number,
+    minimumScale: number,
+  ): { scale: number; needsWrapping: boolean };
+}
+
+interface SubtitleFittingApi {
+  fit(subtitle: HTMLElement, minimumScale: number): void;
+}
+
+interface SubtitleStyleStorageApi {
+  normalize(
+    stored: unknown,
+    defaults: SubtitleStyleSettings,
+  ): { style: SubtitleStyleSettings; changed: boolean };
 }
 
 interface SubtitleSettingsApi {
@@ -234,6 +414,35 @@ interface SubtitleTranslationPreferences {
   preferNative: boolean;
   useNativeSecondaryTrack: boolean;
 }
+interface TranslationLanguageOptionData {
+  value: string;
+  label: string;
+  disabled?: boolean;
+  selected?: boolean;
+}
+
+interface TranslationLanguageOptionsApi {
+  nativeTracks(
+    tracks: SubtitleTrackOption[],
+    selectedTrack: string,
+    noTracksLabel: string,
+    chooseTrackLabel: string,
+  ): TranslationLanguageOptionData[];
+  translationLanguages(
+    languages: SubtitleTranslationLanguageOption[],
+    selectedLanguage: string,
+    getLanguageLabel: (code: string) => string,
+  ): TranslationLanguageOptionData[];
+}
+
+interface SubtitleLanguageTagsApi {
+  normalize(code: string): string;
+  normalizeSubtitleLanguage(language: string): string;
+  matchesSubtitleLanguages(left: string, right: string): boolean;
+  matches(left: string, right: string): boolean;
+  isValid(code: string): boolean;
+}
+
 interface SubtitleTranslationSettingsApi {
   PREFERENCES_KEY: string;
   CONFIG_KEY: string;
@@ -496,17 +705,216 @@ interface CustomSelectApi {
   isOpenForTarget(target: EventTarget | null): boolean;
 }
 
+type ShortcutInputResult =
+  | { type: "cancel" }
+  | { type: "ignore" }
+  | {
+      type: "status";
+      message: string;
+      parameter?: string;
+      error?: boolean;
+    }
+  | { type: "shortcut"; shortcut: Shortcut };
+
+interface ShortcutInputApi {
+  fromKeyboard(
+    event: KeyboardEvent,
+    key: ShortcutKey,
+    platform: string,
+    hasMetaModifier: (event: KeyboardEvent) => boolean,
+  ): ShortcutInputResult;
+  fromWheel(event: WheelEvent, platform: string): ShortcutInputResult;
+}
+
+interface LocalizedMarkupApi {
+  create(doc: Document, translate: (key: string) => string): () => void;
+}
+
+interface DanmakuStyleOptionsApi {
+  create(options: {
+    storage: StorageAreaAdapter;
+    settings: DanmakuSettingsApi;
+    t: (key: string, substitutions?: string | string[]) => string;
+    showStatus: (message: string, error?: boolean) => void;
+  }): {
+    render(): void;
+    setControlsDisabled(disabled: boolean): void;
+    load(): Promise<void>;
+    handleStorageChange(change: chrome.storage.StorageChange | undefined): void;
+  };
+}
+
+interface ExtraBilibiliSettingsApi {
+  create(options: {
+    enabled: HTMLInputElement;
+    url: HTMLInputElement;
+    offset: HTMLInputElement;
+    urlError: HTMLElement;
+    offsetError: HTMLElement;
+    util: PipCompanionUtil;
+    storage: StorageAreaAdapter;
+    t: (key: string, substitutions?: string | string[]) => string;
+  }): void;
+}
+
+interface OptionsShortcutSettingsApi {
+  create(options: {
+    storage: StorageAreaAdapter;
+    util: PipCompanionUtil;
+    shortcutInput: ShortcutInputApi;
+    t: (key: string, substitutions?: string | string[]) => string;
+    showStatus: (message: string, error?: boolean) => void;
+  }): {
+    render(): void;
+    load(): Promise<void>;
+    handleStorageChange(changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }): void;
+  };
+}
+
+interface SubtitleStyleStoreApi {
+  create(options: {
+    storage: StorageAreaAdapter;
+    settings: SubtitleSettingsApi;
+    t: (key: string) => string;
+    showStatus: (message: string, error?: boolean) => void;
+    onChange: () => void;
+  }): {
+    readonly styles: Record<SubtitleStyleTarget, SubtitleStyleSettings>;
+    readonly layout: SubtitleLayoutSettings;
+    updateStyle(target: SubtitleStyleTarget, value: unknown): void;
+    updateLayout(value: unknown): void;
+    saveStyle(target: SubtitleStyleTarget, immediate?: boolean): void;
+    saveLayout(immediate?: boolean): void;
+    loadStyles(): Promise<void>;
+    loadLayout(): Promise<void>;
+    handleStorageChange(changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }): void;
+  };
+}
+
+interface OptionsSubtitleStyleOptionsApi {
+  create(options: {
+    storage: StorageAreaAdapter;
+    settings: SubtitleSettingsApi;
+    t: (key: string) => string;
+    showStatus: (message: string, error?: boolean) => void;
+  }): {
+    render(): void;
+    setControlsDisabled(): void;
+    load(): void;
+    handleStorageChange(changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }): void;
+  };
+}
+
+interface PopupSubtitleStyleOptionsApi {
+  create(options: {
+    storage: StorageAreaAdapter;
+    settings: SubtitleSettingsApi;
+    t: (key: string) => string;
+    showStatus: (message: string, error?: boolean) => void;
+  }): {
+    render(): void;
+    setControlsDisabled(disabled: boolean): void;
+    load(): Promise<void>;
+    handleStorageChange(changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }): void;
+  };
+}
+
+interface PopupSettingsNavigationApi {
+  create(doc: Document): {
+    setView(view: "menu" | "danmaku" | "subtitle" | "extra"): void;
+  };
+}
+
+interface SubtitleTranslationOptionsApi {
+  create(options: {
+    storage: StorageAreaAdapter;
+    settings: SubtitleTranslationSettingsApi;
+    configApi: SubtitleTranslationConfigApi;
+    t: (key: string) => string;
+    showStatus: (message: string, error?: boolean) => void;
+  }): {
+    render(): void;
+    update(value: unknown): void;
+    load(): Promise<void>;
+  };
+}
+
+interface RuntimeMessageDispatcher {
+  addListener(
+    types: string | readonly string[],
+    handler: (
+      message: unknown,
+      sender: chrome.runtime.MessageSender,
+      sendResponse: (response?: unknown) => void,
+    ) => boolean | void | Promise<boolean | void>,
+  ): void;
+}
+
 interface PipCompanionGlobal {
+  runtimeMessages: RuntimeMessageDispatcher;
   locales: Record<"en" | "zh_TW" | "zh_CN", Record<string, LocaleMessage>>;
+  localizedMarkup: LocalizedMarkupApi;
+  shortcutInput: ShortcutInputApi;
+  subtitleStyleStorage: SubtitleStyleStorageApi;
+  subtitleStyleStore: SubtitleStyleStoreApi;
+  subtitleFitting: SubtitleFittingApi;
+  subtitleLineFit: SubtitleLineFitApi;
+  storage: {
+    local: StorageAreaAdapter;
+    session: StorageAreaAdapter;
+  };
   customSelect: CustomSelectApi;
   PipAudio: PipAudioApi;
   PipUI: PipUiApi;
+  PipEventScope: PipEventScopeApi;
+  pipTimeInput: PipTimeInputApi;
+  pipPlaylistPanel: PipPlaylistPanelApi;
+  pipRangeControls: PipRangeControlsApi;
+  PipStyles: { get(): string[] };
+  playlistRendering: PlaylistRenderingApi;
+  pipProgressMath: PipProgressMathApi;
+  translationLanguageOptions: TranslationLanguageOptionsApi;
+  subtitleTranslationPanel: SubtitleTranslationPanelApi;
+  danmakuInputPanel: DanmakuInputPanelApi;
+  playbackControls: PlaybackControlsApi;
   ContentVideo: ContentVideoApi;
   ContentPlatform: ContentPlatformApi;
   ContentSubtitles: ContentSubtitlesApi;
   BilibiliSubtitles: typeof bilibiliSubtitles;
   NativeSecondarySubtitleTrack: NativeSecondarySubtitleTrackApi;
   standardTextTrack: StandardTextTrackProvider;
+  subtitleTrackValidation: SubtitleTrackValidationApi;
+  subtitleTrackOptions: SubtitleTrackOptionsApi;
+  subtitleCueData: SubtitleCueDataApi;
+  subtitleRemoteRequests: SubtitleRemoteRequestsApi;
+  subtitleClock: SubtitleClockApi;
+  nativeSubtitleModes: NativeSubtitleModesApi;
+  subtitleFitController: SubtitleFitControllerApi;
+  subtitleRendering: SubtitleRenderingApi;
+  popupSubtitleStyleRendering: PopupSubtitleStyleRenderingApi;
+  popupSubtitleStyleOptions: PopupSubtitleStyleOptionsApi;
+  optionsSubtitleStyleOptions: OptionsSubtitleStyleOptionsApi;
+  optionsShortcutSettings: OptionsShortcutSettingsApi;
+  danmakuStyleOptions: DanmakuStyleOptionsApi;
+  settingsNavigation: PopupSettingsNavigationApi;
+  subtitleTranslationOptions: SubtitleTranslationOptionsApi;
+  extraBilibiliSourceConfig: ExtraBilibiliSourceConfigApi;
+  extraBilibiliForm: ExtraBilibiliFormApi;
+  extraBilibiliSettings: ExtraBilibiliSettingsApi;
+  danmakuStyleRendering: DanmakuStyleRenderingApi;
+  subtitleLanguageTags: SubtitleLanguageTagsApi;
+  genericSubtitleOverlayDetection: GenericSubtitleOverlayDetectionApi;
+  subtitleStyleRendering: SubtitleStyleRenderingApi;
+  shortcutSettings: ShortcutSettingsApi;
+  subtitleTranslationConfig: SubtitleTranslationConfigApi;
   SubtitleTranslation: SubtitleTranslationApi;
   ContentFeedback: ContentFeedbackApi;
   ContentPlayback: ContentPlaybackApi;
@@ -527,6 +935,7 @@ interface PipCompanionGlobal {
   danmakuSettings: DanmakuSettingsApi;
   subtitleSettings: SubtitleSettingsApi;
   subtitleTranslationSettings: SubtitleTranslationSettingsApi;
+  isValidExtraDanmakuSourceUrl(value: string): boolean;
   site: PipCompanionSiteUtils;
   util: PipCompanionUtil;
 }

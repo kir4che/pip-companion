@@ -144,8 +144,107 @@ function setupSubtitles({
       getSelectedTrack: () => null,
     },
   });
+  const subtitleRenderingSource = readFileSync(
+    new URL("../src/content/subtitles/subtitle-rendering.ts", import.meta.url),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(subtitleRenderingSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    context,
+  );
+  const cueDataSource = readFileSync(
+    new URL("../src/content/subtitles/cue-data.ts", import.meta.url),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(cueDataSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    context,
+  );
+  const overlayDetectionSource = readFileSync(
+    new URL(
+      "../src/content/subtitles/generic-overlay-detection.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(overlayDetectionSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    context,
+  );
+  const languageTagsSource = readFileSync(
+    new URL("../src/shared/subtitle-language-tags.ts", import.meta.url),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(languageTagsSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    context,
+  );
+  const trackOptionsSource = readFileSync(
+    new URL("../src/content/subtitles/track-options.ts", import.meta.url),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(trackOptionsSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    context,
+  );
+  const remoteRequestsSource = readFileSync(
+    new URL("../src/content/subtitles/remote-requests.ts", import.meta.url),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(remoteRequestsSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    context,
+  );
+  const subtitleClockSource = readFileSync(
+    new URL("../src/content/subtitles/subtitle-clock.ts", import.meta.url),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(subtitleClockSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    context,
+  );
+  const nativeSubtitleModesSource = readFileSync(
+    new URL(
+      "../src/content/subtitles/native-subtitle-modes.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(nativeSubtitleModesSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    context,
+  );
+  const subtitleFitControllerSource = readFileSync(
+    new URL(
+      "../src/content/subtitles/subtitle-fit-controller.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(subtitleFitControllerSource, {
+      compilerOptions: { target: ts.ScriptTarget.ES2022 },
+    }).outputText,
+    context,
+  );
   const source = readFileSync(
-    new URL("../src/content/subtitles.ts", import.meta.url),
+    new URL("../src/content/subtitles/index.ts", import.meta.url),
     "utf8",
   );
   vm.runInNewContext(
@@ -194,6 +293,51 @@ test("unknown native switch retains the existing overlay fallback", () => {
   const { subtitles, context } = setupSubtitles({ overlayText: "字幕" });
   subtitles.initializeSubtitlesOn();
   assert.equal(context.state.subtitlessOn, true);
+});
+
+test("generic subtitle overlay detection prefers visible, populated captions", () => {
+  const { context } = setupSubtitles();
+  const makeElement = ({
+    text = "caption",
+    width = 100,
+    top = 10,
+    bottom = 30,
+    child = false,
+    closest = false,
+    contains = () => false,
+  } = {}) => ({
+    innerText: text,
+    querySelector: () => (child ? {} : null),
+    closest: () => (closest ? {} : null),
+    contains,
+    getBoundingClientRect: () => ({ width, top, bottom }),
+  });
+  const nested = makeElement({ text: "nested" });
+  const preferred = makeElement({
+    text: "visible",
+    contains: (element) => element === nested,
+  });
+  const blank = makeElement({ text: "" });
+  const candidates = [
+    makeElement({ text: "offscreen", top: 800, bottom: 820 }),
+    makeElement({ text: "too small", width: 20 }),
+    makeElement({ text: "controls", closest: true }),
+    makeElement({ text: "interactive", child: true }),
+    nested,
+    blank,
+    preferred,
+  ];
+  context.document.querySelectorAll = () => candidates;
+  const detected =
+    context.PipCompanion.genericSubtitleOverlayDetection.findNode(
+      context.document,
+      (element) =>
+        element === candidates[0]
+          ? { position: "static", pointerEvents: "none" }
+          : { position: "absolute", pointerEvents: "none" },
+      600,
+    );
+  assert.equal(detected, preferred);
 });
 
 test("detects Video.js captions rendered outside native text tracks", () => {

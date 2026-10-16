@@ -1,4 +1,4 @@
-// 記錄頁面與浮動視窗運作狀態的資料型別
+// 記錄頁面與浮動視窗運作狀態
 type NextControl = HTMLElement & { disabled?: boolean };
 
 interface PendingNextPlaybackState {

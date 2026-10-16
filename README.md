@@ -61,7 +61,7 @@ A browser extension that brings web videos into Picture-in-Picture, with subtitl
 
 ## Controls and Shortcuts
 
-- Open PiP: on a page with a playable video, click **Open PiP** in the extension popup, or press `Shift + Alt/Opt + P` on the page to toggle PiP on or off.
+- Open PiP: on a supported platform, press `Shift + Alt/Opt + P` or click **Open PiP** button in the extension popup.
 - Customize shortcuts: open the extension’s **All settings** page, select a shortcut in **Shortcuts**, then press a new combination.
 
 | Action                   | Default shortcut          |

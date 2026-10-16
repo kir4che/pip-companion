@@ -1,3 +1,5 @@
+import "../shared/extra-danmaku-url.js";
+import { runtimeMessageDispatcher } from "./message-dispatcher.js";
 import { isRecord } from "../shared/type-guards.js";
 import { registerBilibiliSubtitleListener } from "./bilibili-subtitle.js";
 import { registerBilibiliDanmakuListener } from "./bilibili-danmaku.js";
@@ -10,6 +12,9 @@ registerBilibiliDanmakuListener();
 registerBahamutDanmakuListener();
 registerTwitchChatListener();
 registerSubtitleTranslationListener();
+
+const isValidExtraDanmakuSourceUrl =
+  globalThis.PipCompanion.isValidExtraDanmakuSourceUrl;
 
 async function migrateLegacySubtitleSettings() {
   const stored = await chrome.storage.local.get([
@@ -50,32 +55,7 @@ const extraBilibiliSourceStorageKey = (tabId: number) =>
   `extraBilibiliSource:${tabId}`;
 const pipSubtitlesEnabledStorageKey = (tabId: number) =>
   `pipSubtitlesEnabled:${tabId}`;
-
-function isValidExtraDanmakuSourceUrl(value: string): boolean {
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "https:") return false;
-    if (/(^|\.)bilibili\.com$/i.test(url.hostname)) {
-      const page = Number(url.searchParams.get("p") || 1);
-      return (
-        /^\/video\/(?:BV[\w]{10}|av\d+)\/?$/i.test(url.pathname) &&
-        Number.isInteger(page) &&
-        page >= 1 &&
-        page <= 1000
-      );
-    }
-    if (url.hostname.toLowerCase() === "ani.gamer.com.tw")
-      return (
-        url.pathname === "/animeVideo.php" &&
-        /^\d{1,12}$/.test(url.searchParams.get("sn") || "")
-      );
-    if (/(^|\.)twitch\.tv$/i.test(url.hostname))
-      return /^\/[a-z0-9_]{1,25}$/i.test(url.pathname);
-    return false;
-  } catch {
-    return false;
-  }
-}
+const PIP_WINDOW_ID_STORAGE_KEY = "pipWindowId";
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   void chrome.storage.session
@@ -101,6 +81,7 @@ async function getOpenPipTabId(): Promise<number | null> {
   }
 
   await chrome.storage.session.set({ pipTabId: null, pipSourcePlaying: true });
+  await chrome.storage.session.remove(PIP_WINDOW_ID_STORAGE_KEY);
   void broadcastPipState(false);
   return null;
 }
@@ -128,18 +109,78 @@ async function findPipWindow(
   innerWidth: number,
   sourceWindowId: number | undefined,
 ) {
+  const { [PIP_WINDOW_ID_STORAGE_KEY]: storedWindowId } =
+    await chrome.storage.session.get(PIP_WINDOW_ID_STORAGE_KEY);
+  if (typeof storedWindowId === "number" && storedWindowId !== sourceWindowId) {
+    try {
+      return await chrome.windows.get(storedWindowId);
+    } catch {
+      await chrome.storage.session.remove(PIP_WINDOW_ID_STORAGE_KEY);
+    }
+  }
+
   const tabs = await chrome.tabs.query({ active: true });
-  const pipTab = tabs.find(
-    (tab) =>
-      tab.windowId !== sourceWindowId &&
-      typeof tab.width === "number" &&
-      Math.abs(tab.width - innerWidth) <= 3,
+  const candidates = (
+    await Promise.all(
+      tabs
+        .filter(
+          (tab) =>
+            tab.windowId !== undefined &&
+            tab.windowId !== sourceWindowId &&
+            typeof tab.width === "number" &&
+            Math.abs(tab.width - innerWidth) <= 3,
+        )
+        .map(async (activeTab) => {
+          try {
+            const browserWindow = await chrome.windows.get(activeTab.windowId!);
+            return { browserWindow, activeTab };
+          } catch {
+            return null;
+          }
+        }),
+    )
+  ).filter(
+    (candidate): candidate is NonNullable<typeof candidate> =>
+      candidate !== null,
   );
-  if (pipTab?.windowId === undefined) return null;
-  return chrome.windows.get(pipTab.windowId);
+  const popupCandidates = candidates.filter(
+    ({ browserWindow }) => browserWindow.type === "popup",
+  );
+  const selected =
+    popupCandidates.length === 1
+      ? popupCandidates[0]
+      : candidates.length === 1
+        ? candidates[0]
+        : undefined;
+  if (!selected?.browserWindow.id) return null;
+  await chrome.storage.session.set({
+    [PIP_WINDOW_ID_STORAGE_KEY]: selected.browserWindow.id,
+  });
+  return selected.browserWindow;
 }
 
-chrome.runtime.onMessage.addListener(
+chrome.windows.onRemoved.addListener((windowId) => {
+  void chrome.storage.session
+    .get(PIP_WINDOW_ID_STORAGE_KEY)
+    .then(({ [PIP_WINDOW_ID_STORAGE_KEY]: storedWindowId }) => {
+      if (storedWindowId === windowId)
+        return chrome.storage.session.remove(PIP_WINDOW_ID_STORAGE_KEY);
+      return undefined;
+    })
+    .catch(() => {});
+});
+
+runtimeMessageDispatcher.addListener(
+  [
+    "EXTRA_DANMAKU_SOURCE_CHANGED",
+    "PIP_SOURCE_PLAYBACK_CHANGED",
+    "PIP_SUBTITLES_ENABLED_CHANGED",
+    "PIP_STATE_CHANGED",
+    "GET_PIP_BOUNDS",
+    "GET_PIP_STATE",
+    "REQUEST_PIP_HANDOFF",
+    "CLOSE_ALL_PIP",
+  ],
   (message: unknown, sender, sendResponse) => {
     if (!isRecord(message)) return false;
     if (message.type === "EXTRA_DANMAKU_SOURCE_CHANGED") {
@@ -226,14 +267,12 @@ chrome.runtime.onMessage.addListener(
           });
         else return;
 
-        if (
-          !pipOpen &&
-          pipTabId === sender.tab?.id &&
-          sender.tab?.id !== undefined
-        )
-          await chrome.storage.session.remove(
-            pipSubtitlesEnabledStorageKey(sender.tab.id),
-          );
+        if (!pipOpen) {
+          const keys = [PIP_WINDOW_ID_STORAGE_KEY];
+          if (sender.tab?.id !== undefined)
+            keys.push(pipSubtitlesEnabledStorageKey(sender.tab.id));
+          await chrome.storage.session.remove(keys);
+        }
 
         await broadcastPipState(pipOpen);
       })();
@@ -319,6 +358,7 @@ chrome.runtime.onMessage.addListener(
     if (message.type === "CLOSE_ALL_PIP") {
       void getOpenPipTabId().then(async (pipTabId) => {
         if (pipTabId === null) {
+          await chrome.storage.session.remove(PIP_WINDOW_ID_STORAGE_KEY);
           sendResponse({ ok: true, pipOpen: false });
           return;
         }
@@ -332,6 +372,7 @@ chrome.runtime.onMessage.addListener(
             return;
           }
           await chrome.storage.session.set({ pipTabId: null });
+          await chrome.storage.session.remove(PIP_WINDOW_ID_STORAGE_KEY);
           await broadcastPipState(false);
           sendResponse({ ok: true, pipOpen: false });
         } catch {
@@ -344,7 +385,13 @@ chrome.runtime.onMessage.addListener(
   },
 );
 
-chrome.runtime.onMessage.addListener(
+runtimeMessageDispatcher.addListener(
+  [
+    "SAVE_PIP_BOUNDS",
+    "RESTORE_PIP_BOUNDS",
+    "CENTER_PIP_BOUNDS",
+    "RESIZE_PIP_WINDOW",
+  ],
   (message: unknown, sender, sendResponse) => {
     if (!isRecord(message)) return false;
     if (

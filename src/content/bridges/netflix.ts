@@ -940,10 +940,7 @@ interface NetflixApp {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Netflix seek failed";
-      if (message !== lastFailure) {
-        console.warn("[PiP Companion] Netflix seek failed:", message);
-        lastFailure = message;
-      }
+      if (message !== lastFailure) lastFailure = message;
     }
   });
 })();

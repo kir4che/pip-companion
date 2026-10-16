@@ -503,6 +503,17 @@ body {
   width: 100%;
 }
 
+.translation-security-note {
+  margin: 14px 0 0;
+  color: #a1a1aa;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.translation-config-grid > .translation-security-note {
+  grid-column: 1 / -1;
+}
+
 .translation-config-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(180px, 0.8fr);

@@ -116,6 +116,12 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
   const SEGMENT_SECONDS =
     globalThis.PipCompanion.bilibiliDanmakuConfig.segmentSeconds;
   const LATE_TOLERANCE_SECONDS = 0.5;
+  const DANMAKU_IS_YOUTUBE = globalThis.PipCompanion.site.isYouTubeHost(
+    location.hostname,
+  );
+  const DANMAKU_IS_BILIBILI = globalThis.PipCompanion.site.isBilibiliHost(
+    location.hostname,
+  );
 
   function normalizeSource(value: unknown): ExtraBilibiliSource {
     if (!globalThis.PipCompanion.util.isRecord(value))
@@ -661,51 +667,59 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
       }
     }
 
-    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-      if (!globalThis.PipCompanion.util.isRecord(message)) return;
-      if (
-        message.type === "EXTRA_TWITCH_CHAT_STATUS" &&
-        identity?.kind === "twitch" &&
-        message.channel === identity.channel &&
-        typeof message.connectionId === "string"
-      ) {
-        if (message.status === "connected")
-          twitchConnectionId = message.connectionId;
+    globalThis.PipCompanion.runtimeMessages.addListener(
+      [
+        "EXTRA_TWITCH_CHAT_STATUS",
+        "EXTRA_TWITCH_CHAT_MESSAGE",
+        "GET_EXTRA_DANMAKU_SOURCE",
+        "SET_EXTRA_DANMAKU_SOURCE",
+      ],
+      (message, _sender, sendResponse) => {
+        if (!globalThis.PipCompanion.util.isRecord(message)) return;
         if (
-          message.status !== "connected" &&
-          message.connectionId !== twitchConnectionId
-        )
+          message.type === "EXTRA_TWITCH_CHAT_STATUS" &&
+          identity?.kind === "twitch" &&
+          message.channel === identity.channel &&
+          typeof message.connectionId === "string"
+        ) {
+          if (message.status === "connected")
+            twitchConnectionId = message.connectionId;
+          if (
+            message.status !== "connected" &&
+            message.connectionId !== twitchConnectionId
+          )
+            return;
+          setSourceError(
+            message.status === "error"
+              ? typeof message.error === "string"
+                ? message.error
+                : "Twitch 聊天連線失敗。"
+              : null,
+          );
           return;
-        setSourceError(
-          message.status === "error"
-            ? typeof message.error === "string"
-              ? message.error
-              : "Twitch 聊天連線失敗。"
-            : null,
-        );
-        return;
-      }
-      if (
-        message.type === "EXTRA_TWITCH_CHAT_MESSAGE" &&
-        identity?.kind === "twitch" &&
-        message.channel === identity.channel &&
-        message.connectionId === twitchConnectionId &&
-        globalThis.PipCompanion.util.isRecord(message.data)
-      ) {
-        if (isValidDanmakuData(message.data))
-          scheduleLiveMessage(message.data, "twitch");
-        return;
-      }
-      if (message.type === "GET_EXTRA_DANMAKU_SOURCE") {
-        sendResponse(getSource());
-        return;
-      }
-      if (message.type === "SET_EXTRA_DANMAKU_SOURCE") {
-        setSource(message.source);
-        sendResponse(getSource());
-        return;
-      }
-    });
+        }
+        if (
+          message.type === "EXTRA_TWITCH_CHAT_MESSAGE" &&
+          identity?.kind === "twitch" &&
+          message.channel === identity.channel &&
+          message.connectionId === twitchConnectionId &&
+          globalThis.PipCompanion.util.isRecord(message.data)
+        ) {
+          if (isValidDanmakuData(message.data))
+            scheduleLiveMessage(message.data, "twitch");
+          return;
+        }
+        if (message.type === "GET_EXTRA_DANMAKU_SOURCE") {
+          sendResponse(getSource());
+          return;
+        }
+        if (message.type === "SET_EXTRA_DANMAKU_SOURCE") {
+          setSource(message.source);
+          sendResponse(getSource());
+          return;
+        }
+      },
+    );
 
     return { checkAndBind, getSource, setSource };
   }

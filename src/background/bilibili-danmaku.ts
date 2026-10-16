@@ -1,10 +1,8 @@
 import "../shared/bilibili-danmaku-config.js";
 import { parseBilibiliAdvancedDanmaku } from "../shared/bilibili-advanced-danmaku.js";
 import { isRecord } from "../shared/type-guards.js";
-import {
-  isSupportedDanmakuSender,
-  readResponseBytes,
-} from "./danmaku-utils.js";
+import { runtimeMessageDispatcher } from "./message-dispatcher.js";
+import { readResponseBytes } from "./danmaku-utils.js";
 
 const BILIBILI_SEGMENT_SECONDS =
   globalThis.PipCompanion.bilibiliDanmakuConfig.segmentSeconds;
@@ -553,8 +551,9 @@ function parseBilibiliSegment(bytes: Uint8Array) {
 }
 
 export function registerBilibiliDanmakuListener() {
-  chrome.runtime.onMessage.addListener(
-    (message: unknown, sender, sendResponse) => {
+  runtimeMessageDispatcher.addListener(
+    "GET_BILIBILI_DANMAKU",
+    (message: unknown, _sender, sendResponse) => {
       if (!isBilibiliDanmakuRequest(message)) return;
 
       const bvid = message.bvid || "";
@@ -566,7 +565,6 @@ export function registerBilibiliDanmakuListener() {
         message.startSegment !== undefined || message.endSegment !== undefined;
 
       if (
-        !isSupportedDanmakuSender(sender) ||
         (!/^BV[\w]{10}$/i.test(bvid) && !/^\d+$/.test(avid)) ||
         (Boolean(bvid) && Boolean(avid)) ||
         !Number.isInteger(page) ||

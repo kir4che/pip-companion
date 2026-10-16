@@ -431,6 +431,12 @@
   "pipSubtitlesOff": {
     "message": "Subtitles: off"
   },
+  "pipDanmakuOn": {
+    "message": "Danmaku: on"
+  },
+  "pipDanmakuOff": {
+    "message": "Danmaku: off"
+  },
   "pipSubtitlesToggle": {
     "message": "Show subtitles"
   },
@@ -521,6 +527,9 @@
   "subtitleTranslationApiKey": {
     "message": "API key"
   },
+  "subtitleTranslationSecurityNote": {
+    "message": "Your key stays in this browser and is sent only to the provider you choose—never to this project. You can remove it anytime; revoke it with that provider if it may have been exposed."
+  },
   "subtitleTranslationSetupHint": {
     "message": "Add an API key, test and save. Then enable translation in PiP's subtitle menu."
   },
@@ -534,7 +543,10 @@
     "message": "Save settings"
   },
   "subtitleTranslationRemoveKey": {
-    "message": "Remove current service key"
+    "message": "Remove saved API key for selected service"
+  },
+  "subtitleTranslationAccessDenied": {
+    "message": "Browser access was not granted. Allow this provider to use translation."
   },
   "subtitleTranslationGetKey": {
     "message": "Get an API key"
