@@ -21,6 +21,7 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     ".video-pod__item-duration, .video-pod__item-time, .ep-duration, .duration, [class*='duration']";
   const BAHAMUT_DURATION_SELECTOR = ".duration, [class*='duration']";
   const DURATION_PATTERN = /^\d{1,2}:\d{2}(?::\d{2})?$/;
+  const EPISODE_REGION_LABEL = /episodes?|集數|集数|劇集|剧集|エピソード|회차/i;
 
   function getYouTubePlayer(): YouTubePlayer | null {
     return document.querySelector<YouTubePlayer>("#movie_player");
@@ -74,14 +75,6 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     }
   }
 
-  function getNextItemState(): "available" | "unavailable" | "unknown" {
-    if (!globalThis.PipCompanion.site.isYouTubeHost(location.hostname))
-      return "unknown";
-    if (!hasYouTubePlaylistContext()) return "unavailable";
-    if (!hasYouTubePlaylistInfo()) return "unknown";
-    return hasYouTubeNextVideo() ? "available" : "unavailable";
-  }
-
   function getYouTubePlaylistElements(): HTMLElement[] {
     return Array.from(
       document.querySelectorAll<HTMLElement>(YOUTUBE_PLAYLIST_SELECTORS),
@@ -119,6 +112,15 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
   function removeDurationSuffix(title: string, duration?: string): string {
     if (!duration || !title.endsWith(duration)) return title;
     return title.slice(0, -duration.length).trimEnd() || title;
+  }
+
+  function getPlaylistIndexInfo(index: number, itemCount: number) {
+    const currentIndexKnown =
+      Number.isInteger(index) && index >= 0 && index < itemCount;
+    return {
+      currentIndex: currentIndexKnown ? index : 0,
+      currentIndexKnown,
+    };
   }
 
   function getInitialYouTubePlaylist(): {
@@ -226,6 +228,7 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
       );
 
       if (ids.length >= 2) {
+        const indexInfo = getPlaylistIndexInfo(currentIndex, ids.length);
         const elementsByVideoId = new Map<string, HTMLElement>();
         for (const element of getYouTubePlaylistElements()) {
           if (element.dataset.videoId)
@@ -244,12 +247,15 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
               ...(duration ? { duration } : {}),
             };
           }),
-          currentIndex:
-            currentIndex >= 0 && currentIndex < ids.length ? currentIndex : 0,
+          ...indexInfo,
         };
       }
 
-      if (initialItems.length >= 2)
+      if (initialItems.length >= 2) {
+        const indexInfo = getPlaylistIndexInfo(
+          currentIndex,
+          initialItems.length,
+        );
         return {
           items: initialItems.map((item, index) => ({
             index,
@@ -257,14 +263,13 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
             videoId: item.id,
             ...(item.duration ? { duration: item.duration } : {}),
           })),
-          currentIndex:
-            currentIndex >= 0 && currentIndex < initialItems.length
-              ? currentIndex
-              : 0,
+          ...indexInfo,
         };
+      }
 
       const elements = getYouTubePlaylistElements();
-      if (elements.length >= 2)
+      if (elements.length >= 2) {
+        const indexInfo = getPlaylistIndexInfo(currentIndex, elements.length);
         return {
           items: elements.map((element, index) => {
             const duration = getElementDuration(
@@ -279,27 +284,13 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
               ...(duration ? { duration } : {}),
             };
           }),
-          currentIndex:
-            currentIndex >= 0 && currentIndex < elements.length
-              ? currentIndex
-              : 0,
+          ...indexInfo,
         };
+      }
     } catch {
       return null;
     }
     return null;
-  }
-
-  function hasPlaylist(): boolean {
-    const site = globalThis.PipCompanion.site;
-    if (site.isYouTubeHost(location.hostname)) return hasYouTubePlaylist();
-    if (site.isBahamutHost(location.hostname))
-      return getBahamutPlaylistElements().length >= 2;
-    return (
-      isBilibiliPage() &&
-      hasBilibiliEpisodeList() &&
-      getBilibiliPlaylistElements().length >= 2
-    );
   }
 
   function getBilibiliPlaylistElements(): HTMLElement[] {
@@ -351,7 +342,7 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
           ...(element.dataset.key ? { videoId: element.dataset.key } : {}),
         };
       }),
-      currentIndex: currentIndex >= 0 ? currentIndex : 0,
+      ...getPlaylistIndexInfo(currentIndex, elements.length),
     };
   }
 
@@ -395,7 +386,110 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
             : {}),
         };
       }),
-      currentIndex: currentIndex >= 0 ? currentIndex : 0,
+      ...getPlaylistIndexInfo(currentIndex, elements.length),
+    };
+  }
+
+  function getGenericEpisodeList(): {
+    elements: HTMLAnchorElement[];
+    currentIndex: number;
+  } | null {
+    const currentPath = location.pathname.replace(/\/+$/, "") || "/";
+    const regions = document.querySelectorAll<HTMLElement>(
+      "nav, [role='navigation']",
+    );
+
+    for (const region of regions) {
+      const labels = [
+        region.getAttribute("aria-label") ?? "",
+        ...Array.from(
+          region.querySelectorAll<HTMLElement>(
+            "h1, h2, h3, h4, h5, h6, [role='heading']",
+          ),
+          (heading) => heading.textContent ?? "",
+        ),
+      ];
+      if (!labels.some((label) => EPISODE_REGION_LABEL.test(label))) continue;
+
+      for (const list of region.querySelectorAll<HTMLElement>(
+        "ul, ol, [role='list']",
+      )) {
+        const seen = new Set<string>();
+        const listItems = Array.from(
+          list.querySelectorAll<HTMLElement>("li, [role='listitem']"),
+        ).filter((item) => item.closest("ul, ol, [role='list']") === list);
+        const elements = listItems.flatMap((item) => {
+          const link = item.querySelector<HTMLAnchorElement>("a[href]");
+          if (!link || link.closest("ul, ol, [role='list']") !== list)
+            return [];
+          const text = (link.innerText || link.textContent || "").trim();
+          if (!text) return [];
+          try {
+            const url = new URL(link.href, location.href);
+            if (url.origin !== location.origin || seen.has(url.href)) return [];
+            seen.add(url.href);
+            return /^https?:$/.test(url.protocol) ? [link] : [];
+          } catch {
+            return [];
+          }
+        });
+        if (elements.length < 2) continue;
+
+        const currentIndexes = elements.flatMap((link, index) => {
+          const item = link.closest("li, [role='listitem']");
+          const currentElements = item ? [link, item] : [link];
+          return currentElements.some((element) => {
+            const ariaCurrent = element
+              .getAttribute("aria-current")
+              ?.toLowerCase();
+            return (
+              (ariaCurrent && ariaCurrent !== "false") ||
+              element.getAttribute("aria-selected") === "true"
+            );
+          })
+            ? [index]
+            : [];
+        });
+        if (currentIndexes.length > 1) continue;
+
+        const pathIndexes = elements.flatMap((link, index) =>
+          (new URL(link.href, location.href).pathname.replace(/\/+$/, "") ||
+            "/") === currentPath
+            ? [index]
+            : [],
+        );
+        const currentIndex =
+          currentIndexes[0] ??
+          (pathIndexes.length === 1 ? (pathIndexes[0] ?? -1) : -1);
+        if (currentIndex < 0) continue;
+        return { elements, currentIndex };
+      }
+    }
+    return null;
+  }
+
+  function getGenericEpisodePlaylist(): PlaylistInfo | null {
+    const list = getGenericEpisodeList();
+    if (!list) return null;
+    const { elements, currentIndex } = list;
+
+    return {
+      items: elements.map((element, index) => {
+        const text = (element.innerText || element.textContent || "")
+          .replace(/\s+/g, " ")
+          .trim();
+        const duration = normalizeDuration(
+          text.match(/(?:^|\s)(\d{1,2}:\d{2}(?::\d{2})?)$/)?.[1],
+        );
+        const title = removeDurationSuffix(text, duration);
+        return {
+          index,
+          title: title || t("playlistEpisode", String(index + 1)),
+          ...(duration ? { duration } : {}),
+        };
+      }),
+      currentIndex,
+      currentIndexKnown: true,
     };
   }
 
@@ -404,7 +498,33 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     if (site.isYouTubeHost(location.hostname)) return getYouTubePlaylist();
     if (site.isBahamutHost(location.hostname)) return getBahamutPlaylist();
     if (isBilibiliPage()) return getBilibiliPlaylist();
-    return null;
+    return getGenericEpisodePlaylist();
+  }
+
+  function hasPlaylist(): boolean {
+    const site = globalThis.PipCompanion.site;
+    if (site.isYouTubeHost(location.hostname)) return hasYouTubePlaylist();
+    if (site.isBahamutHost(location.hostname))
+      return getBahamutPlaylistElements().length >= 2;
+    if (isBilibiliPage())
+      return (
+        hasBilibiliEpisodeList() && getBilibiliPlaylistElements().length >= 2
+      );
+    return getGenericEpisodePlaylist() !== null;
+  }
+
+  function getNextItemState(): "available" | "unavailable" | "unknown" {
+    if (globalThis.PipCompanion.site.isYouTubeHost(location.hostname)) {
+      if (!hasYouTubePlaylistContext()) return "unavailable";
+      if (!hasYouTubePlaylistInfo()) return "unknown";
+      return hasYouTubeNextVideo() ? "available" : "unavailable";
+    }
+
+    const playlist = getPlaylist();
+    if (!playlist?.currentIndexKnown) return "unknown";
+    return playlist.currentIndex < playlist.items.length - 1
+      ? "available"
+      : "unavailable";
   }
 
   function selectYouTubePlaylistItem(
@@ -430,7 +550,11 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
       return;
     }
     if (isBahamutVideoPage()) {
-      getBahamutPlaylistElements()[index]?.click();
+      const episodeLink = getBahamutPlaylistElements()[index];
+      if (episodeLink) {
+        preparePlaybackState();
+        episodeLink.click();
+      }
       return;
     }
     if (isBilibiliPage()) {
@@ -457,6 +581,13 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
         element.querySelector<HTMLElement>("button, [role='button'], a") ||
         element;
       target.click();
+      return;
+    }
+
+    const episodeLink = getGenericEpisodeList()?.elements[index];
+    if (episodeLink) {
+      preparePlaybackState();
+      episodeLink.click();
     }
   }
 

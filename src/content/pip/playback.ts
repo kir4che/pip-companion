@@ -10,6 +10,32 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75,
     4, 4.25, 4.5, 4.75, 5,
   ];
+  const PLAYER_CONTAINERS = [
+    "#movie_player",
+    ".bpx-player",
+    "#bilibili-player",
+    ".bilibili-player",
+    ".watch-video",
+    "[data-uia='player']",
+    "#ani_video",
+    ".anime_video_area",
+    ".anime-video-area",
+    ".video-js",
+  ];
+  const NEXT_LABEL = /next|下一|下一个|下一個|다음/i;
+  const NEXT_CONTENT_LABEL =
+    /\b(?:video|lesson|episode)\b|(?:视频|視頻|影片|課程|课程|集)|(?:영상|강의|에피소드)|(?:動画|レッスン|エピソード)/i;
+  const BILIBILI_NEXT_SELECTORS = [
+    ".bpx-player-ctrl-next",
+    ".bpx-player-ctrl-btn-next",
+    ".bpx-player-ctrl-btn[aria-label*='下一']",
+    ".bpx-player-ctrl-btn[title*='下一']",
+    "[class*='next-episode']",
+    "[class*='episode-next']",
+  ];
+  const NEXT_CONTROL_CACHE_MS = 800;
+  const NEXT_RETRY_MS = 250;
+  const NEXT_RETRY_LIMIT = 12;
 
   function getYouTubePlayer(): YouTubePlayer | null {
     return document.querySelector<YouTubePlayer>("#movie_player");
@@ -85,28 +111,6 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     return false;
   }
 
-  const PLAYER_CONTAINERS = [
-    "#movie_player",
-    ".bpx-player",
-    "#bilibili-player",
-    ".bilibili-player",
-    ".watch-video",
-    "[data-uia='player']",
-    "#ani_video",
-    ".anime_video_area",
-    ".anime-video-area",
-    ".video-js",
-  ];
-  const NEXT_LABEL = /next|下一|下一个|下一個|다음/i;
-  const BILIBILI_NEXT_SELECTORS = [
-    ".bpx-player-ctrl-next",
-    ".bpx-player-ctrl-btn-next",
-    ".bpx-player-ctrl-btn[aria-label*='下一']",
-    ".bpx-player-ctrl-btn[title*='下一']",
-    "[class*='next-episode']",
-    "[class*='episode-next']",
-  ];
-
   function isBilibiliPage(): boolean {
     const site = globalThis.PipCompanion.site;
     return (
@@ -143,6 +147,24 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     return null;
   }
 
+  function findByNextContentLabel(root: Element): NextControl | null {
+    const elements = root.querySelectorAll<NextControl>(
+      "a[href], button, [role='button']",
+    );
+    for (const element of elements) {
+      const label = getNextControlLabel(element);
+      const hasNextRelation = element.matches("a[rel~='next']");
+      const hasNextContentLabel =
+        NEXT_LABEL.test(label) && NEXT_CONTENT_LABEL.test(label);
+      if (
+        (hasNextRelation || hasNextContentLabel) &&
+        isUsableNextControl(element)
+      )
+        return element;
+    }
+    return null;
+  }
+
   function findNextControl(): NextControl | null {
     if (
       globalThis.PipCompanion.site.isYouTubeHost(location.hostname) &&
@@ -172,10 +194,12 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       const candidate = container && findByNextLabel(container);
       if (candidate) return candidate;
     }
+    for (const region of document.querySelectorAll("main, article")) {
+      const candidate = findByNextContentLabel(region);
+      if (candidate) return candidate;
+    }
     return null;
   }
-
-  const NEXT_CONTROL_CACHE_MS = 800;
 
   function findNextControlCached() {
     if (Date.now() - state.nextControlCacheAt < NEXT_CONTROL_CACHE_MS) {
@@ -187,9 +211,6 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     state.nextControlCache = findNextControl();
     return state.nextControlCache;
   }
-
-  const NEXT_RETRY_MS = 250;
-  const NEXT_RETRY_LIMIT = 12;
 
   function getVideoSourceKey(video: HTMLVideoElement): string {
     return video.currentSrc || video.src || "";
@@ -280,11 +301,20 @@ globalThis.PipCompanion.ContentPlayback = (() => {
   function playNextVideo() {
     const nextItemState =
       globalThis.PipCompanion.ContentPlaylist.getNextItemState();
+    if (nextItemState === "unavailable") return;
     if (
-      globalThis.PipCompanion.site.isYouTubeHost(location.hostname) &&
-      nextItemState === "unavailable"
-    )
-      return;
+      nextItemState === "available" &&
+      !globalThis.PipCompanion.site.isYouTubeHost(location.hostname)
+    ) {
+      const playlist = globalThis.PipCompanion.ContentPlaylist.getPlaylist();
+      if (playlist) {
+        globalThis.PipCompanion.ContentPlaylist.selectPlaylistItem(
+          playlist.currentIndex + 1,
+          prepareNextVideoRequest,
+        );
+        return;
+      }
+    }
     prepareNextVideoRequest();
     const player = getYouTubePlayer();
     if (player?.nextVideo && nextItemState === "available") {
@@ -323,95 +353,91 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     );
   }
 
-  function updatePlaybackUi() {
-    if (!state.sourceVideo || !state.pipUi) return;
-    const isLive = isLiveStream(state.sourceVideo);
-    const player = getYouTubePlayer();
-    let muted = state.sourceVideo.muted || state.sourceVideo.volume === 0;
-    try {
-      muted = muted || Boolean(player?.isMuted?.());
-    } catch {
-      // YouTube 播放器 API 不可用時，改用 media 元素的靜音狀態。
-    }
-    state.pipUi.playButton.textContent = state.sourceVideo.paused ? "▶" : "Ⅱ";
-    state.pipUi.playButton.setAttribute(
+  function updatePlaybackControlsUi(
+    video: HTMLVideoElement,
+    pipUi: PipUiHandle,
+  ) {
+    pipUi.playButton.textContent = video.paused ? "▶" : "Ⅱ";
+    pipUi.playButton.setAttribute(
       "aria-label",
-      state.sourceVideo.paused ? t("pipPlayVideo") : t("pipPauseVideo"),
+      video.paused ? t("pipPlayVideo") : t("pipPauseVideo"),
     );
-    const playbackRate = Math.round(state.sourceVideo.playbackRate * 100) / 100;
+    const playbackRate = Math.round(video.playbackRate * 100) / 100;
     const speedLabel = `${playbackRate}×`;
-    state.pipUi.speedButton.textContent = speedLabel;
-    state.pipUi.speedButton.setAttribute(
+    pipUi.speedButton.textContent = speedLabel;
+    pipUi.speedButton.setAttribute(
       "aria-label",
       t("pipPlaybackSpeed", speedLabel),
     );
-    state.pipUi.speedSlider.value = String(playbackRate);
+    pipUi.speedSlider.value = String(playbackRate);
+  }
 
-    state.pipUi.volumeButton.setAttribute(
+  function updateVolumeUi(
+    video: HTMLVideoElement,
+    pipUi: PipUiHandle,
+    muted: boolean,
+  ) {
+    pipUi.volumeButton.setAttribute(
       "aria-label",
       muted ? t("pipUnmute") : t("pipMute"),
     );
-    state.pipUi.volumePath.setAttribute(
+    pipUi.volumePath.setAttribute(
       "d",
       muted ? MUTED_VOLUME_ICON_PATH : VOLUME_ICON_PATH,
     );
     const volumePercent = Math.round(getSourceVolumePercent());
-    state.pipUi.volumeSlider.value = String(volumePercent);
-    state.pipUi.volumeSlider.max = String(
-      globalThis.PipCompanion.PipAudio.maxVolume(state.sourceVideo),
+    pipUi.volumeSlider.value = String(volumePercent);
+    pipUi.volumeSlider.max = String(
+      globalThis.PipCompanion.PipAudio.maxVolume(video),
     );
-    if (
-      state.pipUi.volumeValue.ownerDocument.activeElement !==
-      state.pipUi.volumeValue
-    )
-      state.pipUi.volumeValue.value = String(volumePercent);
+    if (pipUi.volumeValue.ownerDocument.activeElement !== pipUi.volumeValue)
+      pipUi.volumeValue.value = String(volumePercent);
+  }
 
-    const duration = Number.isFinite(state.sourceVideo.duration)
-      ? state.sourceVideo.duration
-      : 0;
+  function updateTimelineUi(
+    video: HTMLVideoElement,
+    pipUi: PipUiHandle,
+    isLive: boolean,
+  ) {
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
     const durationText = globalThis.PipCompanion.util.formatTime(duration);
     const currentTimeText = globalThis.PipCompanion.util.formatTime(
-      state.sourceVideo.currentTime,
+      video.currentTime,
     );
-    if (
-      state.pipUi.timeCurrent.ownerDocument.activeElement !==
-      state.pipUi.timeCurrent
-    ) {
-      state.pipUi.timeCurrent.value = currentTimeText;
-      state.pipUi.timeCurrent.size = Math.max(4, currentTimeText.length);
+    if (pipUi.timeCurrent.ownerDocument.activeElement !== pipUi.timeCurrent) {
+      pipUi.timeCurrent.value = currentTimeText;
+      pipUi.timeCurrent.size = Math.max(4, currentTimeText.length);
     }
 
-    state.pipUi.timeDuration.textContent = `/ ${durationText}`;
-    state.pipUi.timeDuration.hidden = isLive;
+    pipUi.timeDuration.textContent = `/ ${durationText}`;
+    pipUi.timeDuration.hidden = isLive;
     const progressPercent =
-      duration > 0 && Number.isFinite(state.sourceVideo.currentTime)
-        ? Math.max(
-            0,
-            Math.min(100, (state.sourceVideo.currentTime / duration) * 100),
-          )
+      duration > 0 && Number.isFinite(video.currentTime)
+        ? Math.max(0, Math.min(100, (video.currentTime / duration) * 100))
         : 0;
-    state.pipUi.miniProgressFill.style.width = `${progressPercent}%`;
-    state.pipUi.miniProgress.setAttribute(
+    pipUi.miniProgressFill.style.width = `${progressPercent}%`;
+    pipUi.miniProgress.setAttribute(
       "aria-valuenow",
       String(Math.round(progressPercent)),
     );
 
-    state.pipUi.progress.disabled = duration <= 0;
-    state.pipUi.progress.setAttribute(
+    pipUi.progress.disabled = duration <= 0;
+    pipUi.progress.setAttribute(
       "aria-valuetext",
       isLive ? currentTimeText : `${currentTimeText} / ${durationText}`,
     );
-    if (
-      state.pipUi.progress.ownerDocument.activeElement !== state.pipUi.progress
-    ) {
-      state.pipUi.progress.value =
+    if (pipUi.progress.ownerDocument.activeElement !== pipUi.progress) {
+      pipUi.progress.value =
         duration > 0
-          ? String(
-              Math.round((state.sourceVideo.currentTime / duration) * 1000),
-            )
+          ? String(Math.round((video.currentTime / duration) * 1000))
           : "0";
     }
+  }
 
+  function updateNextAndPlaylistUi(
+    pipUi: PipUiHandle,
+    player: YouTubePlayer | null,
+  ) {
     const nextControl = findNextControlCached();
     const nextControlUsable = Boolean(
       nextControl &&
@@ -420,23 +446,42 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     );
     const nextItemState =
       globalThis.PipCompanion.ContentPlaylist.getNextItemState();
-    const canPlayNext = Boolean(
-      globalThis.PipCompanion.site.isYouTubeHost(location.hostname)
-        ? nextItemState === "available"
-          ? player?.nextVideo || nextControlUsable
-          : nextItemState === "unknown" && nextControlUsable
-        : nextControlUsable,
+    const isYouTube = globalThis.PipCompanion.site.isYouTubeHost(
+      location.hostname,
     );
-    state.pipUi.nextButton.disabled = !canPlayNext;
-    state.pipUi.nextButton.hidden = !canPlayNext;
+    const canPlayNext =
+      nextItemState === "available"
+        ? !isYouTube || Boolean(player?.nextVideo) || nextControlUsable
+        : nextItemState === "unknown" && nextControlUsable;
+    pipUi.nextButton.disabled = !canPlayNext;
+    pipUi.nextButton.hidden = !canPlayNext;
     const hasPlaylist = globalThis.PipCompanion.ContentPlaylist.hasPlaylist();
-    state.pipUi.playlistButton.hidden = !hasPlaylist;
+    pipUi.playlistButton.hidden = !hasPlaylist;
     if (!hasPlaylist) {
-      state.pipUi.playlistPanel.hidden = true;
-      state.pipUi.playlistButton.setAttribute("aria-expanded", "false");
+      pipUi.playlistPanel.hidden = true;
+      pipUi.playlistButton.setAttribute("aria-expanded", "false");
+    }
+  }
+
+  function updatePlaybackUi() {
+    const video = state.sourceVideo;
+    const pipUi = state.pipUi;
+    if (!video || !pipUi) return;
+
+    const isLive = isLiveStream(video);
+    const player = getYouTubePlayer();
+    let muted = video.muted || video.volume === 0;
+    try {
+      muted = muted || Boolean(player?.isMuted?.());
+    } catch {
+      // YouTube 播放器 API 不可用時，改用 media 元素的靜音狀態。
     }
 
-    state.pipUi.speedControl.hidden = isLive;
+    updatePlaybackControlsUi(video, pipUi);
+    updateVolumeUi(video, pipUi, muted);
+    updateTimelineUi(video, pipUi, isLive);
+    updateNextAndPlaylistUi(pipUi, player);
+    pipUi.speedControl.hidden = isLive;
   }
 
   function togglePlayback() {

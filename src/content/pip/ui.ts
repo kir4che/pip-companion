@@ -2224,7 +2224,10 @@ globalThis.PipCompanion.PipUI = (() => {
         const entry = doc.createElement("button");
         entry.type = "button";
         entry.className = "playlist-item";
-        if (item.index === playlist.currentIndex) {
+        if (
+          playlist.currentIndexKnown &&
+          item.index === playlist.currentIndex
+        ) {
           entry.classList.add("current");
           entry.setAttribute("aria-current", "true");
           currentEntry = entry;

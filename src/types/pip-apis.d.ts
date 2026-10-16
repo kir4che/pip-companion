@@ -48,6 +48,7 @@ interface PlaylistItem {
 interface PlaylistInfo {
   items: PlaylistItem[];
   currentIndex: number;
+  currentIndexKnown: boolean;
 }
 
 type PlaylistNextItemState = "available" | "unavailable" | "unknown";
