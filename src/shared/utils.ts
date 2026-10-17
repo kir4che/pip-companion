@@ -207,6 +207,72 @@ globalThis.PipCompanion.util = (() => {
     if (!isRecord(value) || typeof value.type !== "string") return false;
 
     switch (value.type) {
+      case "YOUTUBE_CHAT_PROBE":
+        return true;
+      case "START_EXTRA_YOUTUBE_CHAT":
+      case "YOUTUBE_CHAT_START":
+      case "STOP_EXTRA_YOUTUBE_CHAT":
+      case "YOUTUBE_CHAT_STOP":
+      case "YOUTUBE_CHAT_ENDED":
+      case "EXTRA_YOUTUBE_CHAT_CLOCK":
+      case "YOUTUBE_CHAT_CLOCK":
+      case "YOUTUBE_CHAT_MESSAGE":
+      case "EXTRA_YOUTUBE_CHAT_MESSAGE":
+      case "EXTRA_YOUTUBE_CHAT_STATUS": {
+        if (
+          typeof value.connectionId !== "string" ||
+          !/^[\w-]{1,100}$/.test(value.connectionId)
+        )
+          return false;
+        if (
+          value.type === "START_EXTRA_YOUTUBE_CHAT" ||
+          value.type === "YOUTUBE_CHAT_START"
+        )
+          return (
+            typeof value.videoId === "string" &&
+            /^[\w-]{11}$/.test(value.videoId)
+          );
+        if (
+          value.type === "STOP_EXTRA_YOUTUBE_CHAT" ||
+          value.type === "YOUTUBE_CHAT_STOP" ||
+          value.type === "YOUTUBE_CHAT_ENDED"
+        )
+          return true;
+        if (value.type === "EXTRA_YOUTUBE_CHAT_STATUS")
+          return (
+            typeof value.videoId === "string" &&
+            /^[\w-]{11}$/.test(value.videoId) &&
+            value.status === "error" &&
+            typeof value.error === "string" &&
+            value.error.length <= 2000
+          );
+        if (
+          !Number.isSafeInteger(value.seekRevision) ||
+          (value.seekRevision as number) < 0
+        )
+          return false;
+        if (
+          value.type === "EXTRA_YOUTUBE_CHAT_CLOCK" ||
+          value.type === "YOUTUBE_CHAT_CLOCK"
+        )
+          return (
+            typeof value.time === "number" &&
+            Number.isFinite(value.time) &&
+            value.time >= 0 &&
+            value.time <= 1e8 &&
+            typeof value.paused === "boolean" &&
+            typeof value.ended === "boolean"
+          );
+        return (
+          (value.type !== "EXTRA_YOUTUBE_CHAT_MESSAGE" ||
+            (typeof value.videoId === "string" &&
+              /^[\w-]{11}$/.test(value.videoId))) &&
+          isRecord(value.data) &&
+          typeof value.data.text === "string" &&
+          value.data.text.length <= 2000 &&
+          JSON.stringify(value.data).length <= 32768
+        );
+      }
       case "PING":
       case "GET_PIP_STATE":
       case "CLOSE_PIP":
@@ -295,6 +361,7 @@ globalThis.PipCompanion.util = (() => {
       case "EXTRA_DANMAKU_SOURCE_STATUS":
         return (
           (value.error === null || typeof value.error === "string") &&
+          (value.loading === undefined || typeof value.loading === "boolean") &&
           typeof value.revision === "number" &&
           Number.isInteger(value.revision) &&
           value.revision >= 0
@@ -556,6 +623,12 @@ type RuntimeMessageHandler = (
 const runtimeMessageHandlers = new Map<string, Set<RuntimeMessageHandler>>();
 let runtimeMessageListenerRegistered = false;
 const knownRuntimeMessageTypes = new Set([
+  "YOUTUBE_CHAT_PROBE",
+  "YOUTUBE_CHAT_START",
+  "YOUTUBE_CHAT_STOP",
+  "YOUTUBE_CHAT_CLOCK",
+  "EXTRA_YOUTUBE_CHAT_MESSAGE",
+  "EXTRA_YOUTUBE_CHAT_STATUS",
   "PING",
   "GET_PIP_STATE",
   "CLOSE_PIP",

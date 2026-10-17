@@ -211,6 +211,7 @@ const danmakuSourcesController =
   });
 const extraBilibiliDanmakuController =
   globalThis.PipCompanion.ContentExtraBilibiliDanmaku.create({
+    clear: clearDanmaku,
     isVisible: isDanmakuVisible,
     isSourceAvailable: (video) =>
       !DANMAKU_IS_BAHAMUT &&

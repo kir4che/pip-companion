@@ -9,6 +9,9 @@
   function createYouTubeDanmaku(
     dependencies: ContentYouTubeDanmakuDependencies,
   ): ContentYouTubeDanmakuController {
+    let relayClock: YouTubeChatClock | null = null;
+    const relayedIds = new Set<string>();
+    let destroyed = false;
     let backgroundChatFrame: HTMLIFrameElement | null = null;
     let youtubeLiveStatusCache: { videoId: string; isLive: boolean } | null =
       null;
@@ -23,6 +26,7 @@
     let observedChatDocument: Document | null = null;
     let observedChatFrame: HTMLIFrameElement | null = null;
     let observedItemsNode: Element | null = null;
+    let observerAttachedAt = 0;
     let observedChatVideoId = "";
     let replayVideo: HTMLVideoElement | null = null;
     let replayVideoController: AbortController | null = null;
@@ -58,6 +62,18 @@
       { initial = false }: { initial?: boolean } = {},
     ): void {
       if (!data) return;
+      if (dependencies.relay) {
+        const key =
+          data.messageId || `${data.replayTime}:${data.author}:${data.text}`;
+        if (relayedIds.has(key)) return;
+        relayedIds.add(key);
+        if (relayedIds.size > YOUTUBE_MAX_REPLAY_MESSAGES) {
+          const first = relayedIds.values().next().value;
+          if (first !== undefined) relayedIds.delete(first);
+        }
+        if (!isYouTubeLiveVideo() || !initial) dependencies.broadcast(data);
+        return;
+      }
       if (YOUTUBE_IS_PAGE && isYouTubeLiveVideo()) {
         if (!initial) dependencies.broadcast(data);
         return;
@@ -107,7 +123,7 @@
 
     function syncYouTubeReplayChat(): void {
       const frame = backgroundChatFrame;
-      const video = replayVideo;
+      const video = relayClock || replayVideo;
       if (!frame || !video || isYouTubeLiveVideo()) return;
 
       let chatDoc: Document | null;
@@ -139,7 +155,9 @@
         dispatchAction("yt-live-player-state-change", [playerState]);
         youtubeReplayChatPlayerState = playerState;
       }
-      dispatchAction("yt-live-player-video-progress", [video.currentTime]);
+      dispatchAction("yt-live-player-video-progress", [
+        relayClock ? relayClock.time + 5 : replayVideo?.currentTime || 0,
+      ]);
     }
 
     function getYouTubeVideoId(): string {
@@ -390,7 +408,7 @@
     }
 
     function createBackgroundChatFrame(): HTMLIFrameElement | null {
-      const videoId = new URL(location.href).searchParams.get("v");
+      const videoId = getYouTubeVideoId();
       if (!videoId) {
         removeBackgroundChatFrame();
         return null;
@@ -452,7 +470,11 @@
       }
 
       const nativeChatFrame = getNativeChatIframe();
-      if (nativeChatFrame && hasChatItems(nativeChatFrame)) {
+      if (
+        (!dependencies.relay || isYouTubeLiveVideo()) &&
+        nativeChatFrame &&
+        hasChatItems(nativeChatFrame)
+      ) {
         removeBackgroundChatFrame();
         return nativeChatFrame;
       }
@@ -468,6 +490,7 @@
       observedChatDocument = null;
       observedChatFrame = null;
       observedItemsNode = null;
+      observerAttachedAt = 0;
     }
 
     function findChatItemsContainer(chatDoc: Document): Element | null {
@@ -511,7 +534,7 @@
     }
 
     function checkAndBindDanmakuChat(): void {
-      if (!YOUTUBE_IS_PAGE) return;
+      if (!YOUTUBE_IS_PAGE || destroyed) return;
       const videoId = getYouTubeVideoId();
       if (videoId !== observedChatVideoId) {
         resetChatObservers();
@@ -525,7 +548,7 @@
         return;
       }
 
-      bindReplayVideo();
+      if (!dependencies.relay) bindReplayVideo();
       if (chatFrame !== observedChatFrame) {
         resetChatObservers();
         observedChatFrame = chatFrame;
@@ -564,6 +587,7 @@
 
       chatObserver?.disconnect();
       observedItemsNode = itemsContainer;
+      observerAttachedAt = Date.now();
 
       const existing = itemsContainer.querySelectorAll(
         "yt-live-chat-text-message-renderer, yt-live-chat-paid-message-renderer",
@@ -572,6 +596,7 @@
         const data =
           globalThis.PipCompanion.ContentDanmakuSources.parseYouTubeMessage(
             node,
+            !dependencies.relay,
           );
         if (data) receiveDanmaku(data, { initial: true });
       });
@@ -584,20 +609,23 @@
         }
         for (const mutation of mutations) {
           for (const addedNode of mutation.addedNodes) {
-            if (!(addedNode instanceof Element)) continue;
+            if (addedNode.nodeType !== 1) continue;
+            const element = addedNode as Element;
             const data =
               globalThis.PipCompanion.ContentDanmakuSources.parseYouTubeMessage(
-                addedNode,
+                element,
+                !dependencies.relay,
               );
             if (data) receiveDanmaku(data);
             else {
-              const children = addedNode.querySelectorAll(
+              const children = element.querySelectorAll(
                 "yt-live-chat-text-message-renderer, yt-live-chat-paid-message-renderer",
               );
               children.forEach((child) => {
                 const childData =
                   globalThis.PipCompanion.ContentDanmakuSources.parseYouTubeMessage(
                     child,
+                    !dependencies.relay,
                   );
                 if (childData) receiveDanmaku(childData);
               });
@@ -612,7 +640,39 @@
 
     return {
       checkAndBind: checkAndBindDanmakuChat,
+      isReady: () =>
+        Boolean(
+          observedItemsNode &&
+          (!dependencies.relay ||
+            !isYouTubeLiveVideo() ||
+            Date.now() - observerAttachedAt >= 2000),
+        ),
+      isLive: isYouTubeLiveVideo,
+      setRelayClock(clock) {
+        const changed =
+          !relayClock || clock.seekRevision !== relayClock.seekRevision;
+        relayClock = clock;
+        if (changed) {
+          relayedIds.clear();
+          observedItemsNode
+            ?.querySelectorAll(
+              "yt-live-chat-text-message-renderer, yt-live-chat-paid-message-renderer",
+            )
+            .forEach((node) => {
+              const data =
+                globalThis.PipCompanion.ContentDanmakuSources.parseYouTubeMessage(
+                  node,
+                  false,
+                );
+              receiveDanmaku(data, { initial: true });
+            });
+        }
+        syncYouTubeReplayChat();
+      },
       destroy() {
+        destroyed = true;
+        resetChatObservers();
+        relayedIds.clear();
         unbindReplayVideo();
         removeBackgroundChatFrame();
         replayMessages.clear();
@@ -620,6 +680,131 @@
       },
     };
   }
+
+  // 獨立的控制器讓 relay 時鐘與解析器去重功能，與本來源分頁自己的播放器及本地彈幕渲染器保持獨立。
+  let relay: ContentYouTubeDanmakuController | null = null;
+  let relayId = "";
+  let relayVideoId = "";
+  let relayRevision = 0;
+  let relayTimer: ReturnType<typeof setInterval> | null = null;
+  let finishStart: ((response: unknown) => void) | null = null;
+
+  function stopRelay(): void {
+    if (relayTimer) clearInterval(relayTimer);
+    relayTimer = null;
+    relay?.destroy();
+    relay = null;
+    relayId = "";
+    finishStart?.({ ok: false });
+    finishStart = null;
+  }
+
+  if (YOUTUBE_IS_PAGE)
+    globalThis.PipCompanion.runtimeMessages.addListener(
+      [
+        "YOUTUBE_CHAT_PROBE",
+        "YOUTUBE_CHAT_START",
+        "YOUTUBE_CHAT_STOP",
+        "YOUTUBE_CHAT_CLOCK",
+      ],
+      (message, sender, respond) => {
+        if (
+          sender.id !== chrome.runtime.id ||
+          sender.tab ||
+          !globalThis.PipCompanion.util.isExtensionMessage(message)
+        )
+          return;
+        const videoId = globalThis.PipCompanion.site.parseYouTubeVideoId(
+          location.href,
+        );
+        if (message.type === "YOUTUBE_CHAT_PROBE") {
+          respond(videoId ? { videoId, url: location.href } : null);
+          return;
+        }
+        if (message.type === "YOUTUBE_CHAT_STOP") {
+          if (message.connectionId === relayId) stopRelay();
+          respond({ ok: true });
+          return;
+        }
+        if (message.type === "YOUTUBE_CHAT_CLOCK") {
+          if (
+            message.connectionId === relayId &&
+            message.seekRevision >= relayRevision &&
+            relay
+          ) {
+            relayRevision = message.seekRevision;
+            relay.setRelayClock(message);
+          }
+          respond({ ok: true });
+          return;
+        }
+        if (
+          message.type !== "YOUTUBE_CHAT_START" ||
+          message.videoId !== videoId
+        ) {
+          respond({ ok: false });
+          return;
+        }
+        stopRelay();
+        relayId = message.connectionId;
+        relayVideoId = videoId;
+        relayRevision = 0;
+        finishStart = respond;
+        relay = createYouTubeDanmaku({
+          relay: true,
+          lateToleranceSeconds: 0.5,
+          restoreWindowSeconds: 0,
+          isSettingsLoaded: () => true,
+          isVisible: () => true,
+          getSourceVideo: () => null,
+          getMainRenderer: () => null,
+          getPipRenderer: () => null,
+          ensureMainRenderer: () => null,
+          clear: () => {},
+          broadcast(data) {
+            if (finishStart) return;
+            // 接收渲染器接受受限制的 HTTPS 圖片與十六進制顏色。
+            const payload = { ...data };
+            if (payload.bgColor && !/^#[\da-f]{6}$/i.test(payload.bgColor))
+              delete payload.bgColor;
+            void chrome.runtime
+              .sendMessage({
+                type: "YOUTUBE_CHAT_MESSAGE",
+                connectionId: relayId,
+                seekRevision: relayRevision,
+                data: payload,
+              } satisfies ExtensionMessage)
+              .catch(() => {});
+          },
+        });
+        const started = Date.now();
+        const check = () => {
+          if (
+            globalThis.PipCompanion.site.parseYouTubeVideoId(location.href) !==
+              relayVideoId ||
+            (Date.now() - started > 20000 && finishStart)
+          ) {
+            void chrome.runtime
+              .sendMessage({
+                type: "YOUTUBE_CHAT_ENDED",
+                connectionId: relayId,
+              } satisfies ExtensionMessage)
+              .catch(() => {});
+            stopRelay();
+            return;
+          }
+          relay?.checkAndBind();
+          if (relay?.isReady() && finishStart) {
+            const finish = finishStart;
+            finishStart = null;
+            finish({ ok: true, mode: relay.isLive() ? "live" : "replay" });
+          }
+        };
+        relayTimer = setInterval(check, 500);
+        check();
+        return true;
+      },
+    );
 
   globalThis.PipCompanion.ContentYouTubeDanmaku = {
     create: createYouTubeDanmaku,

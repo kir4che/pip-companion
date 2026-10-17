@@ -48,7 +48,13 @@
     "message": "显示额外弹幕"
   },
   "popupExtraDanmakuUrl": {
-    "message": "来源网址（支持 Bilibili、动画疯、Twitch）"
+    "message": "来源影片网址"
+  },
+  "popupExtraDanmakuUrlSupportLabel": {
+    "message": "支持的来源平台"
+  },
+  "popupExtraDanmakuUrlSupport": {
+    "message": "支持 Bilibili、巴哈姆特动画疯、Twitch、YouTube"
   },
   "popupExtraDanmakuOffset": {
     "message": "时间偏移／延迟（秒）"
@@ -632,11 +638,8 @@
   "popupExtraDanmakuSettings": {
     "message": "额外弹幕设置"
   },
-  "popupExtraDanmakuUrlPlaceholder": {
-    "message": "Bilibili、巴哈动画疯或 Twitch"
-  },
   "popupExtraDanmakuConnectionFailed": {
-    "message": "无法连接到当前标签页，请刷新视频页面后重试。"
+    "message": "无法连接，请刷新后重试。"
   },
   "popupExtraDanmakuStorageFailed": {
     "message": "无法读取此标签页的额外弹幕"
@@ -648,16 +651,31 @@
     "message": "无法加载额外弹幕，请重新打开设置页。"
   },
   "popupExtraDanmakuInvalidUrl": {
-    "message": "请输入有效的 Bilibili、巴哈动画疯或 Twitch 视频网址"
+    "message": "请输入有效的视频网址"
   },
   "popupExtraDanmakuInvalidOffset": {
     "message": "时间偏移须介于 -3600 至 3600 秒"
   },
-  "popupExtraDanmakuDisableFailed": {
-    "message": "无法停用当前来源，请刷新视频页面后重试。"
-  },
   "popupExtraDanmakuSaveFailed": {
     "message": "保存失败，请刷新视频页面后重试。"
+  },
+  "popupExtraDanmakuSwitchConfirm": {
+    "message": "切换来源会停止当前来源。"
+  },
+  "popupExtraDanmakuSwitchConfirmAction": {
+    "message": "切换"
+  },
+  "popupExtraDanmakuSwitchCancelAction": {
+    "message": "取消"
+  },
+  "popupExtraDanmakuYouTubeHint": {
+    "message": "需要保持来源标签页开启，来源视频可以暂停。"
+  },
+  "popupExtraDanmakuConnecting": {
+    "message": "正在查找或开启来源标签页\u2026"
+  },
+  "popupExtraDanmakuConnected": {
+    "message": "来源已连接。"
   },
   "popupCaptionStyleSettings": {
     "message": "字幕样式设置"

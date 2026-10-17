@@ -749,8 +749,12 @@ interface ExtraBilibiliSettingsApi {
     enabled: HTMLInputElement;
     url: HTMLInputElement;
     offset: HTMLInputElement;
-    urlError: HTMLElement;
     offsetError: HTMLElement;
+    urlHint: HTMLElement;
+    status: HTMLElement;
+    switchConfirm: HTMLElement;
+    switchConfirmYes: HTMLButtonElement;
+    switchConfirmNo: HTMLButtonElement;
     util: PipCompanionUtil;
     storage: StorageAreaAdapter;
     t: (key: string, substitutions?: string | string[]) => string;

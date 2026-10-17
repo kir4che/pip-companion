@@ -48,7 +48,13 @@
     "message": "顯示額外彈幕"
   },
   "popupExtraDanmakuUrl": {
-    "message": "來源網址（支援 Bilibili、動畫瘋、Twitch）"
+    "message": "來源影片網址"
+  },
+  "popupExtraDanmakuUrlSupportLabel": {
+    "message": "支援的來源平台"
+  },
+  "popupExtraDanmakuUrlSupport": {
+    "message": "支援 Bilibili、巴哈動畫瘋、Twitch、YouTube"
   },
   "popupExtraDanmakuOffset": {
     "message": "時間偏移／延遲（秒）"
@@ -632,11 +638,8 @@
   "popupExtraDanmakuSettings": {
     "message": "額外彈幕設定"
   },
-  "popupExtraDanmakuUrlPlaceholder": {
-    "message": "Bilibili、巴哈動畫瘋或 Twitch"
-  },
   "popupExtraDanmakuConnectionFailed": {
-    "message": "無法連線至目前分頁，請重新整理影片頁後再試。"
+    "message": "無法連線，請重新整理後再試。"
   },
   "popupExtraDanmakuStorageFailed": {
     "message": "無法讀取此分頁的額外彈幕"
@@ -648,16 +651,31 @@
     "message": "無法載入額外彈幕，請重新開啟設定頁。"
   },
   "popupExtraDanmakuInvalidUrl": {
-    "message": "請輸入有效的 Bilibili、巴哈動畫瘋或 Twitch 影片網址"
+    "message": "請輸入有效的影片網址"
   },
   "popupExtraDanmakuInvalidOffset": {
     "message": "時間偏移須介於 -3600 至 3600 秒"
   },
-  "popupExtraDanmakuDisableFailed": {
-    "message": "無法停用目前來源，請重新整理影片頁後再試。"
-  },
   "popupExtraDanmakuSaveFailed": {
     "message": "儲存失敗，請重新整理影片頁後再試。"
+  },
+  "popupExtraDanmakuSwitchConfirm": {
+    "message": "切換來源會停止目前來源。"
+  },
+  "popupExtraDanmakuSwitchConfirmAction": {
+    "message": "切換"
+  },
+  "popupExtraDanmakuSwitchCancelAction": {
+    "message": "取消"
+  },
+  "popupExtraDanmakuYouTubeHint": {
+    "message": "需要保持來源分頁開啟，來源影片可暫停。"
+  },
+  "popupExtraDanmakuConnecting": {
+    "message": "正在尋找或開啟來源分頁\u2026"
+  },
+  "popupExtraDanmakuConnected": {
+    "message": "來源已連線。"
   },
   "popupCaptionStyleSettings": {
     "message": "字幕樣式設定"

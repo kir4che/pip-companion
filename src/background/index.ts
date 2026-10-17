@@ -5,12 +5,14 @@ import { registerBilibiliSubtitleListener } from "./bilibili-subtitle.js";
 import { registerBilibiliDanmakuListener } from "./bilibili-danmaku.js";
 import { registerBahamutDanmakuListener } from "./bahamut-danmaku.js";
 import { registerTwitchChatListener } from "./twitch-chat.js";
+import { registerYouTubeChatListener } from "./youtube-chat.js";
 import { registerSubtitleTranslationListener } from "./subtitle-translation.js";
 
 registerBilibiliSubtitleListener();
 registerBilibiliDanmakuListener();
 registerBahamutDanmakuListener();
 registerTwitchChatListener();
+registerYouTubeChatListener();
 registerSubtitleTranslationListener();
 
 const isValidExtraDanmakuSourceUrl =

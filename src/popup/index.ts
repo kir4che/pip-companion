@@ -133,12 +133,24 @@ const extraBilibiliUrl = document.querySelector(
 const extraBilibiliOffset = document.querySelector(
   "#extra-bilibili-offset",
 ) as HTMLInputElement;
-const extraBilibiliUrlError = document.querySelector(
-  "#extra-bilibili-url-error",
-) as HTMLElement;
 const extraBilibiliOffsetError = document.querySelector(
   "#extra-bilibili-offset-error",
 ) as HTMLElement;
+const extraBilibiliUrlHint = document.querySelector(
+  "#extra-bilibili-url-hint",
+) as HTMLElement;
+const extraBilibiliStatus = document.querySelector(
+  "#extra-bilibili-status",
+) as HTMLElement;
+const extraBilibiliSwitchConfirm = document.querySelector(
+  "#extra-bilibili-switch-confirm",
+) as HTMLElement;
+const extraBilibiliSwitchConfirmYes = document.querySelector(
+  "#extra-bilibili-switch-confirm-yes",
+) as HTMLButtonElement;
+const extraBilibiliSwitchConfirmNo = document.querySelector(
+  "#extra-bilibili-switch-confirm-no",
+) as HTMLButtonElement;
 const commentsToggle = document.querySelector(
   "#comments-toggle",
 ) as HTMLInputElement;
@@ -152,8 +164,12 @@ globalThis.PipCompanion.extraBilibiliSettings.create({
   enabled: extraBilibiliEnabled,
   url: extraBilibiliUrl,
   offset: extraBilibiliOffset,
-  urlError: extraBilibiliUrlError,
   offsetError: extraBilibiliOffsetError,
+  urlHint: extraBilibiliUrlHint,
+  status: extraBilibiliStatus,
+  switchConfirm: extraBilibiliSwitchConfirm,
+  switchConfirmYes: extraBilibiliSwitchConfirmYes,
+  switchConfirmNo: extraBilibiliSwitchConfirmNo,
   util,
   storage: storage.session,
   t,

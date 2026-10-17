@@ -48,7 +48,13 @@
     "message": "Show extra danmaku"
   },
   "popupExtraDanmakuUrl": {
-    "message": "Source URL (Bilibili, Bahamut Anime, Twitch)"
+    "message": "Source video URL"
+  },
+  "popupExtraDanmakuUrlSupportLabel": {
+    "message": "Supported source platforms"
+  },
+  "popupExtraDanmakuUrlSupport": {
+    "message": "Supports Bilibili, Bahamut Anime, Twitch, and YouTube"
   },
   "popupExtraDanmakuOffset": {
     "message": "Time offset / delay (seconds)"
@@ -629,11 +635,8 @@
   "popupExtraDanmakuSettings": {
     "message": "Extra danmaku settings"
   },
-  "popupExtraDanmakuUrlPlaceholder": {
-    "message": "Bilibili, Bahamut, or Twitch"
-  },
   "popupExtraDanmakuConnectionFailed": {
-    "message": "Couldn't connect to this tab. Refresh the video page and try again."
+    "message": "Couldn't connect. Refresh and try again."
   },
   "popupExtraDanmakuStorageFailed": {
     "message": "Couldn't read extra danmaku for this tab."
@@ -645,15 +648,30 @@
     "message": "Couldn't load extra danmaku. Reopen the settings page."
   },
   "popupExtraDanmakuInvalidUrl": {
-    "message": "Enter a valid Bilibili, Bahamut Anime, or Twitch video URL."
+    "message": "Enter a valid video URL."
   },
   "popupExtraDanmakuInvalidOffset": {
     "message": "Time offset must be between -3600 and 3600 seconds."
   },
-  "popupExtraDanmakuDisableFailed": {
-    "message": "Couldn't disable the current source. Refresh the video page and try again."
-  },
   "popupExtraDanmakuSaveFailed": {
     "message": "Couldn't save. Refresh the video page and try again."
+  },
+  "popupExtraDanmakuSwitchConfirm": {
+    "message": "Switching sources will stop the current source."
+  },
+  "popupExtraDanmakuSwitchConfirmAction": {
+    "message": "Switch"
+  },
+  "popupExtraDanmakuSwitchCancelAction": {
+    "message": "Cancel"
+  },
+  "popupExtraDanmakuYouTubeHint": {
+    "message": "Keep the source tab open; the source video can stay paused."
+  },
+  "popupExtraDanmakuConnecting": {
+    "message": "Finding or opening the source tab\u2026"
+  },
+  "popupExtraDanmakuConnected": {
+    "message": "Source connected."
   }
 }

@@ -442,6 +442,22 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+.range-row > .source-url-label {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+.range-row .source-url-label-text {
+  margin-bottom: 0;
+}
+
+.source-url-label .settings-hint-tooltip {
+  right: auto;
+  left: 0;
+  width: 170px;
+}
+
 .range-row input {
   width: 100%;
   margin: 0;
@@ -777,6 +793,56 @@ button {
 
 .source-input-error-tooltip:empty {
   display: none;
+}
+
+.source-hint {
+  margin: 6px 0 0;
+  color: #a1a1aa;
+  font-size: 10px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.source-status {
+  margin: 8px 0 0;
+  color: #a1a1aa;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.source-status:empty {
+  display: none;
+}
+
+.source-status[data-state="connected"] {
+  color: #86efac;
+}
+
+.source-status[data-state="error"] {
+  color: #fda4af;
+}
+
+.source-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  background: #27272a;
+}
+
+.source-confirm-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.source-confirm-actions button {
+  flex: 1 1 auto;
+  padding: 5px 8px;
+  font-size: 11px;
 }
 
 #status {

@@ -9,7 +9,8 @@ type ExtraBilibiliSource = {
 type ExtraBilibiliIdentity =
   | { kind: "bilibili"; bvid: string; avid: string; page: number; key: string }
   | { kind: "bahamut"; videoSn: string; key: string }
-  | { kind: "twitch"; channel: string; key: string };
+  | { kind: "twitch"; channel: string; key: string }
+  | { kind: "youtube"; videoId: string; key: string };
 
 type ExtraBilibiliMessage = DanmakuData & { replayTime: number };
 
@@ -171,6 +172,18 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         const channel = url.pathname.slice(1).toLowerCase();
         return { kind: "twitch", channel, key: `twitch:${channel}` };
       }
+      if (globalThis.PipCompanion.site.isYouTubeHost(url.hostname)) {
+        const videoId = globalThis.PipCompanion.site.parseYouTubeVideoId(
+          url.href,
+        );
+        if (
+          videoId &&
+          /^[\w-]{11}$/.test(videoId) &&
+          (url.pathname === "/watch" ||
+            /^\/live\/[\w-]{11}\/?$/.test(url.pathname))
+        )
+          return { kind: "youtube", videoId, key: `youtube:${videoId}` };
+      }
       return null;
     } catch {
       return null;
@@ -181,6 +194,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
     let source: ExtraBilibiliSource = normalizeSource(null);
     let available = dependencies.isSourceAvailable(null);
     let sourceError: string | null = null;
+    let sourceLoading = false;
     let sourceErrorRevision = 0;
     let identity: ExtraBilibiliIdentity | null = null;
     let mainPageKey = getMainPageKey();
@@ -198,7 +212,123 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
     const liveMessageTimers = new Set<ReturnType<typeof setTimeout>>();
     const MAX_LIVE_MESSAGE_TIMERS = 2000;
     const TOGGLE_DEDUPLICATION_WINDOW_MS = 15000;
+    // 高於背景端 findSourceTab + 5 秒重用等待 + 20 秒自動開啟的最差情況。
+    const YOUTUBE_START_TIMEOUT_MS = 45000;
     let twitchConnectionId = "";
+    let youtubeConnectionId = "";
+    let youtubeMode: "live" | "replay" | null = null;
+    let youtubeSeekRevision = 0;
+    let youtubeClockTimer: ReturnType<typeof setInterval> | null = null;
+    let youtubeStartTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function clearYouTubeStartTimer(): void {
+      if (youtubeStartTimer) clearTimeout(youtubeStartTimer);
+      youtubeStartTimer = null;
+    }
+
+    function stopYouTube(): void {
+      if (youtubeClockTimer) clearInterval(youtubeClockTimer);
+      youtubeClockTimer = null;
+      clearYouTubeStartTimer();
+      if (youtubeConnectionId)
+        void chrome.runtime
+          .sendMessage({
+            type: "STOP_EXTRA_YOUTUBE_CHAT",
+            connectionId: youtubeConnectionId,
+          } satisfies ExtensionMessage)
+          .catch(() => {});
+      youtubeConnectionId = "";
+      youtubeMode = null;
+      setSourceLoading(false);
+    }
+
+    function sendYouTubeClock(): void {
+      if (
+        !video ||
+        !youtubeConnectionId ||
+        !youtubeMode ||
+        identity?.kind !== "youtube" ||
+        !Number.isFinite(video.currentTime)
+      )
+        return;
+      const requestGeneration = generation;
+      void chrome.runtime
+        .sendMessage({
+          type: "EXTRA_YOUTUBE_CHAT_CLOCK",
+          connectionId: youtubeConnectionId,
+          time: Math.max(0, video.currentTime - source.offsetSeconds),
+          paused: video.paused || video.seeking || !dependencies.isVisible(),
+          ended: video.ended,
+          seekRevision: youtubeSeekRevision,
+        } satisfies ExtensionMessage)
+        .then((response: unknown) => {
+          if (
+            requestGeneration === generation &&
+            globalThis.PipCompanion.util.isRecord(response) &&
+            response.ok === false
+          )
+            handleLoadError(
+              new Error("YouTube 聊天連線已失效，請重新套用來源。"),
+              requestGeneration,
+            );
+        })
+        .catch((error: unknown) => handleLoadError(error, requestGeneration));
+    }
+
+    function startYouTube(
+      target: Extract<ExtraBilibiliIdentity, { kind: "youtube" }>,
+    ): void {
+      const requestGeneration = generation;
+      youtubeConnectionId = crypto.randomUUID();
+      youtubeSeekRevision = 0;
+      setSourceLoading(true);
+      clearYouTubeStartTimer();
+      const startTimer = setTimeout(() => {
+        if (youtubeStartTimer === startTimer) youtubeStartTimer = null;
+        if (generation !== requestGeneration) return;
+        handleLoadError(
+          new Error("YouTube 來源連線逾時，請確認來源分頁已載入後再試。"),
+          requestGeneration,
+        );
+      }, YOUTUBE_START_TIMEOUT_MS);
+      youtubeStartTimer = startTimer;
+      void chrome.runtime
+        .sendMessage({
+          type: "START_EXTRA_YOUTUBE_CHAT",
+          videoId: target.videoId,
+          connectionId: youtubeConnectionId,
+        } satisfies ExtensionMessage)
+        .then((response: unknown) => {
+          if (generation !== requestGeneration || identity?.key !== target.key)
+            return;
+          if (
+            !globalThis.PipCompanion.util.isRecord(response) ||
+            response.ok !== true ||
+            (response.mode !== "live" && response.mode !== "replay")
+          )
+            throw new Error(
+              globalThis.PipCompanion.util.isRecord(response) &&
+                typeof response.error === "string"
+                ? response.error
+                : "YouTube 聊天連線失敗。",
+            );
+          youtubeMode = response.mode;
+          setSourceError(null);
+          setSourceLoading(false);
+          sendYouTubeClock();
+          youtubeClockTimer = setInterval(() => {
+            sendYouTubeClock();
+            if (video) process(video);
+          }, 250);
+        })
+        .catch((error: unknown) => handleLoadError(error, requestGeneration))
+        .finally(() => {
+          if (youtubeStartTimer === startTimer) {
+            clearTimeout(startTimer);
+            youtubeStartTimer = null;
+          }
+        });
+    }
 
     function resetMessages(): void {
       generation++;
@@ -256,6 +386,11 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
 
     function process(videoElement: HTMLVideoElement): void {
       if (!dependencies.isVisible() || !identity || videoElement.seeking)
+        return;
+      if (
+        identity.kind === "youtube" &&
+        (youtubeMode !== "replay" || videoElement.paused)
+      )
         return;
       const currentTime = videoElement.currentTime;
       if (!Number.isFinite(currentTime)) return;
@@ -330,7 +465,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         messageIndex = findMessageIndex(
           video.currentTime - LATE_TOLERANCE_SECONDS,
         );
-        restoreRecent(video);
+        if (identity?.kind !== "youtube") restoreRecent(video);
       }
     }
 
@@ -475,7 +610,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         !Number.isFinite(videoElement.currentTime)
       )
         return;
-      if (identity.kind === "twitch") return;
+      if (identity.kind === "twitch" || identity.kind === "youtube") return;
       if (identity.kind === "bahamut") {
         requestBahamutDanmaku(identity);
         return;
@@ -534,12 +669,15 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         if (availabilityChanged) publishSourceState();
         return;
       }
+      if (identity?.kind === "youtube") dependencies.clear?.();
+      stopYouTube();
       resetMessages();
       if (!preserveError) setSourceError(null);
       source = next;
       identity = nextIdentity;
       publishSourceState();
       twitchConnectionId = "";
+      if (nextIdentity?.kind === "youtube") startYouTube(nextIdentity);
       if (nextIdentity?.kind === "twitch") {
         void chrome.runtime
           .sendMessage({
@@ -569,22 +707,34 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         : `page:${location.href}`;
     }
 
-    function setSourceError(error: string | null): void {
-      if (sourceError === error) return;
-      sourceError = error;
+    function publishSourceStatus(): void {
       sourceErrorRevision++;
       void chrome.runtime
         .sendMessage({
           type: "EXTRA_DANMAKU_SOURCE_STATUS",
-          error,
+          error: sourceError,
+          loading: sourceLoading,
           revision: sourceErrorRevision,
         } satisfies ExtensionMessage)
         .catch(() => {});
     }
 
+    function setSourceError(error: string | null): void {
+      if (sourceError === error) return;
+      sourceError = error;
+      publishSourceStatus();
+    }
+
+    function setSourceLoading(loading: boolean): void {
+      if (sourceLoading === loading) return;
+      sourceLoading = loading;
+      publishSourceStatus();
+    }
+
     function getSource(): ExtraBilibiliSource & {
       available: boolean;
       error: string | null;
+      loading: boolean;
       errorRevision: number;
     } {
       updateAvailability(video);
@@ -592,6 +742,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         ...source,
         available,
         error: sourceError,
+        loading: sourceLoading,
         errorRevision: sourceErrorRevision,
       };
     }
@@ -624,6 +775,25 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
               if (!video) return;
               process(video);
               ensureSegments(video);
+              sendYouTubeClock();
+            },
+            { signal: controller.signal },
+          );
+          for (const event of ["play", "pause", "ratechange", "ended"])
+            video.addEventListener(event, sendYouTubeClock, {
+              signal: controller.signal,
+            });
+          video.addEventListener(
+            "seeking",
+            () => {
+              if (identity?.kind !== "youtube") return;
+              youtubeSeekRevision++;
+              messages = [];
+              messageIndex = 0;
+              emittedMessages = new WeakSet();
+              recentlyBroadcast.clear();
+              dependencies.clear?.();
+              sendYouTubeClock();
             },
             { signal: controller.signal },
           );
@@ -636,8 +806,9 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
               messageIndex = findMessageIndex(
                 video.currentTime - LATE_TOLERANCE_SECONDS,
               );
-              restoreRecent(video);
+              if (identity?.kind !== "youtube") restoreRecent(video);
               ensureSegments(video);
+              sendYouTubeClock();
             },
             { signal: controller.signal },
           );
@@ -671,11 +842,62 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
       [
         "EXTRA_TWITCH_CHAT_STATUS",
         "EXTRA_TWITCH_CHAT_MESSAGE",
+        "EXTRA_YOUTUBE_CHAT_STATUS",
+        "EXTRA_YOUTUBE_CHAT_MESSAGE",
         "GET_EXTRA_DANMAKU_SOURCE",
         "SET_EXTRA_DANMAKU_SOURCE",
       ],
       (message, _sender, sendResponse) => {
         if (!globalThis.PipCompanion.util.isRecord(message)) return;
+        if (
+          message.type === "EXTRA_YOUTUBE_CHAT_STATUS" ||
+          message.type === "EXTRA_YOUTUBE_CHAT_MESSAGE"
+        ) {
+          if (
+            _sender.id !== chrome.runtime.id ||
+            _sender.tab ||
+            identity?.kind !== "youtube" ||
+            message.videoId !== identity.videoId ||
+            message.connectionId !== youtubeConnectionId
+          )
+            return;
+          if (message.type === "EXTRA_YOUTUBE_CHAT_STATUS") {
+            handleLoadError(
+              new Error(
+                typeof message.error === "string"
+                  ? message.error
+                  : "YouTube 聊天來源已中斷。",
+              ),
+              generation,
+            );
+          } else if (
+            message.seekRevision === youtubeSeekRevision &&
+            isValidDanmakuData(message.data, youtubeMode === "replay")
+          ) {
+            if (youtubeMode === "live")
+              scheduleLiveMessage(message.data, "youtube");
+            else if (
+              youtubeMode === "replay" &&
+              video &&
+              isExtraBilibiliMessage(message.data)
+            ) {
+              const time = video.currentTime - source.offsetSeconds;
+              if (
+                message.data.replayTime < time - 10 ||
+                message.data.replayTime > time + 30
+              )
+                return;
+              messages = messages
+                .filter(
+                  (m) => m.replayTime >= time - 10 && m.replayTime <= time + 30,
+                )
+                .slice(-1999);
+              mergeMessages([message.data]);
+              process(video);
+            }
+          }
+          return;
+        }
         if (
           message.type === "EXTRA_TWITCH_CHAT_STATUS" &&
           identity?.kind === "twitch" &&

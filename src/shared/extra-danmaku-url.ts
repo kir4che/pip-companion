@@ -25,6 +25,10 @@ globalThis.PipCompanion.isValidExtraDanmakuSourceUrl = function (
         Number(videoSn) > 0
       );
     }
+    if (/(^|\.)youtube\.com$/i.test(url.hostname))
+      return url.pathname === "/watch"
+        ? /^[\w-]{11}$/.test(url.searchParams.get("v") || "")
+        : /^\/live\/[\w-]{11}\/?$/.test(url.pathname);
     if (/(^|\.)twitch\.tv$/i.test(url.hostname))
       return /^\/[a-z0-9_]{1,25}$/i.test(url.pathname);
     return false;

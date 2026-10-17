@@ -15,9 +15,15 @@ function setup(kind, options = {}) {
   const broadcasts = [];
   const videoListeners = new Map();
   const runtimeListeners = [];
+  const intervals = [];
+  const timeouts = [];
+  let nextId = 0;
+  let clears = 0;
   const video = {
     currentTime: 5500,
     seeking: false,
+    paused: false,
+    ended: false,
     currentSrc: "video-1",
     src: "",
     addEventListener(type, listener) {
@@ -27,7 +33,8 @@ function setup(kind, options = {}) {
     },
   };
   const site = {
-    isYouTubeHost: () => false,
+    isYouTubeHost: (host) => /(^|\.)youtube\.com$/.test(host),
+    parseYouTubeVideoId: (url) => new URL(url).searchParams.get("v"),
     isBilibiliHost: (host) => host.includes("bilibili.com"),
     isBahamutHost: (host) => host.includes("gamer.com.tw"),
     isTwitchHost: (host) => host.includes("twitch.tv"),
@@ -63,8 +70,24 @@ function setup(kind, options = {}) {
     },
     DANMAKU_IS_YOUTUBE: false,
     DANMAKU_IS_BILIBILI: kind === "bilibili",
-    setTimeout,
-    clearTimeout,
+    setTimeout: options.captureTimeouts
+      ? (fn, delay) => {
+          const timeout = { fn, delay, cleared: false };
+          timeouts.push(timeout);
+          return timeout;
+        }
+      : setTimeout,
+    clearTimeout: options.captureTimeouts
+      ? (timeout) => {
+          if (timeout) timeout.cleared = true;
+        }
+      : clearTimeout,
+    setInterval: (fn) => {
+      intervals.push(fn);
+      return intervals.length;
+    },
+    clearInterval: () => {},
+    crypto: { randomUUID: () => `connection-${++nextId}` },
     PipCompanion: {
       runtimeMessages: {
         addListener(types, listener) {
@@ -84,6 +107,7 @@ function setup(kind, options = {}) {
     },
     chrome: {
       runtime: {
+        id: "test-extension",
         onMessage: {
           addListener(listener) {
             runtimeListeners.push(listener);
@@ -115,13 +139,16 @@ function setup(kind, options = {}) {
     isVisible: () => true,
     isSourceAvailable: () => true,
     broadcast: (message) => broadcasts.push(message),
+    clear: () => clears++,
   });
   const url =
-    kind === "bahamut"
-      ? "https://ani.gamer.com.tw/animeVideo.php?sn=123"
-      : kind === "twitch"
-        ? "https://www.twitch.tv/first_channel"
-        : "https://www.bilibili.com/video/BV1234567890";
+    kind === "youtube"
+      ? "https://www.youtube.com/watch?v=aT2ZZCEEwzg"
+      : kind === "bahamut"
+        ? "https://ani.gamer.com.tw/animeVideo.php?sn=123"
+        : kind === "twitch"
+          ? "https://www.twitch.tv/first_channel"
+          : "https://www.bilibili.com/video/BV1234567890";
   controller.setSource({ enabled: true, url, offsetSeconds: 0 });
   controller.checkAndBind(video);
   return {
@@ -129,8 +156,13 @@ function setup(kind, options = {}) {
     requests,
     videoListeners,
     controller,
+    video,
+    intervals,
+    timeouts,
+    getClears: () => clears,
     dispatchRuntimeMessage(message) {
-      for (const listener of runtimeListeners) listener(message, {}, () => {});
+      for (const listener of runtimeListeners)
+        listener(message, { id: "test-extension" }, () => {});
     },
   };
 }
@@ -237,4 +269,133 @@ test("Twitch chat ignores messages from an old connection after channel switch",
     controller.getSource().url,
     "https://www.twitch.tv/second_channel",
   );
+});
+
+function replaySetup() {
+  const s = setup("youtube", {
+    sendMessage: () => Promise.resolve({ ok: true, mode: "replay" }),
+  });
+  const chat = (time, extra = {}) =>
+    s.dispatchRuntimeMessage({
+      type: "EXTRA_YOUTUBE_CHAT_MESSAGE",
+      videoId: "aT2ZZCEEwzg",
+      connectionId: "connection-1",
+      seekRevision: 0,
+      data: { text: "replay", messageId: `message-${time}`, replayTime: time },
+      ...extra,
+    });
+  const event = (name) => {
+    for (const listener of s.videoListeners.get(name) || []) listener();
+  };
+  return { ...s, chat, event };
+}
+
+test("YouTube replay buffers future messages without emitting a paused historical batch", async () => {
+  const s = replaySetup();
+  await flush();
+  s.video.paused = true;
+  s.chat(5499);
+  s.chat(5500);
+  s.chat(5501);
+  s.event("timeupdate");
+  assert.equal(s.broadcasts.length, 0);
+  s.video.currentTime = 5501;
+  s.video.paused = false;
+  s.event("timeupdate");
+  s.event("timeupdate");
+  assert.deepEqual(
+    s.broadcasts.map((m) => m.replayTime),
+    [5501],
+  );
+  s.video.paused = true;
+  s.chat(5501.1);
+  assert.equal(s.broadcasts.length, 1);
+});
+
+test("YouTube replay ignores old sessions and seek revisions but can replay a backward seek", async () => {
+  const s = replaySetup();
+  await flush();
+  s.chat(5500, { connectionId: "obsolete" });
+  assert.equal(s.broadcasts.length, 0);
+  s.chat(5500);
+  assert.equal(s.broadcasts.length, 1);
+  s.video.seeking = true;
+  s.event("seeking");
+  s.video.currentTime = 5499;
+  s.video.seeking = false;
+  s.event("seeked");
+  s.chat(5500);
+  s.video.currentTime = 5500;
+  s.event("timeupdate");
+  assert.equal(s.broadcasts.length, 1);
+  s.chat(5500, { seekRevision: 1 });
+  assert.equal(s.broadcasts.length, 2);
+  assert.equal(s.getClears(), 1);
+  const clock = s.requests
+    .filter((m) => m.type === "EXTRA_YOUTUBE_CHAT_CLOCK")
+    .at(-1);
+  assert.equal(clock.seekRevision, 1);
+});
+
+test("YouTube disconnect disables the source and prevents late messages from rendering", async () => {
+  const s = replaySetup();
+  await flush();
+  s.dispatchRuntimeMessage({
+    type: "EXTRA_YOUTUBE_CHAT_STATUS",
+    videoId: "aT2ZZCEEwzg",
+    connectionId: "connection-1",
+    status: "error",
+    error: "source closed",
+  });
+  s.chat(5500);
+  assert.equal(s.broadcasts.length, 0);
+  assert.equal(s.controller.getSource().enabled, false);
+  assert.match(s.controller.getSource().error, /source closed/);
+  assert.equal(s.getClears(), 1);
+});
+
+test("YouTube source reports loading until the relay connects", async () => {
+  let resolveStart;
+  const s = setup("youtube", {
+    sendMessage(request) {
+      if (request.type === "START_EXTRA_YOUTUBE_CHAT")
+        return new Promise((resolve) => {
+          resolveStart = resolve;
+        });
+      return Promise.resolve({ ok: true });
+    },
+  });
+  await flush();
+  const statuses = () =>
+    s.requests.filter(
+      (message) => message.type === "EXTRA_DANMAKU_SOURCE_STATUS",
+    );
+  assert.equal(statuses().at(-1).loading, true);
+  assert.equal(s.controller.getSource().loading, true);
+
+  resolveStart({ ok: true, mode: "replay" });
+  await flush();
+  assert.equal(statuses().at(-1).loading, false);
+  assert.equal(s.controller.getSource().loading, false);
+});
+
+test("a stalled YouTube source start times out and disables the source", async () => {
+  const s = setup("youtube", {
+    captureTimeouts: true,
+    sendMessage(request) {
+      if (request.type === "START_EXTRA_YOUTUBE_CHAT")
+        return new Promise(() => {});
+      return Promise.resolve({ ok: true });
+    },
+  });
+  await flush();
+  const startTimer = s.timeouts.find((timeout) => timeout.delay === 45000);
+  assert.ok(startTimer, "expected a start timeout to be scheduled");
+  assert.equal(s.controller.getSource().loading, true);
+
+  startTimer.fn();
+  await flush();
+  assert.equal(s.controller.getSource().enabled, false);
+  assert.equal(s.controller.getSource().loading, false);
+  assert.match(s.controller.getSource().error, /逾時/);
 });

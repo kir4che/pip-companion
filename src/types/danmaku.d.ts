@@ -120,6 +120,7 @@ interface ContentDanmakuRendererApi {
 }
 
 interface ContentExtraBilibiliDanmakuDependencies {
+  clear?(): void;
   isVisible(): boolean;
   isSourceAvailable(video: HTMLVideoElement | null): boolean;
   broadcast(data: DanmakuData, options?: DanmakuEmitOptions): void;
@@ -134,6 +135,7 @@ interface ContentExtraBilibiliDanmakuApi {
       offsetSeconds: number;
       available: boolean;
       error?: string | null;
+      loading?: boolean;
       errorRevision?: number;
     };
     setSource(value: unknown): void;
@@ -153,13 +155,14 @@ interface ContentDanmakuSourcesController {
 }
 
 interface ContentDanmakuSourcesApi {
-  parseYouTubeMessage(node: Node | null): DanmakuData | null;
+  parseYouTubeMessage(node: Node | null, consume?: boolean): DanmakuData | null;
   create(
     dependencies: ContentDanmakuSourcesDependencies,
   ): ContentDanmakuSourcesController;
 }
 
 interface ContentYouTubeDanmakuDependencies {
+  relay?: boolean;
   lateToleranceSeconds: number;
   restoreWindowSeconds: number;
   isSettingsLoaded(): boolean;
@@ -174,6 +177,9 @@ interface ContentYouTubeDanmakuDependencies {
 
 interface ContentYouTubeDanmakuController {
   checkAndBind(): void;
+  isReady(): boolean;
+  isLive(): boolean;
+  setRelayClock(clock: YouTubeChatClock): void;
   destroy(): void;
 }
 

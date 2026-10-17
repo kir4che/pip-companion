@@ -29,7 +29,7 @@ A browser extension that brings web videos into Picture-in-Picture, with subtitl
   - Render chat messages from YouTube and Twitch as danmaku.
   - Send danmaku from PiP on Bahamut Anime Crazy, YouTube Live, and Bilibili.
   - Customize danmaku appearance.
-  - Extra danmaku: overlay danmaku/chat from Bilibili, Bahamut Anime Crazy, or Twitch onto other videos.
+  - Extra danmaku: overlay danmaku/chat from Bilibili, Bahamut Anime Crazy, Twitch, or YouTube onto other videos.
 - **Floating comments:** open the comments panel on YouTube and Bilibili video pages while watching.
 - **Screenshots:** save the video frame as a PNG file.
 - **Follow playback:** when enabled and the PiP source pauses while another page (or the same page) has a playing video, PiP hands off to it. Due to browser restrictions, cross-tab handoff requires a click on that tab.

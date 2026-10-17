@@ -61,15 +61,16 @@
         text += value;
         return;
       }
-      if (!(node instanceof Element)) return;
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
 
-      const el = node;
-      if (el instanceof HTMLImageElement) {
+      const el = node as HTMLElement;
+      if (el.tagName.toLowerCase() === "img") {
+        const image = el as HTMLImageElement;
         const alt =
           el.getAttribute("alt") || el.getAttribute("aria-label") || "";
         let src = "";
         try {
-          const source = el.currentSrc || el.getAttribute("src");
+          const source = image.currentSrc || image.getAttribute("src");
           if (source) {
             const imageUrl = new URL(source, location.href);
             if (imageUrl.protocol === "https:") src = imageUrl.href;
@@ -89,10 +90,13 @@
     return { parts, text: text.trim() };
   }
 
-  function extractMessageFromNode(node: Node | null): DanmakuData | null {
-    if (!(node instanceof HTMLElement)) return null;
+  function extractMessageFromNode(
+    node: Node | null,
+    consume = true,
+  ): DanmakuData | null {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return null;
 
-    const el = node;
+    const el = node as HTMLElement;
     const isPaid =
       el.tagName.toLowerCase() === "yt-live-chat-paid-message-renderer" ||
       Boolean(el.closest("yt-live-chat-paid-message-renderer"));
@@ -114,7 +118,7 @@
 
     if (!targetNode) return null;
 
-    if (targetNode.dataset.ytDanmakuDone) return null;
+    if (consume && targetNode.dataset.ytDanmakuDone) return null;
 
     const messageEl =
       targetNode.querySelector("#message") ||
@@ -147,7 +151,7 @@
         displayParts = [{ type: "text", text: author }];
       }
       if (!displayText && !amount) return null;
-      targetNode.dataset.ytDanmakuDone = "true";
+      if (consume) targetNode.dataset.ytDanmakuDone = "true";
 
       return {
         isSuperChat: true,
@@ -162,7 +166,7 @@
     }
 
     if (!text) return null;
-    targetNode.dataset.ytDanmakuDone = "true";
+    if (consume) targetNode.dataset.ytDanmakuDone = "true";
 
     return {
       isSuperChat: false,

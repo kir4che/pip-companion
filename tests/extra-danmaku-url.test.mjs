@@ -24,6 +24,8 @@ test("accepts supported HTTPS danmaku source URLs", () => {
     "https://www.bilibili.com/video/av123?p=1000",
     "https://ani.gamer.com.tw/animeVideo.php?sn=123",
     "https://www.twitch.tv/channel_1",
+    "https://www.youtube.com/watch?v=aT2ZZCEEwzg&t=4197s",
+    "https://www.youtube.com/live/BM4fWBscpVU",
   ])
     assert.equal(isValidExtraDanmakuSourceUrl(url), true, url);
 });
@@ -36,6 +38,11 @@ test("rejects unsupported protocols, hosts, paths, and invalid identifiers", () 
     "https://ani.gamer.com.tw/animeVideo.php?sn=0",
     "https://ani.gamer.com.tw/animeVideo.php?sn=1234567890123",
     "https://www.twitch.tv/channel/extra",
+    "http://www.youtube.com/watch?v=aT2ZZCEEwzg",
+    "https://youtube.com.example.org/watch?v=aT2ZZCEEwzg",
+    "https://www.youtube.com/watch?v=invalid",
+    "https://www.youtube.com/live/aT2ZZCEEwzg/extra",
+    "https://www.youtube.com/shorts/aT2ZZCEEwzg",
   ])
     assert.equal(isValidExtraDanmakuSourceUrl(url), false, url);
 });

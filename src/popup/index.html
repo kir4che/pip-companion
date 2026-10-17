@@ -307,21 +307,8 @@
                 viewBox="0 0 20 20"
                 width="16"
                 height="16"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
               >
-                <circle cx="10" cy="10" r="8" />
-                <path
-                  d="M8.2 7.5a1.9 1.9 0 1 1 3.3 1.3c-.9.8-1.5 1.1-1.5 2.4"
-                />
-                <circle
-                  cx="10"
-                  cy="14.5"
-                  r=".7"
-                  fill="currentColor"
-                  stroke="none"
-                />
+                <use href="assets/help-icon.svg#help" />
               </svg>
               <span
                 id="extra-danmaku-scope-tooltip"
@@ -338,23 +325,45 @@
             <input id="extra-bilibili-enabled" type="checkbox" role="switch" />
           </label>
           <label class="range-row" for="extra-bilibili-url">
-            <span>__MSG_popupExtraDanmakuUrl__</span>
+            <span class="source-url-label">
+              <span class="source-url-label-text"
+                >__MSG_popupExtraDanmakuUrl__</span
+              >
+              <button
+                class="settings-hint-button"
+                type="button"
+                aria-label="__MSG_popupExtraDanmakuUrlSupportLabel__"
+                aria-describedby="extra-danmaku-url-support-tooltip"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  width="16"
+                  height="16"
+                >
+                  <use href="assets/help-icon.svg#help" />
+                </svg>
+                <span
+                  id="extra-danmaku-url-support-tooltip"
+                  class="settings-hint-tooltip"
+                  role="tooltip"
+                  >__MSG_popupExtraDanmakuUrlSupport__</span
+                >
+              </button>
+            </span>
             <span class="source-input-wrap">
               <input
                 id="extra-bilibili-url"
                 class="source-input"
                 type="url"
-                placeholder="__MSG_popupExtraDanmakuUrlPlaceholder__"
                 autocomplete="off"
                 spellcheck="false"
               />
-              <span
-                id="extra-bilibili-url-error"
-                class="source-input-error-tooltip"
-                role="tooltip"
-              ></span>
             </span>
           </label>
+          <p id="extra-bilibili-url-hint" class="source-hint" hidden>
+            __MSG_popupExtraDanmakuYouTubeHint__
+          </p>
           <label class="range-row" for="extra-bilibili-offset">
             <span>__MSG_popupExtraDanmakuOffset__</span>
             <span class="source-input-wrap">
@@ -374,6 +383,39 @@
               ></span>
             </span>
           </label>
+          <p
+            id="extra-bilibili-status"
+            class="source-status"
+            role="status"
+            aria-live="polite"
+          ></p>
+          <div
+            id="extra-bilibili-switch-confirm"
+            class="source-confirm"
+            role="group"
+            aria-labelledby="extra-bilibili-switch-confirm-message"
+            hidden
+          >
+            <span id="extra-bilibili-switch-confirm-message">
+              __MSG_popupExtraDanmakuSwitchConfirm__
+            </span>
+            <span class="source-confirm-actions">
+              <button
+                id="extra-bilibili-switch-confirm-yes"
+                type="button"
+                class="secondary"
+              >
+                __MSG_popupExtraDanmakuSwitchConfirmAction__
+              </button>
+              <button
+                id="extra-bilibili-switch-confirm-no"
+                type="button"
+                class="secondary"
+              >
+                __MSG_popupExtraDanmakuSwitchCancelAction__
+              </button>
+            </span>
+          </div>
         </div>
       </section>
       <section

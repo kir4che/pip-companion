@@ -1,26 +1,101 @@
 "use strict";
 
 globalThis.PipCompanion.extraBilibiliSettings = {
-  create({ enabled, url, offset, urlError, offsetError, util, storage, t }) {
+  create({
+    enabled,
+    url,
+    offset,
+    offsetError,
+    urlHint,
+    status,
+    switchConfirm,
+    switchConfirmYes,
+    switchConfirmNo,
+    util,
+    storage,
+    t,
+  }) {
     let extraSourceSaveQueue: Promise<void> = Promise.resolve();
     let extraSourceSaveRevision = 0;
     let extraBilibiliSourceEdited = false;
     let extraBilibiliTabId: number | undefined;
     let extraSourceLoadError: string | null = null;
+    // 本地表單驗證錯誤獨立保存，避免被來源端回報的執行期狀態覆蓋。
+    let extraSourceValidationError: string | null = null;
+    // 最後一次從來源端實際套用的設定，用來判斷是否真的有來源需要停用。
+    let extraSourceApplied: ExtraBilibiliSourceSettings | null = null;
+    let extraSourceLoading = false;
     let extraSourceErrorRevision = -1;
+    // 已連線時切換到不同來源網址，先等待使用者確認才替換來源。
+    let pendingSwitch: ExtraBilibiliSourceSettings | null = null;
 
-    function setExtraSourceLoadError(error: string | null): void {
-      const previousError = extraSourceLoadError;
-      extraSourceLoadError = error;
-      if (error) {
-        setExtraBilibiliInputError("url", error);
-      } else if (previousError && urlError.textContent === previousError) {
-        setExtraBilibiliInputError("url", null);
+    function showSwitchConfirm(source: ExtraBilibiliSourceSettings): void {
+      pendingSwitch = source;
+      switchConfirm.hidden = false;
+    }
+
+    function clearSwitchConfirm(): void {
+      pendingSwitch = null;
+      switchConfirm.hidden = true;
+    }
+
+    function isYouTubeSourceUrl(value: string): boolean {
+      try {
+        const source = new URL(value.trim());
+        if (!/(^|\.)youtube\.com$/i.test(source.hostname)) return false;
+        return source.pathname === "/watch"
+          ? /^[\w-]{11}$/.test(source.searchParams.get("v") || "")
+          : /^\/live\/[\w-]{11}\/?$/.test(source.pathname);
+      } catch {
+        return false;
       }
     }
 
-    function clearExtraSourceLoadError(): void {
-      setExtraSourceLoadError(null);
+    function renderExtraSourceHint(): void {
+      urlHint.hidden = !isYouTubeSourceUrl(url.value);
+    }
+
+    function renderExtraSourceStatus(): void {
+      const error = extraSourceValidationError ?? extraSourceLoadError;
+      url.classList.toggle("is-error", error !== null);
+      if (error) url.setAttribute("aria-describedby", status.id);
+      else url.removeAttribute("aria-describedby");
+      if (extraSourceLoading) {
+        status.textContent = t("popupExtraDanmakuConnecting");
+        status.dataset.state = "loading";
+      } else if (error) {
+        status.textContent = error;
+        status.dataset.state = "error";
+      } else if (extraSourceApplied?.enabled === true) {
+        status.textContent = t("popupExtraDanmakuConnected");
+        status.dataset.state = "connected";
+      } else {
+        status.textContent = "";
+        status.dataset.state = "";
+      }
+    }
+
+    function setExtraSourceLoading(loading: boolean): void {
+      if (extraSourceLoading === loading) return;
+      extraSourceLoading = loading;
+      renderExtraSourceStatus();
+    }
+
+    // URL 錯誤只在下方狀態列顯示，避免與輸入框 hover 提示重複。
+    function setExtraSourceLoadError(error: string | null): void {
+      extraSourceLoadError = error;
+      renderExtraSourceStatus();
+    }
+
+    function setExtraSourceValidationError(error: string | null): void {
+      extraSourceValidationError = error;
+      renderExtraSourceStatus();
+    }
+
+    function clearExtraSourceErrors(): void {
+      extraSourceValidationError = null;
+      extraSourceLoadError = null;
+      renderExtraSourceStatus();
     }
 
     function updateExtraSourceError(
@@ -61,19 +136,14 @@ globalThis.PipCompanion.extraBilibiliSettings = {
       return chrome.tabs.sendMessage(tabId, message);
     }
 
-    function setExtraBilibiliInputError(
-      field: "url" | "offset",
-      message: string | null,
-    ): void {
-      const input = field === "url" ? url : offset;
-      const tooltip = field === "url" ? urlError : offsetError;
-      input.classList.toggle("is-error", message !== null);
+    function setOffsetInputError(message: string | null): void {
+      offset.classList.toggle("is-error", message !== null);
       if (message) {
-        tooltip.textContent = message;
-        input.setAttribute("aria-describedby", tooltip.id);
+        offsetError.textContent = message;
+        offset.setAttribute("aria-describedby", offsetError.id);
       } else {
-        tooltip.textContent = "";
-        input.removeAttribute("aria-describedby");
+        offsetError.textContent = "";
+        offset.removeAttribute("aria-describedby");
       }
     }
 
@@ -97,6 +167,7 @@ globalThis.PipCompanion.extraBilibiliSettings = {
 
     function renderExtraBilibiliSource(value: unknown) {
       const source = util.isRecord(value) ? value : {};
+      extraSourceApplied = parseExtraBilibiliSource(value);
       setExtraBilibiliAvailability(source.available !== false);
       enabled.checked = source.enabled === true;
       url.value = typeof source.url === "string" ? source.url : "";
@@ -106,6 +177,9 @@ globalThis.PipCompanion.extraBilibiliSettings = {
           ? Math.max(-3600, Math.min(3600, source.offsetSeconds))
           : 0,
       );
+      setExtraSourceLoading(source.loading === true);
+      renderExtraSourceHint();
+      renderExtraSourceStatus();
     }
 
     async function loadExtraBilibiliSource() {
@@ -144,6 +218,13 @@ globalThis.PipCompanion.extraBilibiliSettings = {
         const storedSettings = parseExtraBilibiliSource(
           storedValues[storageKey] ?? storedValues[legacyStorageKey],
         );
+        const hasConfiguredSource =
+          globalThis.PipCompanion.extraBilibiliSourceConfig.hasSettings(
+            liveSettings,
+          ) ||
+          globalThis.PipCompanion.extraBilibiliSourceConfig.hasSettings(
+            storedSettings,
+          );
         let sourceToRender: unknown = liveSource;
         const resolution =
           globalThis.PipCompanion.extraBilibiliSourceConfig.resolve(
@@ -181,7 +262,13 @@ globalThis.PipCompanion.extraBilibiliSettings = {
             sourceToRender.error,
             sourceToRender.errorRevision,
           );
-        else setExtraSourceLoadError(storageReadError ?? sourceMessageError);
+        else
+          setExtraSourceLoadError(
+            storageReadError ??
+              (hasConfiguredSource ? sourceMessageError : null),
+          );
+        if (util.isRecord(sourceToRender))
+          setExtraSourceLoading(sourceToRender.loading === true);
       } catch {
         if (
           revision === extraSourceSaveRevision &&
@@ -218,34 +305,6 @@ globalThis.PipCompanion.extraBilibiliSettings = {
       return request;
     }
 
-    async function disableExtraSourceForInvalidSettings(
-      revision: number,
-      url: string,
-      offsetSeconds: number,
-      errorField: "url" | "offset",
-    ): Promise<void> {
-      enabled.checked = false;
-      const validationError =
-        errorField === "url"
-          ? t("popupExtraDanmakuInvalidUrl")
-          : t("popupExtraDanmakuInvalidOffset");
-      try {
-        await queueExtraBilibiliSourceUpdate({
-          enabled: false,
-          url: errorField === "url" ? "" : url,
-          offsetSeconds,
-        });
-        if (revision === extraSourceSaveRevision)
-          setExtraBilibiliInputError(errorField, validationError);
-      } catch {
-        if (revision === extraSourceSaveRevision)
-          setExtraBilibiliInputError(
-            errorField,
-            `${validationError} ${t("popupExtraDanmakuDisableFailed")}`,
-          );
-      }
-    }
-
     function parseExtraBilibiliForm(): ExtraBilibiliFormResult {
       return globalThis.PipCompanion.extraBilibiliForm.parse(
         url.value,
@@ -255,37 +314,74 @@ globalThis.PipCompanion.extraBilibiliSettings = {
       );
     }
 
-    async function saveExtraBilibiliSource(): Promise<void> {
+    async function applyExtraSource(
+      source: ExtraBilibiliSourceSettings,
+    ): Promise<void> {
       const revision = ++extraSourceSaveRevision;
-      setExtraBilibiliInputError("url", null);
-      setExtraBilibiliInputError("offset", null);
-      const form = parseExtraBilibiliForm();
-      if (!form.ok) {
-        await disableExtraSourceForInvalidSettings(
-          revision,
-          form.url,
-          form.offsetSeconds,
-          form.errorField,
-        );
-        return;
-      }
-
+      clearSwitchConfirm();
       try {
-        const saved = await queueExtraBilibiliSourceUpdate(form.source);
+        const saved = await queueExtraBilibiliSourceUpdate(source);
         if (revision !== extraSourceSaveRevision) return;
         renderExtraBilibiliSource(saved);
       } catch {
-        if (revision === extraSourceSaveRevision)
-          setExtraBilibiliInputError("url", t("popupExtraDanmakuSaveFailed"));
+        if (revision !== extraSourceSaveRevision) return;
+        // 儲存失敗代表沒有套用，將開關還原成來源端實際狀態。
+        enabled.checked = extraSourceApplied?.enabled === true;
+        setExtraSourceLoadError(t("popupExtraDanmakuSaveFailed"));
       }
+    }
+
+    async function saveExtraBilibiliSource(): Promise<void> {
+      const wantsEnabled = enabled.checked;
+      clearExtraSourceErrors();
+      setOffsetInputError(null);
+      const form = parseExtraBilibiliForm();
+
+      if (!form.ok && wantsEnabled) {
+        // 使用者想啟用但設定無效：保留正在運作的來源，只顯示錯誤並還原開關。
+        clearSwitchConfirm();
+        enabled.checked = extraSourceApplied?.enabled === true;
+        if (form.errorField === "url")
+          setExtraSourceValidationError(t("popupExtraDanmakuInvalidUrl"));
+        else setOffsetInputError(t("popupExtraDanmakuInvalidOffset"));
+        return;
+      }
+
+      // 設定無效且使用者想停用時，仍照常停用（URL 需清空才能通過訊息驗證）。
+      const nextSource = form.ok
+        ? form.source
+        : { enabled: false, url: "", offsetSeconds: form.offsetSeconds };
+      if (
+        nextSource.enabled &&
+        extraSourceApplied?.enabled === true &&
+        nextSource.url !== extraSourceApplied.url
+      ) {
+        showSwitchConfirm(nextSource);
+        return;
+      }
+      await applyExtraSource(nextSource);
     }
 
     url.addEventListener("input", () => {
       extraBilibiliSourceEdited = true;
-      clearExtraSourceLoadError();
+      clearSwitchConfirm();
+      clearExtraSourceErrors();
+      renderExtraSourceHint();
     });
     offset.addEventListener("input", () => {
       extraBilibiliSourceEdited = true;
+      clearSwitchConfirm();
+    });
+    switchConfirmYes.addEventListener("click", () => {
+      if (pendingSwitch) void applyExtraSource(pendingSwitch);
+    });
+    switchConfirmNo.addEventListener("click", () => {
+      clearSwitchConfirm();
+      enabled.checked = extraSourceApplied?.enabled === true;
+      url.value = extraSourceApplied?.url ?? "";
+      offset.value = String(extraSourceApplied?.offsetSeconds ?? 0);
+      renderExtraSourceHint();
+      renderExtraSourceStatus();
     });
     void loadExtraBilibiliSource();
     url.addEventListener("change", () => {
@@ -307,11 +403,15 @@ globalThis.PipCompanion.extraBilibiliSettings = {
           return;
         if (message.type === "EXTRA_DANMAKU_SOURCE_STATUS") {
           updateExtraSourceError(message.error, message.revision);
+          setExtraSourceLoading(message.loading === true);
           return;
         }
         if (message.type === "EXTRA_DANMAKU_SOURCE_CHANGED") {
+          extraSourceApplied = parseExtraBilibiliSource(message.source);
           enabled.checked = message.source.enabled;
           setExtraBilibiliAvailability(message.available);
+          renderExtraSourceHint();
+          renderExtraSourceStatus();
         }
       },
     );

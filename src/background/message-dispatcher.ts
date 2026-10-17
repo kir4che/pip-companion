@@ -9,6 +9,11 @@ type MessageHandler = (
 
 const handlers = new Map<string, Set<MessageHandler>>();
 const messageTypes = new Set([
+  "START_EXTRA_YOUTUBE_CHAT",
+  "STOP_EXTRA_YOUTUBE_CHAT",
+  "EXTRA_YOUTUBE_CHAT_CLOCK",
+  "YOUTUBE_CHAT_MESSAGE",
+  "YOUTUBE_CHAT_ENDED",
   "PING",
   "GET_PIP_STATE",
   "CLOSE_PIP",
@@ -91,10 +96,42 @@ function hasWebTabSender(sender: chrome.runtime.MessageSender): boolean {
   }
 }
 
+// SPA 導覽時 sender.url 與 tab.url 可能短暫不同，因此只要求同源且為頂層 frame。
+function isOwnTopFrameSender(sender: chrome.runtime.MessageSender): boolean {
+  if (
+    sender.frameId !== 0 ||
+    sender.tab?.id === undefined ||
+    !sender.tab.url ||
+    !sender.url
+  )
+    return false;
+  try {
+    const tabUrl = new URL(sender.tab.url);
+    const senderUrl = new URL(sender.url);
+    const isWeb = (url: URL) =>
+      url.protocol === "https:" || url.protocol === "http:";
+    return (
+      isWeb(tabUrl) && isWeb(senderUrl) && senderUrl.origin === tabUrl.origin
+    );
+  } catch {
+    return false;
+  }
+}
+
 function isAuthorizedSender(
   message: Record<string, unknown>,
   sender: chrome.runtime.MessageSender,
 ): boolean {
+  if (
+    [
+      "START_EXTRA_YOUTUBE_CHAT",
+      "STOP_EXTRA_YOUTUBE_CHAT",
+      "EXTRA_YOUTUBE_CHAT_CLOCK",
+      "YOUTUBE_CHAT_MESSAGE",
+      "YOUTUBE_CHAT_ENDED",
+    ].includes(message.type as string)
+  )
+    return isOwnTopFrameSender(sender);
   if (sameOriginMessageTypes.has(message.type as string))
     return isSupportedDanmakuSender(sender);
   if (webTabMessageTypes.has(message.type as string))
@@ -106,6 +143,46 @@ function isAuthorizedSender(
 
 function isValidMessage(message: Record<string, unknown>): boolean {
   switch (message.type) {
+    case "START_EXTRA_YOUTUBE_CHAT":
+    case "STOP_EXTRA_YOUTUBE_CHAT":
+    case "EXTRA_YOUTUBE_CHAT_CLOCK":
+    case "YOUTUBE_CHAT_MESSAGE":
+    case "YOUTUBE_CHAT_ENDED": {
+      if (
+        typeof message.connectionId !== "string" ||
+        !/^[\w-]{1,100}$/.test(message.connectionId)
+      )
+        return false;
+      if (message.type === "START_EXTRA_YOUTUBE_CHAT")
+        return (
+          typeof message.videoId === "string" &&
+          /^[\w-]{11}$/.test(message.videoId)
+        );
+      if (
+        message.type === "STOP_EXTRA_YOUTUBE_CHAT" ||
+        message.type === "YOUTUBE_CHAT_ENDED"
+      )
+        return true;
+      if (
+        !Number.isSafeInteger(message.seekRevision) ||
+        (message.seekRevision as number) < 0
+      )
+        return false;
+      if (message.type === "EXTRA_YOUTUBE_CHAT_CLOCK")
+        return (
+          isFiniteNumber(message.time) &&
+          message.time >= 0 &&
+          message.time <= 1e8 &&
+          typeof message.paused === "boolean" &&
+          typeof message.ended === "boolean"
+        );
+      return (
+        isRecord(message.data) &&
+        typeof message.data.text === "string" &&
+        message.data.text.length <= 2000 &&
+        JSON.stringify(message.data).length <= 32768
+      );
+    }
     case "PING":
     case "GET_PIP_STATE":
     case "CLOSE_PIP":
@@ -155,6 +232,8 @@ function isValidMessage(message: Record<string, unknown>): boolean {
     case "EXTRA_DANMAKU_SOURCE_STATUS":
       return (
         (message.error === null || typeof message.error === "string") &&
+        (message.loading === undefined ||
+          typeof message.loading === "boolean") &&
         Number.isSafeInteger(message.revision) &&
         (message.revision as number) >= 0
       );

@@ -7,7 +7,49 @@ type SimpleExtensionMessageType =
   | "GET_PIP_BOUNDS"
   | "REQUEST_PIP_HANDOFF";
 
+type YouTubeChatClock = {
+  time: number;
+  paused: boolean;
+  ended: boolean;
+  seekRevision: number;
+};
+
 type ExtensionMessage =
+  | { type: "YOUTUBE_CHAT_PROBE" }
+  | {
+      type: "START_EXTRA_YOUTUBE_CHAT" | "YOUTUBE_CHAT_START";
+      videoId: string;
+      connectionId: string;
+    }
+  | {
+      type:
+        "STOP_EXTRA_YOUTUBE_CHAT" | "YOUTUBE_CHAT_STOP" | "YOUTUBE_CHAT_ENDED";
+      connectionId: string;
+    }
+  | ({
+      type: "EXTRA_YOUTUBE_CHAT_CLOCK" | "YOUTUBE_CHAT_CLOCK";
+      connectionId: string;
+    } & YouTubeChatClock)
+  | {
+      type: "YOUTUBE_CHAT_MESSAGE";
+      connectionId: string;
+      seekRevision: number;
+      data: DanmakuData;
+    }
+  | {
+      type: "EXTRA_YOUTUBE_CHAT_MESSAGE";
+      connectionId: string;
+      videoId: string;
+      seekRevision: number;
+      data: DanmakuData;
+    }
+  | {
+      type: "EXTRA_YOUTUBE_CHAT_STATUS";
+      connectionId: string;
+      videoId: string;
+      status: "error";
+      error: string;
+    }
   | { type: SimpleExtensionMessageType }
   | { type: "OPEN_PIP" }
   | {
@@ -45,6 +87,7 @@ type ExtensionMessage =
   | {
       type: "EXTRA_DANMAKU_SOURCE_STATUS";
       error: string | null;
+      loading?: boolean;
       revision: number;
     }
   | {

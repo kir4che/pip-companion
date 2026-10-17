@@ -14,6 +14,6 @@
 | Thumbnail previews     | ✅                                        | ✅                                             | ❌                   | ✅                                           | ❌                    |
 | Screenshots            | ✅                                        | ✅                                             | ✅                   | ✅                                           | ❌ (DRM restrictions) |
 | Add extra danmaku      | ✅                                        | ✅                                             | ✅                   | ❌ (crashes in tests)                        | ✅                    |
-| Provide extra danmaku  | ❌                                        | ✅                                             | ✅                   | ✅                                           | ❌                    |
+| Provide extra danmaku  | ✅ (source tab required)                  | ✅                                             | ✅                   | ✅                                           | ❌                    |
 
 > This table covers the main tested platforms. Other sites have not been fully verified; actual support depends on the site and browser restrictions.
