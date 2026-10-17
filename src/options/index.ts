@@ -78,7 +78,6 @@ function refreshOptionsLocale() {
     option.textContent = t("popupSeconds", option.value);
   shortcutOptions.render();
   danmakuStyleOptions.render();
-  shortcutOptions.render();
   subtitleStyleOptions.render();
   subtitleTranslationOptions.render();
 }

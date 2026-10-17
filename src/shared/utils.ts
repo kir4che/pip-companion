@@ -203,6 +203,55 @@ globalThis.PipCompanion.util = (() => {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
 
+  const extensionMessageTypes = new Set([
+    "YOUTUBE_CHAT_PROBE",
+    "START_EXTRA_YOUTUBE_CHAT",
+    "YOUTUBE_CHAT_START",
+    "STOP_EXTRA_YOUTUBE_CHAT",
+    "YOUTUBE_CHAT_STOP",
+    "YOUTUBE_CHAT_CLOCK",
+    "EXTRA_YOUTUBE_CHAT_CLOCK",
+    "YOUTUBE_CHAT_ENDED",
+    "YOUTUBE_CHAT_MESSAGE",
+    "EXTRA_YOUTUBE_CHAT_MESSAGE",
+    "EXTRA_YOUTUBE_CHAT_STATUS",
+    "PING",
+    "GET_PIP_STATE",
+    "CLOSE_PIP",
+    "CLOSE_ALL_PIP",
+    "GET_PIP_BOUNDS",
+    "REQUEST_PIP_HANDOFF",
+    "OPEN_PIP",
+    "PIP_STATE_CHANGED",
+    "PIP_GLOBAL_STATE",
+    "SAVE_PIP_BOUNDS",
+    "RESTORE_PIP_BOUNDS",
+    "CENTER_PIP_BOUNDS",
+    "PIP_SOURCE_PLAYBACK_CHANGED",
+    "PIP_SUBTITLES_ENABLED_CHANGED",
+    "GET_EXTRA_DANMAKU_SOURCE",
+    "EXTRA_DANMAKU_SOURCE_STATUS",
+    "EXTRA_DANMAKU_SOURCE_CHANGED",
+    "SET_EXTRA_DANMAKU_SOURCE",
+    "RESIZE_PIP_WINDOW",
+    "GET_BILIBILI_DANMAKU",
+    "GET_BAHAMUT_DANMAKU",
+    "START_EXTRA_TWITCH_CHAT",
+    "STOP_EXTRA_TWITCH_CHAT",
+    "EXTRA_TWITCH_CHAT_STATUS",
+    "EXTRA_TWITCH_CHAT_MESSAGE",
+    "GET_BILIBILI_SUBTITLE_CUES",
+    "GET_SUBTITLE_TRANSLATION_LANGUAGES",
+    "GET_SUBTITLE_TRANSLATION_SERVICES",
+    "SET_SUBTITLE_TRANSLATION_PROVIDER",
+    "TRANSLATE_SUBTITLE_CUES",
+    "TEST_SUBTITLE_TRANSLATION",
+  ]);
+
+  function isKnownExtensionMessageType(value: unknown): value is string {
+    return typeof value === "string" && extensionMessageTypes.has(value);
+  }
+
   function isExtensionMessage(value: unknown): value is ExtensionMessage {
     if (!isRecord(value) || typeof value.type !== "string") return false;
 
@@ -602,6 +651,7 @@ globalThis.PipCompanion.util = (() => {
     SEEK_SECONDS_OPTIONS,
     normalizeSeekSeconds,
     isRecord,
+    isKnownExtensionMessageType,
     isValidExtraDanmakuSourceUrl:
       globalThis.PipCompanion.isValidExtraDanmakuSourceUrl,
     isExtensionMessage,
@@ -620,94 +670,83 @@ type RuntimeMessageHandler = (
   sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ) => boolean | void | Promise<boolean | void>;
-const runtimeMessageHandlers = new Map<string, Set<RuntimeMessageHandler>>();
-let runtimeMessageListenerRegistered = false;
-const knownRuntimeMessageTypes = new Set([
-  "YOUTUBE_CHAT_PROBE",
-  "YOUTUBE_CHAT_START",
-  "YOUTUBE_CHAT_STOP",
-  "YOUTUBE_CHAT_CLOCK",
-  "EXTRA_YOUTUBE_CHAT_MESSAGE",
-  "EXTRA_YOUTUBE_CHAT_STATUS",
-  "PING",
-  "GET_PIP_STATE",
-  "CLOSE_PIP",
-  "CLOSE_ALL_PIP",
-  "GET_PIP_BOUNDS",
-  "REQUEST_PIP_HANDOFF",
-  "OPEN_PIP",
-  "PIP_STATE_CHANGED",
-  "PIP_GLOBAL_STATE",
-  "SAVE_PIP_BOUNDS",
-  "RESTORE_PIP_BOUNDS",
-  "CENTER_PIP_BOUNDS",
-  "PIP_SOURCE_PLAYBACK_CHANGED",
-  "PIP_SUBTITLES_ENABLED_CHANGED",
-  "GET_EXTRA_DANMAKU_SOURCE",
-  "EXTRA_DANMAKU_SOURCE_STATUS",
-  "EXTRA_DANMAKU_SOURCE_CHANGED",
-  "SET_EXTRA_DANMAKU_SOURCE",
-  "RESIZE_PIP_WINDOW",
-  "GET_BILIBILI_DANMAKU",
-  "GET_BAHAMUT_DANMAKU",
-  "START_EXTRA_TWITCH_CHAT",
-  "STOP_EXTRA_TWITCH_CHAT",
-  "EXTRA_TWITCH_CHAT_STATUS",
-  "EXTRA_TWITCH_CHAT_MESSAGE",
-  "GET_BILIBILI_SUBTITLE_CUES",
-  "GET_SUBTITLE_TRANSLATION_LANGUAGES",
-  "GET_SUBTITLE_TRANSLATION_SERVICES",
-  "SET_SUBTITLE_TRANSLATION_PROVIDER",
-  "TRANSLATE_SUBTITLE_CUES",
-  "TEST_SUBTITLE_TRANSLATION",
-]);
+type RuntimeMessageListener = (
+  message: unknown,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: unknown) => void,
+) => boolean | void;
+type RuntimeMessageRegistrar = (listener: RuntimeMessageListener) => void;
+type RuntimeMessageAuthorizer = (
+  message: Record<string, unknown>,
+  sender: chrome.runtime.MessageSender,
+) => boolean;
 
+function createRuntimeMessageDispatcher(
+  register: RuntimeMessageRegistrar,
+  authorize?: RuntimeMessageAuthorizer,
+): RuntimeMessageDispatcher {
+  const handlers = new Map<string, Set<RuntimeMessageHandler>>();
+  register((message, sender, sendResponse) => {
+    if (!globalThis.PipCompanion.util.isExtensionMessage(message)) {
+      if (
+        globalThis.PipCompanion.util.isRecord(message) &&
+        typeof message.type === "string" &&
+        globalThis.PipCompanion.util.isKnownExtensionMessageType(message.type)
+      )
+        sendResponse({ ok: false, error: "Invalid message" });
+      return false;
+    }
+    if (authorize && !authorize(message as Record<string, unknown>, sender)) {
+      sendResponse({ ok: false, error: "Unsupported request sender" });
+      return false;
+    }
+
+    let responseSent = false;
+    const respondOnce = (response?: unknown) => {
+      if (responseSent) return;
+      responseSent = true;
+      sendResponse(response);
+    };
+    let keepChannelOpen = false;
+    for (const registeredHandler of handlers.get(message.type) ?? []) {
+      try {
+        const result = registeredHandler(message, sender, respondOnce);
+        if (result === true) keepChannelOpen = true;
+        else if (result && typeof result === "object" && "then" in result) {
+          keepChannelOpen = true;
+          void Promise.resolve(result).catch((error: unknown) => {
+            console.error("[PiP Companion] Message handler failed:", error);
+            respondOnce({ ok: false });
+          });
+        }
+      } catch (error) {
+        console.error("[PiP Companion] Message handler failed:", error);
+        respondOnce({ ok: false });
+      }
+    }
+    return keepChannelOpen;
+  });
+
+  return {
+    addListener(types, handler) {
+      for (const type of typeof types === "string" ? [types] : types) {
+        const typeHandlers = handlers.get(type) ?? new Set();
+        typeHandlers.add(handler);
+        handlers.set(type, typeHandlers);
+      }
+    },
+  };
+}
+
+globalThis.PipCompanion.createRuntimeMessageDispatcher =
+  createRuntimeMessageDispatcher;
+
+let runtimeMessages: RuntimeMessageDispatcher | null = null;
 globalThis.PipCompanion.runtimeMessages = {
   addListener(types, handler) {
-    const messageTypes = typeof types === "string" ? [types] : types;
-    for (const type of messageTypes) {
-      const handlers = runtimeMessageHandlers.get(type) ?? new Set();
-      handlers.add(handler);
-      runtimeMessageHandlers.set(type, handlers);
-    }
-    if (runtimeMessageListenerRegistered) return;
-    runtimeMessageListenerRegistered = true;
-    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-      if (!globalThis.PipCompanion.util.isExtensionMessage(message)) {
-        if (
-          globalThis.PipCompanion.util.isRecord(message) &&
-          typeof message.type === "string" &&
-          knownRuntimeMessageTypes.has(message.type)
-        )
-          sendResponse({ ok: false, error: "Invalid message" });
-        return false;
-      }
-
-      let responseSent = false;
-      const respondOnce = (response?: unknown) => {
-        if (responseSent) return;
-        responseSent = true;
-        sendResponse(response);
-      };
-      let keepChannelOpen = false;
-      const handlers = runtimeMessageHandlers.get(message.type) ?? [];
-      for (const registeredHandler of handlers) {
-        try {
-          const result = registeredHandler(message, sender, respondOnce);
-          if (result === true) keepChannelOpen = true;
-          else if (result && typeof result === "object" && "then" in result) {
-            keepChannelOpen = true;
-            void Promise.resolve(result).catch((error: unknown) => {
-              console.error("[PiP Companion] Message handler failed:", error);
-              respondOnce({ ok: false });
-            });
-          }
-        } catch (error) {
-          console.error("[PiP Companion] Message handler failed:", error);
-          respondOnce({ ok: false });
-        }
-      }
-      return keepChannelOpen;
-    });
+    runtimeMessages ??= createRuntimeMessageDispatcher((listener) =>
+      chrome.runtime.onMessage.addListener(listener),
+    );
+    runtimeMessages.addListener(types, handler);
   },
 };

@@ -19,6 +19,8 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       isNetflix: IS_NETFLIX,
     });
   const remoteSubtitleRequestState = remoteSubtitleRequests.state;
+  const { youtubePrimary, youtubeSecondary, netflixSecondary } =
+    remoteSubtitleRequests;
   let selectedNativeTrack: TextTrack | null = null;
   let renderedSubtitleSignature: string | null = null;
   let renderedSubtitleElement: HTMLElement | null = null;
@@ -137,37 +139,27 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       !Array.isArray(event.data.tracks)
     )
       return;
-    const previousPrimaryTrackKey =
-      remoteSubtitleRequestState.youtubePrimaryTrackKey;
-    const previousSecondaryTrackKey =
-      remoteSubtitleRequestState.youtubeSecondaryTrackKey;
+    const previousPrimaryTrackKey = youtubePrimary.trackKey;
+    const previousSecondaryTrackKey = youtubeSecondary.trackKey;
     remoteSubtitleRequestState.youtubeTracks = event.data.tracks.filter(
       globalThis.PipCompanion.subtitleTrackValidation.isYouTubeTrack,
     );
     updateYouTubePrimarySubtitleTrackKey();
     requestYouTubePrimarySubtitleCues();
     if (
-      remoteSubtitleRequestState.youtubeSecondaryTrackKey &&
+      youtubeSecondary.trackKey &&
       !remoteSubtitleRequestState.youtubeTracks.some(
-        (track) =>
-          track.key === remoteSubtitleRequestState.youtubeSecondaryTrackKey &&
-          !track.selected,
+        (track) => track.key === youtubeSecondary.trackKey && !track.selected,
       )
     ) {
-      remoteSubtitleRequestState.youtubeSecondaryTrackKey = "";
-      remoteSubtitleRequestState.youtubeSecondaryCues = null;
-      remoteSubtitleRequestState.youtubeSecondaryCueLoadedTrack = "";
-      remoteSubtitleRequestState.youtubeSecondaryCuePendingTrack = "";
-      remoteSubtitleRequestState.youtubeSecondaryCueRequestId++;
-    } else if (remoteSubtitleRequestState.youtubeSecondaryTrackKey) {
+      youtubeSecondary.reset("", false);
+    } else if (youtubeSecondary.trackKey) {
       requestYouTubeSecondarySubtitleCues();
     }
     state.pipUi?.refreshSubtitleTracks();
     if (
-      previousPrimaryTrackKey !==
-        remoteSubtitleRequestState.youtubePrimaryTrackKey ||
-      previousSecondaryTrackKey !==
-        remoteSubtitleRequestState.youtubeSecondaryTrackKey
+      previousPrimaryTrackKey !== youtubePrimary.trackKey ||
+      previousSecondaryTrackKey !== youtubeSecondary.trackKey
     )
       refreshSubtitle(true);
   });
@@ -180,27 +172,19 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       event.data.type !== "PIP_YT_SUBTITLE_CUES" ||
       typeof event.data.videoId !== "string" ||
       event.data.videoId !== getCurrentYouTubeVideoId() ||
-      typeof event.data.requestId !== "number" ||
-      event.data.requestId !==
-        remoteSubtitleRequestState.youtubePrimaryCueRequestId ||
-      event.data.key !== remoteSubtitleRequestState.youtubePrimaryTrackKey ||
+      !youtubePrimary.matches(event.data.requestId, event.data.key) ||
       typeof event.data.ok !== "boolean" ||
       !Array.isArray(event.data.cues)
     )
       return;
-    remoteSubtitleRequestState.youtubePrimaryCuePendingTrack = "";
     if (!event.data.ok) {
+      youtubePrimary.complete(null);
       refreshSubtitle(true);
       return;
     }
-    remoteSubtitleRequestState.youtubePrimaryCues =
-      globalThis.PipCompanion.subtitleCueData.parseYouTubeCues(event.data.cues);
-    if (!remoteSubtitleRequestState.youtubePrimaryCues.length) {
-      refreshSubtitle(true);
-      return;
-    }
-    remoteSubtitleRequestState.youtubePrimaryCueLoadedTrack =
-      remoteSubtitleRequestState.youtubePrimaryTrackKey;
+    youtubePrimary.complete(
+      globalThis.PipCompanion.subtitleCueData.parseYouTubeCues(event.data.cues),
+    );
     refreshSubtitle(true);
   });
 
@@ -212,24 +196,20 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       event.data.type !== "PIP_YT_SUBTITLE_CUES" ||
       typeof event.data.videoId !== "string" ||
       event.data.videoId !== getCurrentYouTubeVideoId() ||
-      typeof event.data.requestId !== "number" ||
-      event.data.requestId !==
-        remoteSubtitleRequestState.youtubeSecondaryCueRequestId ||
-      event.data.key !== remoteSubtitleRequestState.youtubeSecondaryTrackKey ||
+      !youtubeSecondary.matches(event.data.requestId, event.data.key) ||
       typeof event.data.ok !== "boolean" ||
       !Array.isArray(event.data.cues)
     )
       return;
-    remoteSubtitleRequestState.youtubeSecondaryCuePendingTrack = "";
     if (!event.data.ok) {
+      youtubeSecondary.complete(null);
       showSecondarySubtitleFailure();
       return;
     }
-    remoteSubtitleRequestState.youtubeSecondaryCues =
-      globalThis.PipCompanion.subtitleCueData.parseYouTubeCues(event.data.cues);
-    if (!remoteSubtitleRequestState.youtubeSecondaryCues.length) return;
-    remoteSubtitleRequestState.youtubeSecondaryCueLoadedTrack =
-      remoteSubtitleRequestState.youtubeSecondaryTrackKey;
+    youtubeSecondary.complete(
+      globalThis.PipCompanion.subtitleCueData.parseYouTubeCues(event.data.cues),
+    );
+    if (!youtubeSecondary.cues?.length) return;
     refreshSubtitle(true);
   });
 
@@ -287,10 +267,9 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       (track) => track.selected,
     );
     const selectedTrackKey = selectedTrack?.key ?? "";
-    const temporarySecondaryTrackKey =
-      remoteSubtitleRequestState.netflixSecondaryCuePendingTrack;
+    const temporarySecondaryTrackKey = netflixSecondary.pendingTrack;
     const selectedIsSecondaryTrack =
-      selectedTrackKey === remoteSubtitleRequestState.netflixSecondaryTrackKey;
+      selectedTrackKey === netflixSecondary.trackKey;
     if (
       selectedTrackKey !== temporarySecondaryTrackKey &&
       !selectedIsSecondaryTrack
@@ -299,18 +278,13 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     if (
       !temporarySecondaryTrackKey &&
       !selectedIsSecondaryTrack &&
-      (remoteSubtitleRequestState.netflixSecondaryTrackKey ===
+      (netflixSecondary.trackKey ===
         remoteSubtitleRequestState.netflixPrimaryTrackKey ||
         !remoteSubtitleRequestState.netflixTracks.some(
-          (track) =>
-            track.key === remoteSubtitleRequestState.netflixSecondaryTrackKey,
+          (track) => track.key === netflixSecondary.trackKey,
         ))
     ) {
-      remoteSubtitleRequestState.netflixSecondaryTrackKey = "";
-      remoteSubtitleRequestState.netflixSecondaryCues = null;
-      remoteSubtitleRequestState.netflixSecondaryCueLoadedTrack = "";
-      remoteSubtitleRequestState.netflixSecondaryCuePendingTrack = "";
-      remoteSubtitleRequestState.lastNetflixSecondaryCueRequest = 0;
+      netflixSecondary.reset("");
     }
     if (typeof event.data.subtitlesEnabled === "boolean") {
       if (subtitleInitializationPending) {
@@ -342,22 +316,16 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       event.origin !== location.origin ||
       !globalThis.PipCompanion.util.isRecord(event.data) ||
       event.data.type !== "PIP_NETFLIX_SUBTITLE_CUES" ||
-      typeof event.data.requestId !== "number" ||
-      event.data.requestId !==
-        remoteSubtitleRequestState.netflixSecondaryCueRequestId ||
-      event.data.key !== remoteSubtitleRequestState.netflixSecondaryTrackKey ||
+      !netflixSecondary.matches(event.data.requestId, event.data.key) ||
       !Array.isArray(event.data.cues)
     )
       return;
-    remoteSubtitleRequestState.netflixSecondaryCuePendingTrack = "";
     const cues = event.data.cues.flatMap((cue) => {
       const parsed = globalThis.PipCompanion.subtitleCueData.parseTimedCue(cue);
       return parsed ? [parsed] : [];
     });
     if (event.data.restored !== true) {
-      remoteSubtitleRequestState.netflixSecondaryCues = null;
-      remoteSubtitleRequestState.netflixSecondaryCueLoadedTrack = "";
-      remoteSubtitleRequestState.lastNetflixSecondaryCueRequest = 0;
+      netflixSecondary.retry();
       requestNetflixSubtitleTracks(true);
       if (
         remoteSubtitleRequestState.netflixSecondaryCueRetryCount < 3 &&
@@ -372,9 +340,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       } else if (remoteSubtitleRequestState.netflixSecondaryCueRetryCount >= 3)
         showSecondarySubtitleFailure();
     } else {
-      remoteSubtitleRequestState.netflixSecondaryCues = cues;
-      remoteSubtitleRequestState.netflixSecondaryCueLoadedTrack =
-        remoteSubtitleRequestState.netflixSecondaryTrackKey;
+      netflixSecondary.complete(cues, true);
       remoteSubtitleRequestState.netflixSecondaryCueRetryCount = 0;
     }
     state.pipUi?.refreshSubtitleTranslationPreferences();
@@ -424,7 +390,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     );
     const key = updateYouTubePrimarySubtitleTrackKey();
     if (!key || !track?.canLoadCues) return false;
-    if (remoteSubtitleRequestState.youtubePrimaryCueLoadedTrack !== key) {
+    if (youtubePrimary.loadedTrack !== key) {
       requestYouTubePrimarySubtitleCues();
       return false;
     }
@@ -434,7 +400,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     state.subtitleNode = null;
     state.subtitleExtract = null;
     const lines = getTimedSubtitleLines(
-      remoteSubtitleRequestState.youtubePrimaryCues,
+      youtubePrimary.cues,
       state.sourceVideo?.currentTime ?? 0,
     );
     state.subtitleLines = lines;
@@ -519,14 +485,14 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     if (IS_YOUTUBE)
       return globalThis.PipCompanion.subtitleTrackOptions.youtubeSecondary(
         remoteSubtitleRequestState.youtubeTracks,
-        remoteSubtitleRequestState.youtubeSecondaryTrackKey,
+        youtubeSecondary.trackKey,
         (index) => t("pipSubtitleTrackNumber", String(index + 1)),
       );
     if (IS_NETFLIX)
       return globalThis.PipCompanion.subtitleTrackOptions.netflixSecondary(
         remoteSubtitleRequestState.netflixTracks,
         remoteSubtitleRequestState.netflixPrimaryTrackKey,
-        remoteSubtitleRequestState.netflixSecondaryTrackKey,
+        netflixSecondary.trackKey,
         (index) => t("pipSubtitleTrackNumber", String(index + 1)),
       );
 
@@ -566,13 +532,13 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
 
   function getSelectedSecondarySubtitleTrack(): string {
     if (IS_YOUTUBE)
-      return remoteSubtitleRequestState.youtubeSecondaryTrackKey
-        ? `youtube:${remoteSubtitleRequestState.youtubeSecondaryTrackKey}`
+      return youtubeSecondary.trackKey
+        ? `youtube:${youtubeSecondary.trackKey}`
         : "";
     if (IS_BILIBILI && bilibiliSubtitles.secondaryKey)
       return `bilibili:${bilibiliSubtitles.secondaryKey}`;
-    if (IS_NETFLIX && remoteSubtitleRequestState.netflixSecondaryTrackKey)
-      return `netflix:${remoteSubtitleRequestState.netflixSecondaryTrackKey}`;
+    if (IS_NETFLIX && netflixSecondary.trackKey)
+      return `netflix:${netflixSecondary.trackKey}`;
     const track = nativeSecondaryTrack.getTrack();
     return track ? getNativeTrackId(track) : "";
   }
@@ -586,11 +552,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
         )
       )
         return;
-      remoteSubtitleRequestState.youtubeSecondaryTrackKey = key;
-      remoteSubtitleRequestState.youtubeSecondaryCues = null;
-      remoteSubtitleRequestState.youtubeSecondaryCueLoadedTrack = "";
-      remoteSubtitleRequestState.youtubeSecondaryCuePendingTrack = "";
-      remoteSubtitleRequestState.youtubeSecondaryCueRequestId++;
+      youtubeSecondary.reset(key, false);
       secondarySubtitleFailureShown = false;
       requestYouTubeSecondarySubtitleCues();
       state.pipUi?.refreshSubtitleTracks();
@@ -616,12 +578,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
         )
       )
         return;
-      remoteSubtitleRequestState.netflixSecondaryTrackKey = key;
-      remoteSubtitleRequestState.netflixSecondaryCues = null;
-      remoteSubtitleRequestState.netflixSecondaryCueLoadedTrack = "";
-      remoteSubtitleRequestState.netflixSecondaryCuePendingTrack = "";
-      remoteSubtitleRequestState.lastNetflixSecondaryCueRequest = 0;
-      remoteSubtitleRequestState.netflixSecondaryCueRequestId++;
+      netflixSecondary.reset(key);
       if (remoteSubtitleRequestState.netflixSecondaryCueRetryTimer !== null) {
         window.clearTimeout(
           remoteSubtitleRequestState.netflixSecondaryCueRetryTimer,
@@ -712,13 +669,8 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
         return;
       preserveSubtitleEnabledOverride();
       remoteSubtitleRequestState.netflixPrimaryTrackKey = key;
-      if (remoteSubtitleRequestState.netflixSecondaryTrackKey === key) {
-        remoteSubtitleRequestState.netflixSecondaryTrackKey = "";
-        remoteSubtitleRequestState.netflixSecondaryCues = null;
-        remoteSubtitleRequestState.netflixSecondaryCueLoadedTrack = "";
-        remoteSubtitleRequestState.netflixSecondaryCuePendingTrack = "";
-        remoteSubtitleRequestState.lastNetflixSecondaryCueRequest = 0;
-        remoteSubtitleRequestState.netflixSecondaryCueRequestId++;
+      if (netflixSecondary.trackKey === key) {
+        netflixSecondary.reset("");
       }
       state.pipUi?.refreshSubtitleTracks();
       window.postMessage(
@@ -740,12 +692,8 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       preserveSubtitleEnabledOverride();
       for (const track of remoteSubtitleRequestState.youtubeTracks)
         track.selected = track.key === key;
-      if (remoteSubtitleRequestState.youtubeSecondaryTrackKey === key) {
-        remoteSubtitleRequestState.youtubeSecondaryTrackKey = "";
-        remoteSubtitleRequestState.youtubeSecondaryCues = null;
-        remoteSubtitleRequestState.youtubeSecondaryCueLoadedTrack = "";
-        remoteSubtitleRequestState.youtubeSecondaryCuePendingTrack = "";
-        remoteSubtitleRequestState.youtubeSecondaryCueRequestId++;
+      if (youtubeSecondary.trackKey === key) {
+        youtubeSecondary.reset("", false);
       }
       state.pipUi?.refreshSubtitleTracks();
       rememberYouTubeSubtitleState();
@@ -1219,17 +1167,14 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
 
   function getNativeSecondarySubtitleLines(): SubtitleLine[] {
     if (IS_YOUTUBE) {
-      const key = remoteSubtitleRequestState.youtubeSecondaryTrackKey;
+      const key = youtubeSecondary.trackKey;
       if (!key) return [];
-      if (remoteSubtitleRequestState.youtubeSecondaryCueLoadedTrack !== key) {
+      if (youtubeSecondary.loadedTrack !== key) {
         requestYouTubeSecondarySubtitleCues();
         return [];
       }
       const currentTime = state.sourceVideo?.currentTime ?? 0;
-      return getTimedSubtitleLines(
-        remoteSubtitleRequestState.youtubeSecondaryCues,
-        currentTime,
-      );
+      return getTimedSubtitleLines(youtubeSecondary.cues, currentTime);
     }
     if (IS_BILIBILI && bilibiliSubtitles.secondaryKey) {
       return getTimedSubtitleLines(
@@ -1237,16 +1182,13 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
         state.sourceVideo?.currentTime ?? 0,
       );
     }
-    if (IS_NETFLIX && remoteSubtitleRequestState.netflixSecondaryTrackKey) {
-      if (
-        remoteSubtitleRequestState.netflixSecondaryCueLoadedTrack !==
-        remoteSubtitleRequestState.netflixSecondaryTrackKey
-      ) {
+    if (IS_NETFLIX && netflixSecondary.trackKey) {
+      if (netflixSecondary.loadedTrack !== netflixSecondary.trackKey) {
         requestNetflixSecondarySubtitleCues();
         return [];
       }
       return getTimedSubtitleLines(
-        remoteSubtitleRequestState.netflixSecondaryCues,
+        netflixSecondary.cues,
         state.sourceVideo?.currentTime ?? 0,
       );
     }
@@ -1257,8 +1199,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     if (IS_YOUTUBE)
       return (
         remoteSubtitleRequestState.youtubeTracks.find(
-          (track) =>
-            track.key === remoteSubtitleRequestState.youtubeSecondaryTrackKey,
+          (track) => track.key === youtubeSecondary.trackKey,
         )?.language ?? ""
       );
     if (IS_BILIBILI && bilibiliSubtitles.secondaryKey)
@@ -1267,11 +1208,10 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
           (track) => track.key === bilibiliSubtitles.secondaryKey,
         )?.language ?? ""
       );
-    if (IS_NETFLIX && remoteSubtitleRequestState.netflixSecondaryTrackKey)
+    if (IS_NETFLIX && netflixSecondary.trackKey)
       return (
         remoteSubtitleRequestState.netflixTracks.find(
-          (track) =>
-            track.key === remoteSubtitleRequestState.netflixSecondaryTrackKey,
+          (track) => track.key === netflixSecondary.trackKey,
         )?.language ?? ""
       );
     return nativeSecondaryTrack.getTrack()?.language ?? "";
@@ -1305,16 +1245,14 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     )
       return false;
 
-    if (IS_YOUTUBE)
-      return Boolean(remoteSubtitleRequestState.youtubeSecondaryTrackKey);
+    if (IS_YOUTUBE) return Boolean(youtubeSecondary.trackKey);
     if (IS_BILIBILI && bilibiliSubtitles.secondaryKey)
       return bilibiliSubtitles.tracks.some(
         (track) => track.key === bilibiliSubtitles.secondaryKey,
       );
     if (IS_NETFLIX)
       return remoteSubtitleRequestState.netflixTracks.some(
-        (track) =>
-          track.key === remoteSubtitleRequestState.netflixSecondaryTrackKey,
+        (track) => track.key === netflixSecondary.trackKey,
       );
     return nativeSecondaryTrack.hasTrack();
   }

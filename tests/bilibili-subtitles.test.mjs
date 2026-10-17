@@ -86,6 +86,7 @@ function setupSubtitles({
   nativeEnabled = null,
   overlayText = "",
   overlayClass = "",
+  platform = "bilibili",
 } = {}) {
   const fixture = setup();
   const { context } = fixture;
@@ -98,9 +99,11 @@ function setupSubtitles({
     getBoundingClientRect: () => ({ width: 100, top: 100, bottom: 120 }),
   };
   Object.assign(context, {
-    IS_YOUTUBE: false,
+    IS_YOUTUBE: platform === "youtube",
+    IS_BILIBILI: platform === "bilibili",
     getComputedStyle: () => ({ position: "absolute", pointerEvents: "none" }),
     document: {
+      documentElement: { dataset: { pipYtVideoId: "video-1" } },
       addEventListener() {},
       querySelector: (selector) => {
         if (
@@ -134,7 +137,13 @@ function setupSubtitles({
   });
   Object.assign(context.PipCompanion, {
     util: { ...context.PipCompanion.util, getMessage: (key) => key },
-    site: { isNetflixHost: () => false, isHahowHost: () => false },
+    ContentFeedback: {
+      showFeedback: (message) => fixture.events.push(message),
+    },
+    site: {
+      isNetflixHost: () => platform === "netflix",
+      isHahowHost: () => false,
+    },
     NativeSecondarySubtitleTrack: {
       create: () => ({ getTrack: () => null, clear() {} }),
     },
@@ -207,6 +216,13 @@ function setupSubtitles({
     }).outputText,
     context,
   );
+  let remoteRequests;
+  const createRemoteRequests =
+    context.PipCompanion.subtitleRemoteRequests.create;
+  context.PipCompanion.subtitleRemoteRequests.create = (options) => {
+    remoteRequests = createRemoteRequests(options);
+    return remoteRequests;
+  };
   const subtitleClockSource = readFileSync(
     new URL("../src/content/subtitles/subtitle-clock.ts", import.meta.url),
     "utf8",
@@ -257,8 +273,141 @@ function setupSubtitles({
     ...fixture,
     subtitles: context.PipCompanion.ContentSubtitles,
     nativeState,
+    remoteRequests,
   };
 }
+
+test("YouTube cue receivers discard stale tracks, videos and untrusted events", () => {
+  const { subtitles, remoteRequests, context, posted, respond } =
+    setupSubtitles({ platform: "youtube" });
+  context.state.pipUi = null;
+  remoteRequests.state.youtubeTracks = [
+    { key: "en", selected: true, canLoadCues: true },
+    { key: "zh", selected: false, canLoadCues: true },
+    { key: "ja", selected: false, canLoadCues: true },
+  ];
+  remoteRequests.requestYouTubePrimaryCues();
+  const primaryRequest = posted.at(-1);
+  subtitles.selectSecondarySubtitleTrack("youtube:zh");
+  const secondaryRequest = posted.at(-1);
+  const data = (request) => ({
+    ...request,
+    type: "PIP_YT_SUBTITLE_CUES",
+    videoId: "video-1",
+    ok: true,
+    cues: [cue],
+  });
+  respond({ data: { ...data(primaryRequest), videoId: "old-video" } });
+  respond({ data: data(primaryRequest), origin: "https://other.example" });
+  respond({ data: data(primaryRequest), source: {} });
+  assert.equal(remoteRequests.youtubePrimary.cues, null);
+  respond({ data: data(primaryRequest) });
+  assert.equal(remoteRequests.youtubePrimary.loadedTrack, "en");
+  assert.equal(remoteRequests.youtubePrimary.cues.length, 1);
+  // 切換第二字幕軌會使先前的回應失效，不影響主字幕資料。
+  subtitles.selectSecondarySubtitleTrack("youtube:ja");
+  respond({ data: data(secondaryRequest) });
+  assert.equal(remoteRequests.youtubeSecondary.trackKey, "ja");
+  assert.equal(remoteRequests.youtubeSecondary.cues, null);
+  assert.equal(remoteRequests.youtubePrimary.loadedTrack, "en");
+  subtitles.selectNativeSubtitleTrack("youtube:ja");
+  assert.equal(subtitles.getSelectedSecondarySubtitleTrack(), "");
+  remoteRequests.reset();
+  respond({ data: data(primaryRequest) });
+  assert.equal(remoteRequests.youtubePrimary.cues, null);
+});
+
+test("YouTube secondary receivers complete valid requests and release failed pending requests", () => {
+  const { subtitles, remoteRequests, context, posted, respond } =
+    setupSubtitles({ platform: "youtube" });
+  context.state.pipUi = null;
+  remoteRequests.state.youtubeTracks = [
+    { key: "zh", selected: false, canLoadCues: true },
+  ];
+  subtitles.selectSecondarySubtitleTrack("youtube:zh");
+  const request = posted.at(-1);
+  respond({
+    data: {
+      ...request,
+      type: "PIP_YT_SUBTITLE_CUES",
+      videoId: "video-1",
+      ok: false,
+      cues: [],
+    },
+  });
+  assert.equal(remoteRequests.youtubeSecondary.pendingTrack, "");
+  assert.equal(remoteRequests.youtubeSecondary.loadedTrack, "");
+  remoteRequests.youtubeSecondary.reset("zh");
+  remoteRequests.requestYouTubeSecondaryCues();
+  respond({
+    data: {
+      ...posted.at(-1),
+      type: "PIP_YT_SUBTITLE_CUES",
+      videoId: "video-1",
+      ok: true,
+      cues: [cue],
+    },
+  });
+  assert.equal(remoteRequests.youtubeSecondary.loadedTrack, "zh");
+  assert.equal(remoteRequests.youtubeSecondary.cues.length, 1);
+});
+
+test("Netflix cue receivers retain restoration retries, caching and track invalidation", () => {
+  const { subtitles, remoteRequests, context, posted, respond } =
+    setupSubtitles({ platform: "netflix" });
+  context.state.pipUi = null;
+  const timers = new Map();
+  let nextTimer = 0;
+  context.window.setTimeout = (callback) => {
+    timers.set(++nextTimer, callback);
+    return nextTimer;
+  };
+  context.window.clearTimeout = (id) => timers.delete(id);
+  remoteRequests.state.netflixTracks = [
+    { key: "zh", selected: false },
+    { key: "ja", selected: false },
+  ];
+  subtitles.selectSecondarySubtitleTrack("netflix:zh");
+  const original = posted.at(-1);
+  const data = (request, restored = false) => ({
+    ...request,
+    type: "PIP_NETFLIX_SUBTITLE_CUES",
+    restored,
+    cues: [cue],
+  });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const request = posted.at(-1);
+    respond({ data: data(request) });
+    assert.equal(remoteRequests.netflixSecondary.pendingTrack, "");
+    assert.equal(remoteRequests.netflixSecondary.loadedTrack, "");
+    assert.equal(
+      remoteRequests.state.netflixSecondaryCueRetryCount,
+      attempt + 1,
+    );
+    const timer = remoteRequests.state.netflixSecondaryCueRetryTimer;
+    const callback = timers.get(timer);
+    timers.delete(timer);
+    callback();
+    assert.equal(posted.at(-1).type, "PIP_REQUEST_NETFLIX_SUBTITLE_CUES");
+    assert.ok(posted.at(-1).requestId > request.requestId);
+  }
+  respond({ data: data(posted.at(-1)) });
+  assert.equal(timers.size, 0);
+  subtitles.selectSecondarySubtitleTrack("netflix:ja");
+  const current = posted.at(-1);
+  respond({ data: data(original, true) });
+  assert.equal(remoteRequests.netflixSecondary.cues, null);
+  respond({ data: data(current, true) });
+  assert.equal(remoteRequests.netflixSecondary.loadedTrack, "ja");
+  assert.equal(remoteRequests.netflixSecondary.cues.length, 1);
+  assert.equal(remoteRequests.state.netflixSecondaryCueRetryCount, 0);
+  const count = posted.length;
+  remoteRequests.requestNetflixSecondaryCues();
+  assert.equal(posted.length, count);
+  subtitles.selectNativeSubtitleTrack("netflix:ja");
+  respond({ data: data(current, true) });
+  assert.equal(remoteRequests.netflixSecondary.cues, null);
+});
 
 test("PiP inherits native subtitles enabled even between caption cues", () => {
   const { subtitles, context } = setupSubtitles({ nativeEnabled: true });

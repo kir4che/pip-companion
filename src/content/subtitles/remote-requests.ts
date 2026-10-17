@@ -3,29 +3,88 @@
 globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.subtitleRemoteRequests = {
   create(options) {
+    function createCueRequest(
+      type: string,
+      targetOrigin: string,
+      throttleInitialRequest = false,
+    ): SubtitleCueRequest {
+      let trackKey = "";
+      let cues: TimedSubtitleCue[] | null = null;
+      let loadedTrack = "";
+      let pendingTrack = "";
+      let requestId = 0;
+      let lastRequest = 0;
+      return {
+        get trackKey() {
+          return trackKey;
+        },
+        get cues() {
+          return cues;
+        },
+        get loadedTrack() {
+          return loadedTrack;
+        },
+        get pendingTrack() {
+          return pendingTrack;
+        },
+        reset(key = "", resetThrottle = true) {
+          trackKey = key;
+          cues = null;
+          loadedTrack = "";
+          pendingTrack = "";
+          requestId++;
+          if (resetThrottle) lastRequest = 0;
+        },
+        request() {
+          const now = Date.now();
+          if (
+            !trackKey ||
+            loadedTrack === trackKey ||
+            pendingTrack === trackKey ||
+            ((throttleInitialRequest || lastRequest > 0) &&
+              now - lastRequest < 3000)
+          )
+            return;
+          requestId++;
+          pendingTrack = trackKey;
+          lastRequest = now;
+          window.postMessage({ type, requestId, key: trackKey }, targetOrigin);
+        },
+        matches(id, key) {
+          return typeof id === "number" && id === requestId && key === trackKey;
+        },
+        complete(nextCues, loaded = Boolean(nextCues?.length)) {
+          pendingTrack = "";
+          cues = nextCues;
+          loadedTrack = loaded ? trackKey : "";
+        },
+        retry() {
+          pendingTrack = "";
+          cues = null;
+          loadedTrack = "";
+          lastRequest = 0;
+        },
+      };
+    }
+
+    const youtubePrimary = createCueRequest(
+      "PIP_REQUEST_YT_SUBTITLE_CUES",
+      "*",
+    );
+    const youtubeSecondary = createCueRequest(
+      "PIP_REQUEST_YT_SUBTITLE_CUES",
+      "*",
+    );
+    const netflixSecondary = createCueRequest(
+      "PIP_REQUEST_NETFLIX_SUBTITLE_CUES",
+      location.origin,
+      true,
+    );
     const state: SubtitleRemoteRequestState = {
       youtubeTracks: [],
       lastYouTubeTrackRequest: 0,
-      youtubePrimaryTrackKey: "",
-      youtubePrimaryCues: null,
-      youtubePrimaryCueLoadedTrack: "",
-      youtubePrimaryCuePendingTrack: "",
-      youtubePrimaryCueRequestId: 0,
-      lastYouTubePrimaryCueRequest: 0,
-      youtubeSecondaryTrackKey: "",
-      youtubeSecondaryCues: null,
-      youtubeSecondaryCueLoadedTrack: "",
-      youtubeSecondaryCuePendingTrack: "",
-      youtubeSecondaryCueRequestId: 0,
-      lastYouTubeSecondaryCueRequest: 0,
       netflixTracks: [],
       netflixPrimaryTrackKey: "",
-      netflixSecondaryTrackKey: "",
-      netflixSecondaryCues: null,
-      netflixSecondaryCueLoadedTrack: "",
-      netflixSecondaryCuePendingTrack: "",
-      netflixSecondaryCueRequestId: 0,
-      lastNetflixSecondaryCueRequest: 0,
       netflixSecondaryCueRetryTimer: null,
       netflixSecondaryCueRetryCount: 0,
       lastNetflixTrackRequest: 0,
@@ -45,56 +104,18 @@ globalThis.PipCompanion.subtitleRemoteRequests = {
     function updateYouTubePrimaryTrackKey() {
       const key =
         state.youtubeTracks.find((track) => track.selected)?.key ?? "";
-      if (key === state.youtubePrimaryTrackKey) return key;
-      state.youtubePrimaryTrackKey = key;
-      state.youtubePrimaryCues = null;
-      state.youtubePrimaryCueLoadedTrack = "";
-      state.youtubePrimaryCuePendingTrack = "";
-      state.youtubePrimaryCueRequestId++;
-      state.lastYouTubePrimaryCueRequest = 0;
+      if (key !== youtubePrimary.trackKey) youtubePrimary.reset(key);
       return key;
     }
 
     function requestYouTubePrimaryCues() {
       const track = state.youtubeTracks.find((item) => item.selected);
-      const key = updateYouTubePrimaryTrackKey();
-      if (
-        !options.isYouTube ||
-        !key ||
-        !track?.canLoadCues ||
-        state.youtubePrimaryCueLoadedTrack === key ||
-        state.youtubePrimaryCuePendingTrack === key ||
-        (state.lastYouTubePrimaryCueRequest > 0 &&
-          Date.now() - state.lastYouTubePrimaryCueRequest < 3000)
-      )
-        return;
-      const requestId = ++state.youtubePrimaryCueRequestId;
-      state.youtubePrimaryCuePendingTrack = key;
-      state.lastYouTubePrimaryCueRequest = Date.now();
-      window.postMessage(
-        { type: "PIP_REQUEST_YT_SUBTITLE_CUES", requestId, key },
-        "*",
-      );
+      updateYouTubePrimaryTrackKey();
+      if (options.isYouTube && track?.canLoadCues) youtubePrimary.request();
     }
 
     function requestYouTubeSecondaryCues() {
-      const key = state.youtubeSecondaryTrackKey;
-      if (
-        !options.isYouTube ||
-        !key ||
-        state.youtubeSecondaryCueLoadedTrack === key ||
-        state.youtubeSecondaryCuePendingTrack === key ||
-        (state.lastYouTubeSecondaryCueRequest > 0 &&
-          Date.now() - state.lastYouTubeSecondaryCueRequest < 3000)
-      )
-        return;
-      const requestId = ++state.youtubeSecondaryCueRequestId;
-      state.youtubeSecondaryCuePendingTrack = key;
-      state.lastYouTubeSecondaryCueRequest = Date.now();
-      window.postMessage(
-        { type: "PIP_REQUEST_YT_SUBTITLE_CUES", requestId, key },
-        "*",
-      );
+      if (options.isYouTube) youtubeSecondary.request();
     }
 
     function requestNetflixTracks(force = false) {
@@ -112,33 +133,17 @@ globalThis.PipCompanion.subtitleRemoteRequests = {
     }
 
     function requestNetflixSecondaryCues() {
-      const key = state.netflixSecondaryTrackKey;
-      if (
-        !options.isNetflix ||
-        !key ||
-        state.netflixSecondaryCueLoadedTrack === key ||
-        state.netflixSecondaryCuePendingTrack === key ||
-        Date.now() - state.lastNetflixSecondaryCueRequest < 3000
-      )
-        return;
-      const requestId = ++state.netflixSecondaryCueRequestId;
-      state.netflixSecondaryCuePendingTrack = key;
-      state.lastNetflixSecondaryCueRequest = Date.now();
-      window.postMessage(
-        { type: "PIP_REQUEST_NETFLIX_SUBTITLE_CUES", requestId, key },
-        location.origin,
-      );
+      if (options.isNetflix) netflixSecondary.request();
     }
 
     function isNetflixSecondaryActive() {
-      if (!options.isNetflix || !state.netflixSecondaryTrackKey) return false;
+      if (!options.isNetflix || !netflixSecondary.trackKey) return false;
       const selectedKey = state.netflixTracks.find(
         (track) => track.selected,
       )?.key;
       return (
-        selectedKey === state.netflixSecondaryTrackKey ||
-        state.netflixSecondaryCuePendingTrack ===
-          state.netflixSecondaryTrackKey ||
+        selectedKey === netflixSecondary.trackKey ||
+        netflixSecondary.pendingTrack === netflixSecondary.trackKey ||
         state.netflixSecondaryCueRetryTimer !== null
       );
     }
@@ -146,37 +151,25 @@ globalThis.PipCompanion.subtitleRemoteRequests = {
     function reset() {
       state.youtubeTracks = [];
       state.lastYouTubeTrackRequest = 0;
-      state.youtubePrimaryTrackKey = "";
-      state.youtubePrimaryCues = null;
-      state.youtubePrimaryCueLoadedTrack = "";
-      state.youtubePrimaryCuePendingTrack = "";
-      state.youtubePrimaryCueRequestId++;
-      state.lastYouTubePrimaryCueRequest = 0;
-      state.youtubeSecondaryTrackKey = "";
-      state.youtubeSecondaryCues = null;
-      state.youtubeSecondaryCueLoadedTrack = "";
-      state.youtubeSecondaryCuePendingTrack = "";
-      state.youtubeSecondaryCueRequestId++;
-      state.lastYouTubeSecondaryCueRequest = 0;
+      youtubePrimary.reset();
+      youtubeSecondary.reset();
       state.netflixTracks = [];
       state.netflixPrimaryTrackKey = "";
-      state.netflixSecondaryTrackKey = "";
-      state.netflixSecondaryCues = null;
-      state.netflixSecondaryCueLoadedTrack = "";
-      state.netflixSecondaryCuePendingTrack = "";
-      state.netflixSecondaryCueRequestId++;
+      netflixSecondary.reset();
       if (state.netflixSecondaryCueRetryTimer !== null) {
         window.clearTimeout(state.netflixSecondaryCueRetryTimer);
         state.netflixSecondaryCueRetryTimer = null;
       }
       state.netflixSecondaryCueRetryCount = 0;
-      state.lastNetflixSecondaryCueRequest = 0;
       state.lastNetflixTrackRequest = 0;
       state.netflixTrackRequestId++;
     }
 
     return {
       state,
+      youtubePrimary,
+      youtubeSecondary,
+      netflixSecondary,
       requestYouTubeTracks,
       updateYouTubePrimaryTrackKey,
       requestYouTubePrimaryCues,

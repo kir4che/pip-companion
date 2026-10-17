@@ -4,8 +4,13 @@ import test from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
 
-function createDispatcher() {
+function createDispatcher(environment = "background") {
   let runtimeListener;
+  let registrations = 0;
+  const register = (listener) => {
+    runtimeListener = listener;
+    registrations++;
+  };
   const errors = [];
   const danmakuUtils = { exports: {}, URL };
   const danmakuUtilsSource = readFileSync(
@@ -21,9 +26,36 @@ function createDispatcher() {
     }).outputText,
     danmakuUtils,
   );
+  const utilsContext = {
+    URL,
+    console: { error: (...args) => errors.push(args) },
+    navigator: { platform: "Linux" },
+    chrome: {
+      i18n: { getUILanguage: () => "en-US", getMessage: () => "" },
+      runtime: { onMessage: { addListener: register }, getURL: () => "" },
+    },
+    PipCompanion: {
+      locales: {},
+      isValidExtraDanmakuSourceUrl: () => true,
+    },
+  };
+  const utilsSource = readFileSync(
+    new URL("../src/shared/utils.ts", import.meta.url),
+    "utf8",
+  );
+  vm.runInNewContext(
+    ts.transpileModule(utilsSource, {
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2022,
+        module: ts.ModuleKind.None,
+      },
+    }).outputText,
+    utilsContext,
+  );
   const context = {
     URL,
     exports: {},
+    PipCompanion: utilsContext.PipCompanion,
     require: (path) =>
       path.includes("danmaku-utils")
         ? danmakuUtils.exports
@@ -36,11 +68,8 @@ function createDispatcher() {
     console: { error: (...args) => errors.push(args) },
     chrome: {
       runtime: {
-        onMessage: {
-          addListener(listener) {
-            runtimeListener = listener;
-          },
-        },
+        onMessage: { addListener: register },
+        getURL: () => "",
       },
     },
   };
@@ -48,18 +77,23 @@ function createDispatcher() {
     new URL("../src/background/message-dispatcher.ts", import.meta.url),
     "utf8",
   );
-  vm.runInNewContext(
-    ts.transpileModule(source, {
-      compilerOptions: {
-        target: ts.ScriptTarget.ES2022,
-        module: ts.ModuleKind.CommonJS,
-      },
-    }).outputText,
-    context,
-  );
+  if (environment === "background")
+    vm.runInNewContext(
+      ts.transpileModule(source, {
+        compilerOptions: {
+          target: ts.ScriptTarget.ES2022,
+          module: ts.ModuleKind.CommonJS,
+        },
+      }).outputText,
+      context,
+    );
   return {
-    dispatcher: context.exports.runtimeMessageDispatcher,
+    dispatcher:
+      environment === "background"
+        ? context.exports.runtimeMessageDispatcher
+        : utilsContext.PipCompanion.runtimeMessages,
     errors,
+    registrations: () => registrations,
     dispatch: (message, sender = {}) => {
       const responses = [];
       const keepChannelOpen = runtimeListener(message, sender, (response) =>
@@ -68,6 +102,92 @@ function createDispatcher() {
       return { keepChannelOpen, responses };
     },
   };
+}
+
+for (const environment of ["background", "content/popup"]) {
+  test(`${environment}: registers one listener, deduplicates handlers and ignores unknown or unhandled messages`, () => {
+    const { dispatcher, dispatch, registrations } =
+      createDispatcher(environment);
+    const received = [];
+    const handler = (message) => {
+      received.push(message.type);
+    };
+    dispatcher.addListener(["GET_PIP_STATE", "PING"], handler);
+    dispatcher.addListener("GET_PIP_STATE", handler);
+    assert.equal(registrations(), 1);
+    for (const type of ["GET_PIP_STATE", "PING"])
+      assert.equal(dispatch({ type }).keepChannelOpen, false);
+    assert.deepEqual(received, ["GET_PIP_STATE", "PING"]);
+    for (const message of [
+      null,
+      {},
+      { type: "UNKNOWN" },
+      { type: "OPEN_PIP" },
+    ]) {
+      const result = dispatch(message);
+      assert.equal(result.keepChannelOpen, false);
+      assert.equal(result.responses.length, 0);
+    }
+    const invalid = dispatch({ type: "PIP_STATE_CHANGED", pipOpen: "yes" });
+    assert.equal(invalid.keepChannelOpen, false);
+    assert.equal(invalid.responses[0].error, "Invalid message");
+    assert.equal(received.length, 2);
+  });
+
+  test(`${environment}: sends only the first response while running every handler`, async () => {
+    const { dispatcher, dispatch, errors } = createDispatcher(environment);
+    const received = [];
+    dispatcher.addListener("GET_PIP_STATE", (_message, _sender, respond) => {
+      respond({ ok: true });
+      respond({ ok: false });
+    });
+    dispatcher.addListener(
+      "GET_PIP_STATE",
+      async (_message, _sender, respond) => {
+        await Promise.resolve();
+        received.push("async");
+        respond({ late: true });
+        throw new Error("late rejection");
+      },
+    );
+    dispatcher.addListener("GET_PIP_STATE", () => {
+      received.push("sync");
+      throw new Error("late throw");
+    });
+    const result = dispatch({ type: "GET_PIP_STATE" });
+    assert.equal(result.keepChannelOpen, true);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(received, ["sync", "async"]);
+    assert.equal(result.responses.length, 1);
+    assert.equal(result.responses[0].ok, true);
+    assert.equal(errors.length, 2);
+  });
+
+  test(`${environment}: keeps callback and Promise channels open and handles sync/async failures`, async () => {
+    for (const asynchronous of [false, true]) {
+      const { dispatcher, dispatch, errors } = createDispatcher(environment);
+      dispatcher.addListener("GET_PIP_STATE", () => {
+        if (asynchronous) return Promise.reject(new Error("async"));
+        throw new Error("sync");
+      });
+      const result = dispatch({ type: "GET_PIP_STATE" });
+      assert.equal(result.keepChannelOpen, asynchronous);
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(result.responses.length, 1);
+      assert.equal(result.responses[0].ok, false);
+      assert.equal(errors.length, 1);
+    }
+    const { dispatcher, dispatch } = createDispatcher(environment);
+    let callback;
+    dispatcher.addListener("GET_PIP_STATE", (_message, _sender, respond) => {
+      callback = respond;
+      return true;
+    });
+    const result = dispatch({ type: "GET_PIP_STATE" });
+    assert.equal(result.keepChannelOpen, true);
+    callback({ ok: true });
+    assert.equal(result.responses[0].ok, true);
+  });
 }
 
 test("routes only schema-valid messages to handlers registered for their type", () => {

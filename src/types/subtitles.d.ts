@@ -181,29 +181,23 @@ interface SubtitleRenderingApi {
   ): boolean;
 }
 
+interface SubtitleCueRequest {
+  readonly trackKey: string;
+  readonly cues: TimedSubtitleCue[] | null;
+  readonly loadedTrack: string;
+  readonly pendingTrack: string;
+  reset(key?: string, resetThrottle?: boolean): void;
+  request(): void;
+  matches(requestId: unknown, key: unknown): boolean;
+  complete(cues: TimedSubtitleCue[] | null, loaded?: boolean): void;
+  retry(): void;
+}
+
 interface SubtitleRemoteRequestState {
   youtubeTracks: YouTubeSubtitleTrack[];
   lastYouTubeTrackRequest: number;
-  youtubePrimaryTrackKey: string;
-  youtubePrimaryCues: TimedSubtitleCue[] | null;
-  youtubePrimaryCueLoadedTrack: string;
-  youtubePrimaryCuePendingTrack: string;
-  youtubePrimaryCueRequestId: number;
-  lastYouTubePrimaryCueRequest: number;
-  youtubeSecondaryTrackKey: string;
-  youtubeSecondaryCues: TimedSubtitleCue[] | null;
-  youtubeSecondaryCueLoadedTrack: string;
-  youtubeSecondaryCuePendingTrack: string;
-  youtubeSecondaryCueRequestId: number;
-  lastYouTubeSecondaryCueRequest: number;
   netflixTracks: NetflixSubtitleTrack[];
   netflixPrimaryTrackKey: string;
-  netflixSecondaryTrackKey: string;
-  netflixSecondaryCues: TimedSubtitleCue[] | null;
-  netflixSecondaryCueLoadedTrack: string;
-  netflixSecondaryCuePendingTrack: string;
-  netflixSecondaryCueRequestId: number;
-  lastNetflixSecondaryCueRequest: number;
   netflixSecondaryCueRetryTimer: number | null;
   netflixSecondaryCueRetryCount: number;
   lastNetflixTrackRequest: number;
@@ -212,6 +206,9 @@ interface SubtitleRemoteRequestState {
 
 interface SubtitleRemoteRequests {
   readonly state: SubtitleRemoteRequestState;
+  readonly youtubePrimary: SubtitleCueRequest;
+  readonly youtubeSecondary: SubtitleCueRequest;
+  readonly netflixSecondary: SubtitleCueRequest;
   requestYouTubeTracks(): void;
   updateYouTubePrimaryTrackKey(): string;
   requestYouTubePrimaryCues(): void;

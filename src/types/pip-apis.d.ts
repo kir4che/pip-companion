@@ -497,6 +497,7 @@ interface PipCompanionUtil {
   SEEK_SECONDS_OPTIONS: readonly SeekSeconds[];
   normalizeSeekSeconds(value: unknown): SeekSeconds;
   isRecord(value: unknown): value is Record<string, unknown>;
+  isKnownExtensionMessageType(value: unknown): value is string;
   isValidExtraDanmakuSourceUrl(value: string): boolean;
   isExtensionMessage(value: unknown): value is ExtensionMessage;
   normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut;
@@ -862,8 +863,25 @@ interface RuntimeMessageDispatcher {
   ): void;
 }
 
+interface RuntimeMessageDispatcherFactory {
+  (
+    register: (
+      listener: (
+        message: unknown,
+        sender: chrome.runtime.MessageSender,
+        sendResponse: (response?: unknown) => void,
+      ) => boolean | void,
+    ) => void,
+    authorize?: (
+      message: Record<string, unknown>,
+      sender: chrome.runtime.MessageSender,
+    ) => boolean,
+  ): RuntimeMessageDispatcher;
+}
+
 interface PipCompanionGlobal {
   runtimeMessages: RuntimeMessageDispatcher;
+  createRuntimeMessageDispatcher: RuntimeMessageDispatcherFactory;
   locales: Record<"en" | "zh_TW" | "zh_CN", Record<string, LocaleMessage>>;
   localizedMarkup: LocalizedMarkupApi;
   shortcutInput: ShortcutInputApi;
