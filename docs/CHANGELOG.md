@@ -1,3 +1,14 @@
+## 0.5.0
+
+- Added multi-track and bilingual subtitles, with live translation via Microsoft Translator, Google Cloud Translation, or DeepL (bring your own API key)
+- Added extra danmaku sources from Bilibili, Bahamut, Twitch, and YouTube
+- Added Netflix seek-bar thumbnail previews
+- Added a setting to pause playback when PiP closes
+- Added generic episode navigation and improved native subtitle and Video.js overlay detection
+- Improved PiP playback recovery and continuity when websites replace videos, including native PiP for accessible embedded videos
+- Fixed hover previews interrupting PiP video selection and page-level hover blocking video transitions
+- Improved subtitle request recovery, PiP cleanup, and extension messaging reliability
+
 ## 0.5.0-beta.1
 
 - Migrated captions to subtitles with multi-track switching and bilingual display
