@@ -506,6 +506,9 @@
   "pipGestureRequired": {
     "message": "瀏覽器要求在頁面上操作，請關閉選單後按設定的快捷鍵。"
   },
+  "pipExtensionContextInvalidated": {
+    "message": "擴充功能已重新載入，請重新整理此分頁後再試一次。"
+  },
   "pipCannotOpen": {
     "message": "此影片目前無法開啟子母畫面，請稍後再試。"
   },

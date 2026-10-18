@@ -506,6 +506,9 @@
   "pipGestureRequired": {
     "message": "浏览器要求在页面上操作，请关闭菜单后按设置的快捷键。"
   },
+  "pipExtensionContextInvalidated": {
+    "message": "扩展程序已重新加载，请刷新此页面后再试一次。"
+  },
   "pipCannotOpen": {
     "message": "当前无法为此视频开启画中画，请稍后重试。"
   },

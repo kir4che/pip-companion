@@ -19,6 +19,7 @@ let danmakuMediaKey = "";
 const PIP_HANDOFF_RETRY_DELAY_MS = 1500;
 let pipSourceRecoveryStartedAt = 0;
 const PIP_SOURCE_RECOVERY_WAIT_MS = 5000;
+let replacedPipVideos = new WeakSet<HTMLVideoElement>();
 
 let subtitleStyleRevision = 0;
 let secondarySubtitleStyleRevision = 0;
@@ -386,21 +387,44 @@ function scanPage() {
     }
   }
 
-  const found = globalThis.PipCompanion.ContentVideo.findVideo();
+  if (!state.pipWindow) replacedPipVideos = new WeakSet();
+  const detected = globalThis.PipCompanion.ContentVideo.findVideo();
+  // 舊影片可能被放回原容器；只有再次播放時才允許重新接管 PiP。
+  const found =
+    detected && replacedPipVideos.has(detected) && detected.paused
+      ? null
+      : detected;
   const current = state.sourceVideo;
   let video = state.pipWindow && state.videoStash ? current : found;
+  const pipVideoStalled =
+    Boolean(state.pipWindow && state.videoStash && current) &&
+    globalThis.PipCompanion.ContentPipLifecycle.isPipVideoStalled();
   if (state.pipWindow && state.videoStash && current && !current.isConnected) {
     pipSourceRecoveryStartedAt ||= Date.now();
     const container = state.videoStash.parent;
-    // 來源失效只找原容器，不能改接頁面上其他影片。
-    const replacement =
+    // 優先找原容器內的新影片；容器也被重建時才重新偵測主影片。
+    const replacementInContainer =
       container?.isConnected && "querySelectorAll" in container
         ? Array.from(
             (container as ParentNode).querySelectorAll<HTMLVideoElement>(
               "video",
             ),
-          ).find((candidate) => candidate.videoWidth > 0 && !candidate.ended)
+          ).find(
+            (candidate) =>
+              candidate.videoWidth > 0 &&
+              !candidate.ended &&
+              (!replacedPipVideos.has(candidate) || !candidate.paused),
+          )
         : null;
+    const replacement =
+      replacementInContainer ??
+      (container &&
+      !container.isConnected &&
+      found?.ownerDocument === document &&
+      found.videoWidth > 0 &&
+      !found.ended
+        ? found
+        : null);
     if (replacement) {
       video = replacement;
       pipSourceRecoveryStartedAt = 0;
@@ -412,7 +436,29 @@ function scanPage() {
     else video = null;
   } else {
     pipSourceRecoveryStartedAt = 0;
+    const stashParent = state.videoStash?.parent;
+    const sameContainer = Boolean(
+      stashParent?.isConnected && found && stashParent.contains(found),
+    );
+    // 舊影片移到 PiP 後仍是 connected，換片不能只靠元素是否離開 DOM 判斷。
     if (
+      state.pipWindow &&
+      stashParent &&
+      current &&
+      found &&
+      found !== current &&
+      found.ownerDocument === document &&
+      found.videoWidth > 0 &&
+      !found.ended &&
+      (!stashParent.isConnected ||
+        (sameContainer &&
+          (current.paused ||
+            current.ended ||
+            current.readyState < 2 ||
+            pipVideoStalled)))
+    )
+      video = found;
+    else if (
       state.nextVideoRequested &&
       state.pipWindow &&
       state.videoStash &&
@@ -431,10 +477,6 @@ function scanPage() {
       found !== current &&
       !isPointerHoveringVideo(found)
     ) {
-      const stashParent = state.videoStash.parent;
-      const sameContainer = Boolean(
-        stashParent?.isConnected && stashParent.contains(found),
-      );
       if (
         found.videoWidth > 0 &&
         !found.paused &&
@@ -443,6 +485,8 @@ function scanPage() {
       )
         video = found;
     }
+    if (video === current && pipVideoStalled)
+      globalThis.PipCompanion.ContentPipLifecycle.recoverStalledPipVideo();
   }
   if (IS_YOUTUBE) checkAndBindDanmakuChat();
   if (IS_TWITCH || IS_BAHAMUT || isBilibiliLivePage())
@@ -459,9 +503,10 @@ function scanPage() {
     return;
   }
 
-  if (video !== state.sourceVideo)
+  if (video !== state.sourceVideo) {
+    if (state.pipWindow && current) replacedPipVideos.add(current);
     globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
-  else if (
+  } else if (
     state.nextVideoRequested &&
     state.nextPlaybackState &&
     (video.currentSrc || video.src || "") !== state.nextVideoSourceKey

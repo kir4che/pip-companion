@@ -23,6 +23,78 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   let nativePipRequest: Promise<unknown> | null = null;
   let nativePipPlaybackHandler: (() => void) | null = null;
   let nativePipLeaveHandler: (() => void) | null = null;
+  let pipOperationGeneration = 0;
+  let pipFrameVideo: HTMLVideoElement | null = null;
+  let pipFrameCallbackId: number | null = null;
+  let pipLastFrameAt = 0;
+  let pipLastRecoveryAt = 0;
+  const PIP_FRAME_STALL_MS = 2500;
+  const PIP_FRAME_RECOVERY_COOLDOWN_MS = 4000;
+
+  function stopPipFrameTracking() {
+    if (pipFrameVideo && pipFrameCallbackId !== null) {
+      try {
+        pipFrameVideo.cancelVideoFrameCallback(pipFrameCallbackId);
+      } catch {
+        // 影片元素可能已被網站替換
+      }
+    }
+    pipFrameVideo = null;
+    pipFrameCallbackId = null;
+    pipLastFrameAt = 0;
+    pipLastRecoveryAt = 0;
+  }
+
+  function startPipFrameTracking(video: HTMLVideoElement) {
+    stopPipFrameTracking();
+    if (typeof video.requestVideoFrameCallback !== "function") return;
+    pipFrameVideo = video;
+    pipLastFrameAt = performance.now();
+    const onFrame = () => {
+      if (pipFrameVideo !== video) return;
+      pipLastFrameAt = performance.now();
+      try {
+        pipFrameCallbackId = video.requestVideoFrameCallback(onFrame);
+      } catch {
+        pipFrameCallbackId = null;
+      }
+    };
+    try {
+      pipFrameCallbackId = video.requestVideoFrameCallback(onFrame);
+    } catch {
+      stopPipFrameTracking();
+    }
+  }
+
+  function isPipVideoStalled() {
+    const video = pipFrameVideo;
+    return Boolean(
+      video &&
+      !video.paused &&
+      !video.ended &&
+      video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+      performance.now() - pipLastFrameAt >= PIP_FRAME_STALL_MS,
+    );
+  }
+
+  function recoverStalledPipVideo() {
+    if (!isPipVideoStalled()) return false;
+    const video = pipFrameVideo;
+    const now = Date.now();
+    if (!video || now - pipLastRecoveryAt < PIP_FRAME_RECOVERY_COOLDOWN_MS)
+      return false;
+    pipLastRecoveryAt = now;
+    const currentTime = video.currentTime;
+    video.pause();
+    // 暫停後立即還原播放位置，避免延遲完成的播放請求覆蓋使用者跳轉，或在 PiP 關閉、影片放回原頁面後改動播放位置。
+    if (
+      Number.isFinite(currentTime) &&
+      Math.abs(video.currentTime - currentTime) > 0.5
+    )
+      video.currentTime = currentTime;
+    void video.play().catch(() => {});
+    return true;
+  }
 
   function isHahowPage() {
     return globalThis.PipCompanion.site.isHahowHost(location.hostname);
@@ -183,7 +255,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       };
     }
 
-    while (boundsSavePromise) await boundsSavePromise;
+    // 關閉時立即送出最後快照，背景會依序儲存，避免等候期間視窗已消失。
+    if (!force) while (boundsSavePromise) await boundsSavePromise;
     if (!force && boundsDebounceTimer) return;
     const latest = pendingBounds;
     if (!latest || latest.win.closed) return;
@@ -280,7 +353,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         // 置中失敗就留在瀏覽器預設位置，照舊開始追蹤。
       }
     }
-    if (result.ok || result.missing) startPipBoundsTracking(win);
+    if ((result.ok || result.missing) && !win.closed && state.pipWindow === win)
+      startPipBoundsTracking(win);
     return result;
   }
 
@@ -521,6 +595,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     const video = state.sourceVideo;
     if (!stash) return true;
     if (!video) return false;
+    const wasPlaying = !video.paused && !video.ended;
     stash.placeholder?.remove();
     video.controls = stash.controls;
     video.style.cssText = stash.inlineStyle;
@@ -547,6 +622,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       }
     } else video.remove();
     state.videoStash = null;
+    if (wasPlaying && video.paused) void video.play().catch(() => {});
     return true;
   }
 
@@ -571,14 +647,17 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         state.sourceVideo,
         state.pipWindow,
       );
+      startPipFrameTracking(state.pipUi.video);
       if (wasPlaying) void state.pipUi.video.play().catch(() => {});
       return;
     }
+    state.pipUi.setVideo(state.sourceVideo);
     stashSourceVideo();
     state.pipUi.screen.append(state.sourceVideo);
     state.sourceVideo.style.cssText = "";
     globalThis.PipCompanion.ContentSubtitles.prepareNativeSubtitles();
     globalThis.PipCompanion.PipAudio.start(state.sourceVideo, state.pipWindow);
+    startPipFrameTracking(state.sourceVideo);
     if (wasPlaying) void state.sourceVideo.play().catch(() => {});
   }
 
@@ -659,7 +738,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       console.warn("[Subtitle PiP] Could not restore native subtitles:", error);
     }
     const pipVideo = state.pipUi?.video;
-    if (pipVideo) pipVideo.srcObject = null;
+    if (pipVideo && pipVideo !== state.sourceVideo) pipVideo.srcObject = null;
     hahowPipStream?.getTracks().forEach((track) => track.stop());
     hahowPipStream = null;
     return videoRestored;
@@ -816,6 +895,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   }
 
   async function closePiP(closeWindow: boolean): Promise<void> {
+    pipOperationGeneration++;
+    stopPipFrameTracking();
     globalThis.PipCompanion.ContentPlayback.cancelNextVideoRequest();
     if (nativePipVideo) {
       const video = nativePipVideo;
@@ -827,6 +908,10 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       return;
     }
     const session = state.pipSession;
+    if (session.phase === "opening") {
+      state.pipSession = { phase: "closed" };
+      return;
+    }
     const oldWindow =
       session.phase === "waiting" || session.phase === "active"
         ? session.window
@@ -871,14 +956,15 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       console.warn("[Subtitle PiP] Could not reset storyboard:", error);
     }
     if (oldWindow && !oldWindow.closed) {
-      await boundsSave;
-      if (!closeWindow) return;
-      try {
-        if (!oldWindow.closed) oldWindow.close();
-      } catch (error) {
-        console.warn("[Subtitle PiP] Could not close PiP window:", error);
+      if (closeWindow) {
+        try {
+          oldWindow.close();
+        } catch (error) {
+          console.warn("[Subtitle PiP] Could not close PiP window:", error);
+        }
       }
     }
+    await boundsSave;
   }
 
   async function openPiP(): Promise<PipOperationResult> {
@@ -898,6 +984,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     if (nativePipVideo === state.sourceVideo && isNativePipOpen())
       return { ok: true };
     if (nativePipVideo) await closePiP(true);
+    const operationGeneration = ++pipOperationGeneration;
     state.pipSession = { phase: "opening" };
     const openingVideo = state.sourceVideo;
 
@@ -915,6 +1002,15 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         height: cachedPipSize?.height ?? 360,
       });
       const nextWindow = await windowPromise;
+      if (
+        operationGeneration !== pipOperationGeneration ||
+        state.pipSession.phase !== "opening"
+      ) {
+        try {
+          if (!nextWindow.closed) nextWindow.close();
+        } catch {}
+        return { ok: false, message: t("pipOpening") };
+      }
       if (openingVideo && state.sourceVideo !== openingVideo) {
         nextWindow.close();
         throw new Error("source changed");
@@ -932,7 +1028,6 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         { once: true },
       );
 
-      await restorePipBounds(nextWindow);
       if (state.sourceVideo) mountPipVideo(nextWindow, state.sourceVideo);
       else {
         showPipWaiting(nextWindow);
@@ -957,23 +1052,36 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       }
       notifyPipState(true, !state.sourceVideo?.paused);
       notifySourcePlayback(!state.sourceVideo?.paused);
+      void restorePipBounds(nextWindow).catch(() => {});
       return { ok: true };
     } catch (error) {
-      if (state.pipWindow) closePiP(true);
-      else state.pipSession = { phase: "closed" };
+      if (operationGeneration === pipOperationGeneration) {
+        if (state.pipWindow) void closePiP(true);
+        else state.pipSession = { phase: "closed" };
+      }
       const gestureRequired =
         error instanceof DOMException && error.name === "NotAllowedError";
+      const extensionContextInvalidated = /extension context invalidated/i.test(
+        String(error),
+      );
       const sourceChanged =
         error instanceof Error && error.message === "source changed";
       if (!gestureRequired && !sourceChanged)
         console.warn("[Subtitle PiP] Could not open PiP:", error);
       return {
         ok: false,
-        message: gestureRequired ? t("pipGestureRequired") : t("pipCannotOpen"),
+        message: gestureRequired
+          ? t("pipGestureRequired")
+          : extensionContextInvalidated
+            ? t("pipExtensionContextInvalidated")
+            : t("pipCannotOpen"),
         ...(gestureRequired ? { code: "GESTURE_REQUIRED" as const } : {}),
       };
     } finally {
-      if (state.pipSession.phase === "opening")
+      if (
+        operationGeneration === pipOperationGeneration &&
+        state.pipSession.phase === "opening"
+      )
         state.pipSession = { phase: "closed" };
     }
   }
@@ -990,6 +1098,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     bindSourceVideo,
     closePiP,
     isPipOpen,
+    isPipVideoStalled,
+    recoverStalledPipVideo,
     openPiP,
     restorePipBounds,
   };

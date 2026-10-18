@@ -58,6 +58,8 @@ const extraBilibiliSourceStorageKey = (tabId: number) =>
 const pipSubtitlesEnabledStorageKey = (tabId: number) =>
   `pipSubtitlesEnabled:${tabId}`;
 const PIP_WINDOW_ID_STORAGE_KEY = "pipWindowId";
+// 尺寸快照必須在關閉通知清除來源分頁前儲存
+let pipStateUpdate = Promise.resolve();
 
 chrome.tabs.onRemoved.addListener((tabId) => {
   void chrome.storage.session
@@ -253,31 +255,53 @@ runtimeMessageDispatcher.addListener(
     if (message.type === "PIP_STATE_CHANGED") {
       if (typeof message.pipOpen !== "boolean") return false;
       const pipOpen = message.pipOpen;
-      void (async () => {
-        const { pipTabId } = await chrome.storage.session.get("pipTabId");
-        if (pipOpen && sender.tab?.id !== undefined)
-          await chrome.storage.session.set({
-            pipTabId: sender.tab.id,
-            pipSourcePlaying: message.playing !== false,
-            [pipSubtitlesEnabledStorageKey(sender.tab.id)]:
-              message.subtitlesEnabled === true,
-          });
-        else if (!pipOpen && (pipTabId === sender.tab?.id || pipTabId == null))
-          await chrome.storage.session.set({
-            pipTabId: null,
-            pipSourcePlaying: true,
-          });
-        else return;
+      pipStateUpdate = pipStateUpdate
+        .then(async () => {
+          const senderTabId = sender.tab?.id;
+          if (senderTabId !== undefined) {
+            try {
+              const currentState: unknown = await chrome.tabs.sendMessage(
+                senderTabId,
+                { type: "PING" } satisfies ExtensionMessage,
+              );
+              if (
+                isRecord(currentState) &&
+                typeof currentState.pipOpen === "boolean" &&
+                currentState.pipOpen !== pipOpen
+              )
+                return;
+            } catch {
+              // 來源分頁可能正在導覽或關閉，沿用原本的狀態清理流程。
+            }
+          }
+          const { pipTabId } = await chrome.storage.session.get("pipTabId");
+          if (pipOpen && sender.tab?.id !== undefined)
+            await chrome.storage.session.set({
+              pipTabId: sender.tab.id,
+              pipSourcePlaying: message.playing !== false,
+              [pipSubtitlesEnabledStorageKey(sender.tab.id)]:
+                message.subtitlesEnabled === true,
+            });
+          else if (
+            !pipOpen &&
+            (pipTabId === sender.tab?.id || pipTabId == null)
+          )
+            await chrome.storage.session.set({
+              pipTabId: null,
+              pipSourcePlaying: true,
+            });
+          else return;
 
-        if (!pipOpen) {
-          const keys = [PIP_WINDOW_ID_STORAGE_KEY];
-          if (sender.tab?.id !== undefined)
-            keys.push(pipSubtitlesEnabledStorageKey(sender.tab.id));
-          await chrome.storage.session.remove(keys);
-        }
+          if (!pipOpen) {
+            const keys = [PIP_WINDOW_ID_STORAGE_KEY];
+            if (sender.tab?.id !== undefined)
+              keys.push(pipSubtitlesEnabledStorageKey(sender.tab.id));
+            await chrome.storage.session.remove(keys);
+          }
 
-        await broadcastPipState(pipOpen);
-      })();
+          await broadcastPipState(pipOpen);
+        })
+        .catch(() => {});
       return false;
     }
     if (message.type === "GET_PIP_BOUNDS") {
@@ -373,6 +397,18 @@ runtimeMessageDispatcher.addListener(
             sendResponse({ ok: false, pipOpen: true });
             return;
           }
+          try {
+            const currentState: unknown = await chrome.tabs.sendMessage(
+              pipTabId,
+              { type: "PING" } satisfies ExtensionMessage,
+            );
+            if (isRecord(currentState) && currentState.pipOpen === true) {
+              sendResponse({ ok: true, pipOpen: true });
+              return;
+            }
+          } catch {
+            // 關閉完成後來源分頁可能已導覽或關閉。
+          }
           await chrome.storage.session.set({ pipTabId: null });
           await chrome.storage.session.remove(PIP_WINDOW_ID_STORAGE_KEY);
           await broadcastPipState(false);
@@ -412,7 +448,7 @@ runtimeMessageDispatcher.addListener(
         return false;
       }
 
-      void (async () => {
+      const updateBounds = async () => {
         try {
           let pipBounds: unknown;
           if (message.type === "RESTORE_PIP_BOUNDS") {
@@ -423,8 +459,14 @@ runtimeMessageDispatcher.addListener(
             }
           }
 
-          const pipWindow = await findPipWindow(innerWidth, sourceWindowId);
-          if (pipWindow?.id === undefined) {
+          const pipWindow =
+            message.type === "SAVE_PIP_BOUNDS"
+              ? null
+              : await findPipWindow(innerWidth, sourceWindowId);
+          if (
+            message.type !== "SAVE_PIP_BOUNDS" &&
+            pipWindow?.id === undefined
+          ) {
             sendResponse({ ok: false });
             return;
           }
@@ -476,6 +518,7 @@ runtimeMessageDispatcher.addListener(
             sendResponse({ ok: false });
             return;
           }
+          if (pipWindow?.id === undefined) return;
           await chrome.windows.update(pipWindow.id, {
             left: Math.round(pipBounds.left),
             top: Math.round(pipBounds.top),
@@ -486,7 +529,10 @@ runtimeMessageDispatcher.addListener(
         } catch {
           sendResponse({ ok: false });
         }
-      })();
+      };
+      if (message.type === "SAVE_PIP_BOUNDS")
+        pipStateUpdate = pipStateUpdate.then(updateBounds).catch(() => {});
+      else void updateBounds();
       return true;
     }
     if (message.type !== "RESIZE_PIP_WINDOW") return false;

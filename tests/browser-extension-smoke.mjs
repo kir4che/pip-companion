@@ -19,6 +19,7 @@ import { chromium } from "playwright";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const chromeExecutable = process.env.CHROME_PATH || chromium.executablePath();
+const smokeVideo = readFileSync(join(root, "tests/fixtures/pip-smoke.webm"));
 
 function referencedManifestFiles(manifest) {
   return [
@@ -42,19 +43,11 @@ function fixtureHtml() {
 <body><main id="route" data-route="initial"><video id="source-video" controls></video><div id="subtitle-caption" style="position:absolute;bottom:20px;left:30px;width:400px">Smoke caption</div></main>
 <script>
   const video = document.querySelector("#source-video");
-  const canvas = document.createElement("canvas");
-  canvas.width = 640;
-  canvas.height = 360;
-  const context = canvas.getContext("2d");
-  function draw() {
-    context.fillStyle = "#162033";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    context.fillStyle = "#fff";
-    context.fillRect((Date.now() / 20) % 600, 150, 40, 40);
-    requestAnimationFrame(draw);
-  }
-  draw();
-  video.srcObject = canvas.captureStream(20);
+  video.src = "/pip-smoke.webm";
+  video.loop = true;
+  video.muted = true;
+  video.playsInline = true;
+  video.autoplay = true;
   video.play().catch(() => {});
   window.navigateSmokeRoute = () => {
     history.pushState({}, "", "/spa/next");
@@ -141,7 +134,16 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
   };
   writeFileSync(manifestPath, `${JSON.stringify(testManifest, null, 2)}\n`);
 
-  const server = createServer((_request, response) => {
+  const server = createServer((request, response) => {
+    if (request.url === "/pip-smoke.webm") {
+      response.writeHead(200, {
+        "content-type": "video/webm",
+        "content-length": smokeVideo.byteLength,
+        "cache-control": "no-store",
+      });
+      response.end(smokeVideo);
+      return;
+    }
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     response.end(fixtureHtml());
   });
@@ -182,7 +184,7 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
   await fixturePage.goto(fixtureUrl);
   await fixturePage.waitForFunction(() => {
     const video = document.querySelector("video");
-    return video?.srcObject && video.readyState >= 2;
+    return video?.readyState >= 2 && video.currentTime > 0;
   });
   const pipSupport = await fixturePage.evaluate(() => ({
     available: Boolean(window.documentPictureInPicture),
@@ -298,7 +300,13 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
     });
   await fixturePage
     .waitForFunction(
-      () => Boolean(window.documentPictureInPicture?.window),
+      () => {
+        const video =
+          window.documentPictureInPicture?.window?.document.querySelector(
+            "video",
+          );
+        return video?.readyState >= 2 && video.currentTime > 0;
+      },
       undefined,
       {
         timeout: 5000,
@@ -395,6 +403,167 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
     "SPA navigation must not register duplicate observers, intervals or runtime listeners",
   );
 
+  const rapidCycle = await popupPage.evaluate(
+    async ({ tabUrl }) => {
+      const [tab] = await chrome.tabs.query({ url: tabUrl });
+      if (tab?.id === undefined) throw new Error("fixture tab not found");
+      const closing = chrome.runtime.sendMessage({ type: "CLOSE_ALL_PIP" });
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      const openStarted = performance.now();
+      const opening = chrome.tabs.sendMessage(tab.id, { type: "OPEN_PIP" });
+      const [closeResult, openResult] = await Promise.all([closing, opening]);
+      return {
+        closeResult,
+        openResult,
+        openElapsed: performance.now() - openStarted,
+      };
+    },
+    { tabUrl: fixtureUrl },
+  );
+  assert.equal(rapidCycle.closeResult?.ok, true);
+  assert.equal(rapidCycle.openResult?.ok, true);
+  assert.ok(
+    rapidCycle.openElapsed < 1000,
+    `PiP open response took ${rapidCycle.openElapsed.toFixed(0)}ms`,
+  );
+  await popupPage.waitForFunction(
+    () =>
+      chrome.runtime
+        .sendMessage({ type: "GET_PIP_STATE" })
+        .then((state) => state?.pipOpen === true),
+    undefined,
+    { timeout: 15000 },
+  );
+  await fixturePage.waitForFunction(
+    () => {
+      const video =
+        window.documentPictureInPicture?.window?.document.querySelector(
+          "video",
+        );
+      return video?.readyState >= 2 && video.currentTime > 0;
+    },
+    undefined,
+    { timeout: 5000 },
+  );
+  assert.equal(
+    await fixturePage.evaluate(() =>
+      Boolean(
+        window.documentPictureInPicture?.window?.document.querySelector(
+          "#source-video",
+        )?.currentTime > 0,
+      ),
+    ),
+    true,
+  );
+
+  await fixturePage.bringToFront();
+  await fixturePage.mouse.move(10, 10);
+  for (const replaceContainer of [false, true]) {
+    await fixturePage.evaluate(async (replaceContainer) => {
+      const pipWindow = window.documentPictureInPicture.window;
+      window.__replacementPipWindow = pipWindow;
+      const previous = pipWindow.document.querySelector("#source-video");
+      previous.pause();
+      previous.id = "previous-video";
+      let player = document.querySelector("#route");
+      if (replaceContainer) {
+        const replacementPlayer = document.createElement("main");
+        replacementPlayer.id = "route";
+        player.replaceWith(replacementPlayer);
+        player = replacementPlayer;
+      }
+      const replacement = document.createElement("video");
+      replacement.id = "source-video";
+      replacement.src = "/pip-smoke.webm";
+      replacement.loop = true;
+      replacement.muted = true;
+      replacement.playsInline = true;
+      player.append(replacement);
+      await replacement.play();
+    }, replaceContainer);
+
+    await fixturePage.waitForFunction(() => {
+      const pipWindow = window.documentPictureInPicture.window;
+      const video = pipWindow?.document.querySelector("#source-video");
+      return (
+        pipWindow === window.__replacementPipWindow &&
+        video?.readyState >= 2 &&
+        !video.paused &&
+        video.currentTime > 0 &&
+        !pipWindow.document.querySelector("#previous-video")
+      );
+    });
+
+    const renderedFrames = await fixturePage.evaluate(
+      () =>
+        new Promise((resolve, reject) => {
+          const video =
+            window.documentPictureInPicture.window.document.querySelector(
+              "#source-video",
+            );
+          const timeout = window.setTimeout(
+            () =>
+              reject(new Error("replacement video produced no new PiP frames")),
+            5000,
+          );
+          video.requestVideoFrameCallback((_now, first) => {
+            video.requestVideoFrameCallback((_next, second) => {
+              window.clearTimeout(timeout);
+              resolve(second.presentedFrames > first.presentedFrames);
+            });
+          });
+        }),
+    );
+    assert.equal(renderedFrames, true);
+    const hasVisiblePixels = await fixturePage.evaluate(() => {
+      const video =
+        window.documentPictureInPicture.window.document.querySelector(
+          "#source-video",
+        );
+      const canvas = document.createElement("canvas");
+      canvas.width = 32;
+      canvas.height = 18;
+      const context = canvas.getContext("2d");
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      return data.some((channel, index) => index % 4 !== 3 && channel > 50);
+    });
+    assert.equal(
+      hasVisiblePixels,
+      true,
+      "replacement PiP video must not be black",
+    );
+
+    await fixturePage.evaluate(() => {
+      const pipWindow = window.documentPictureInPicture.window;
+      window.__pausedReplacement =
+        pipWindow.document.querySelector("#source-video");
+      window.__pausedReplacement.pause();
+    });
+    await delay(2300);
+    assert.equal(
+      await fixturePage.evaluate(() => {
+        const video =
+          window.documentPictureInPicture.window.document.querySelector(
+            "video",
+          );
+        return video === window.__pausedReplacement && video.paused;
+      }),
+      true,
+      "pausing after replacement must retain the replacement video in PiP",
+    );
+    await fixturePage.evaluate(() => window.__pausedReplacement.play());
+  }
+
+  const beforeClose = await fixturePage.evaluate(() => {
+    const video =
+      window.documentPictureInPicture?.window?.document.querySelector(
+        "#source-video",
+      );
+    return { currentTime: video?.currentTime ?? 0, paused: video?.paused };
+  });
+  assert.equal(beforeClose.paused, false);
+
   await popupPage.locator("#open-pip").click();
   await popupPage.waitForFunction(
     () =>
@@ -407,6 +576,33 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
   await fixturePage.waitForFunction(
     () => !window.documentPictureInPicture?.window,
   );
+  await fixturePage
+    .waitForFunction(
+      () => {
+        const video = document.querySelector("#source-video");
+        return (
+          video?.paused === false &&
+          video.readyState >= 2 &&
+          video.currentTime > 0
+        );
+      },
+      undefined,
+      { timeout: 5000 },
+    )
+    .catch(async (error) => {
+      const state = await fixturePage.evaluate(() => {
+        const video = document.querySelector("#source-video");
+        return {
+          paused: video?.paused,
+          time: video?.currentTime,
+          readyState: video?.readyState,
+          parent: video?.parentElement.id,
+        };
+      });
+      throw new Error(
+        `replacement restore failed: ${JSON.stringify(state)}: ${error.message}`,
+      );
+    });
   assert.equal(
     await fixturePage
       .locator("#source-video")

@@ -158,6 +158,7 @@ interface PipUiActions {
 
 interface PipUiHandle {
   readonly video: HTMLVideoElement;
+  setVideo(video: HTMLVideoElement): void;
   readonly screen: HTMLElement;
   readonly subtitle: HTMLElement;
   readonly feedback: HTMLElement;
@@ -648,6 +649,8 @@ interface ContentPipLifecycleApi {
   bindSourceVideo(video: HTMLVideoElement): void;
   closePiP(closeWindow: boolean): Promise<void>;
   isPipOpen(): boolean;
+  isPipVideoStalled(): boolean;
+  recoverStalledPipVideo(): boolean;
   openPiP(): Promise<PipOperationResult>;
   restorePipBounds(): Promise<{ ok?: boolean; missing?: boolean }>;
 }

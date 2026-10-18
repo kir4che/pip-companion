@@ -733,7 +733,12 @@ globalThis.PipCompanion.PipUI = (() => {
     };
 
     const ui = {
-      video,
+      get video() {
+        return video;
+      },
+      setVideo(nextVideo: HTMLVideoElement) {
+        video = nextVideo;
+      },
       screen,
       subtitle,
       feedback,

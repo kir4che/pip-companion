@@ -506,6 +506,9 @@
   "pipGestureRequired": {
     "message": "The browser requires an action on the page. Close the menu and press the shortcut you configured."
   },
+  "pipExtensionContextInvalidated": {
+    "message": "The extension was reloaded. Reload this page, then try PiP again."
+  },
   "pipCannotOpen": {
     "message": "PiP cannot be opened for this video right now. Please try again later."
   },

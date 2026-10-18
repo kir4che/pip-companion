@@ -35,6 +35,11 @@ function showStatus(message: string, error = false) {
   statusEl.dataset.error = String(error);
 }
 
+function isExtensionContextInvalidated(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /extension context invalidated/i.test(message);
+}
+
 const openOptionsButton = document.querySelector(
   "#open-options-page",
 ) as HTMLButtonElement | null;
@@ -286,7 +291,7 @@ openButton.addEventListener("click", async () => {
         showStatus(t("popupCannotClosePip"), true);
         return;
       }
-      setPipOpen(false);
+      setPipOpen(result.pipOpen === true);
       showStatus("");
       return;
     }
@@ -338,7 +343,7 @@ openButton.addEventListener("click", async () => {
         showStatus(t("popupCannotClosePip"), true);
         return;
       }
-      setPipOpen(false);
+      setPipOpen(result.pipOpen === true);
       showStatus("");
       return;
     }
@@ -349,8 +354,13 @@ openButton.addEventListener("click", async () => {
       result = await chrome.tabs.sendMessage(tab.id, {
         type: "OPEN_PIP",
       } satisfies ExtensionMessage);
-    } catch {
-      result = null;
+    } catch (error) {
+      result = {
+        ok: false,
+        message: isExtensionContextInvalidated(error)
+          ? t("pipExtensionContextInvalidated")
+          : t("popupCannotOpenPip"),
+      };
     }
 
     if (result && !result.ok && result.code === "GESTURE_REQUIRED") {
@@ -368,8 +378,13 @@ openButton.addEventListener("click", async () => {
     setPipOpen(true);
     showStatus("");
     window.close();
-  } catch {
-    showStatus(t("popupCannotOperatePip"), true);
+  } catch (error) {
+    showStatus(
+      isExtensionContextInvalidated(error)
+        ? t("pipExtensionContextInvalidated")
+        : t("popupCannotOperatePip"),
+      true,
+    );
   } finally {
     openButton.disabled = false;
   }
