@@ -524,7 +524,10 @@ interface ContentPlatformApi {
 
 interface ContentVideoApi {
   getDocumentPip(): Window["documentPictureInPicture"];
-  findVideo(includeDeep?: boolean): HTMLVideoElement | null;
+  findVideo(
+    includeDeep?: boolean,
+    forceDeep?: boolean,
+  ): HTMLVideoElement | null;
 }
 
 interface SubtitleTranslationRuntime {
@@ -648,6 +651,12 @@ interface ContentScreenshotApi {
 interface ContentPipLifecycleApi {
   bindSourceVideo(video: HTMLVideoElement): void;
   closePiP(closeWindow: boolean): Promise<void>;
+  getActivePipSource(): {
+    video: HTMLVideoElement;
+    ownerDocument: Document;
+    parent: Node | null;
+  } | null;
+  handoffNativePipVideo(video: HTMLVideoElement): Promise<void>;
   isPipOpen(): boolean;
   isPipVideoStalled(): boolean;
   recoverStalledPipVideo(): boolean;

@@ -23,6 +23,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   let nativePipRequest: Promise<unknown> | null = null;
   let nativePipPlaybackHandler: (() => void) | null = null;
   let nativePipLeaveHandler: (() => void) | null = null;
+  let nativePipHandoff: Promise<void> | null = null;
   let pipOperationGeneration = 0;
   let pipFrameVideo: HTMLVideoElement | null = null;
   let pipFrameCallbackId: number | null = null;
@@ -169,7 +170,27 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     nativePipVideo = null;
     nativePipPlaybackHandler = null;
     nativePipLeaveHandler = null;
+    if (
+      state.pipSession.phase === "active" &&
+      "mode" in state.pipSession &&
+      state.pipSession.mode === "native" &&
+      state.pipSession.video === video
+    )
+      state.pipSession = { phase: "closed" };
     if (notify) notifyPipState(false);
+  }
+
+  function detachNativePip(video: HTMLVideoElement) {
+    if (nativePipVideo !== video) return;
+    if (nativePipPlaybackHandler) {
+      video.removeEventListener("play", nativePipPlaybackHandler);
+      video.removeEventListener("pause", nativePipPlaybackHandler);
+    }
+    if (nativePipLeaveHandler)
+      video.removeEventListener("leavepictureinpicture", nativePipLeaveHandler);
+    nativePipVideo = null;
+    nativePipPlaybackHandler = null;
+    nativePipLeaveHandler = null;
   }
 
   async function openNativePip(video: HTMLVideoElement) {
@@ -198,13 +219,53 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       request = video.requestPictureInPicture();
       nativePipRequest = request;
       await request;
-      if (nativePipVideo === video) notifyPipState(true, !video.paused);
+      if (nativePipVideo === video) {
+        state.pipSession = {
+          phase: "active",
+          mode: "native",
+          video,
+          ownerDocument: video.ownerDocument,
+          parent: video.parentNode,
+        };
+        notifyPipState(true, !video.paused);
+      }
     } catch (error) {
       clearNativePip(video, false);
       throw error;
     } finally {
       if (nativePipRequest === request) nativePipRequest = null;
     }
+  }
+
+  async function handoffNativePip(video: HTMLVideoElement) {
+    const oldVideo = nativePipVideo;
+    if (!oldVideo || oldVideo === video || !isNativePipOpen()) return;
+    if (oldVideo.ownerDocument !== video.ownerDocument) return;
+
+    const generation = ++pipOperationGeneration;
+    state.pipSession = { phase: "opening" };
+    detachNativePip(oldVideo);
+    try {
+      if (oldVideo.ownerDocument.pictureInPictureElement === oldVideo)
+        await oldVideo.ownerDocument.exitPictureInPicture();
+      if (generation !== pipOperationGeneration) return;
+      await openNativePip(video);
+    } catch (error) {
+      if (generation !== pipOperationGeneration) return;
+      state.pipSession = { phase: "closed" };
+      notifyPipState(false);
+      console.warn("[Subtitle PiP] Could not hand off native PiP:", error);
+    }
+  }
+
+  function handoffNativePipVideo(video: HTMLVideoElement) {
+    const queued = (nativePipHandoff ?? Promise.resolve())
+      .then(() => handoffNativePip(video))
+      .finally(() => {
+        if (nativePipHandoff === queued) nativePipHandoff = null;
+      });
+    nativePipHandoff = queued;
+    return nativePipHandoff;
   }
 
   function observePipBounds(win: Window) {
@@ -754,6 +815,12 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   }
 
   function bindSourceVideo(video: HTMLVideoElement) {
+    const previousNativeVideo =
+      state.pipSession.phase === "active" &&
+      "mode" in state.pipSession &&
+      state.pipSession.mode === "native"
+        ? state.pipSession.video
+        : null;
     if (state.sourceVideo !== video)
       globalThis.PipCompanion.ContentStoryboard.reset();
     if (state.pipWindow && state.videoStash) restoreSourceVideo();
@@ -895,6 +962,9 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         video,
       );
     }
+    if (previousNativeVideo && previousNativeVideo !== video) {
+      void handoffNativePipVideo(video);
+    }
     state.nextVideoRequested = false;
   }
 
@@ -918,7 +988,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       return;
     }
     const oldWindow =
-      session.phase === "waiting" || session.phase === "active"
+      session.phase === "waiting" ||
+      (session.phase === "active" && "window" in session)
         ? session.window
         : null;
     if (session.phase === "waiting" && session.waitTimer !== null)
@@ -998,7 +1069,6 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     try {
       if (openingVideo && openingVideo.ownerDocument !== document) {
         await openNativePip(openingVideo);
-        state.pipSession = { phase: "closed" };
         return { ok: true };
       }
       const documentPip = globalThis.PipCompanion.ContentVideo.getDocumentPip();
@@ -1101,9 +1171,25 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     );
   }
 
+  function getActivePipSource() {
+    const session = state.pipSession;
+    if (
+      session.phase !== "active" ||
+      !("mode" in session && session.mode === "native")
+    )
+      return null;
+    return {
+      video: session.video,
+      ownerDocument: session.ownerDocument,
+      parent: session.parent,
+    };
+  }
+
   return {
     bindSourceVideo,
     closePiP,
+    getActivePipSource,
+    handoffNativePipVideo,
     isPipOpen,
     isPipVideoStalled,
     recoverStalledPipVideo,

@@ -461,7 +461,7 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
   );
 
   await fixturePage.bringToFront();
-  await fixturePage.mouse.move(10, 10);
+  await fixturePage.mouse.move(1000, 700);
   for (const replaceContainer of [false, true]) {
     await fixturePage.evaluate(async (replaceContainer) => {
       const pipWindow = window.documentPictureInPicture.window;

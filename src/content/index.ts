@@ -7,11 +7,34 @@ function isBilibiliLivePage() {
 function isPointerHoveringVideo(video: HTMLVideoElement): boolean {
   for (
     let element: Element | null = video;
-    element;
+    element &&
+    element !== video.ownerDocument.body &&
+    element !== video.ownerDocument.documentElement;
     element = element.parentElement
   )
     if (element.matches(":hover")) return true;
   return false;
+}
+
+function findReplacementVideo(
+  container: Node | null,
+  current: HTMLVideoElement | null,
+): HTMLVideoElement | null {
+  if (!container || !("querySelectorAll" in container)) return null;
+  return (
+    Array.from(
+      (container as ParentNode).querySelectorAll<HTMLVideoElement>("video"),
+    )
+      .filter(
+        (candidate) =>
+          candidate !== current &&
+          candidate.videoWidth > 0 &&
+          !candidate.ended &&
+          !isPointerHoveringVideo(candidate),
+      )
+      .sort((left, right) => Number(left.paused) - Number(right.paused))[0] ??
+    null
+  );
 }
 
 let pipHandoffRetryAfter = 0;
@@ -392,21 +415,39 @@ function scanPage() {
     }
   }
 
-  if (!state.pipWindow) replacedPipVideos = new WeakSet();
-  const detected = globalThis.PipCompanion.ContentVideo.findVideo();
+  const pipLifecycle = globalThis.PipCompanion.ContentPipLifecycle;
+  const nativePipSource = pipLifecycle.getActivePipSource();
+  const pipActive = pipLifecycle.isPipOpen();
+  const sourceDocument = nativePipSource?.ownerDocument ?? document;
+  if (!pipActive) replacedPipVideos = new WeakSet();
+  const nativeSourceDisconnected = Boolean(
+    nativePipSource && !nativePipSource.video.isConnected,
+  );
+  const current = state.sourceVideo;
+  const nativeContainerReplacement = nativePipSource
+    ? findReplacementVideo(nativePipSource.parent, current)
+    : null;
+  const detected = globalThis.PipCompanion.ContentVideo.findVideo(
+    true,
+    nativeSourceDisconnected,
+  );
+  const candidate = nativeContainerReplacement ?? detected;
   // 舊影片可能被放回原容器；只有再次播放時才允許重新接管 PiP。
   const found =
-    detected && replacedPipVideos.has(detected) && detected.paused
+    candidate &&
+    nativePipSource &&
+    candidate.ownerDocument !== nativePipSource.ownerDocument
       ? null
-      : detected;
-  const current = state.sourceVideo;
-  let video = state.pipWindow && state.videoStash ? current : found;
+      : candidate && replacedPipVideos.has(candidate) && candidate.paused
+        ? null
+        : candidate;
+  let video = pipActive && current ? current : found;
   const pipVideoStalled =
     Boolean(state.pipWindow && state.videoStash && current) &&
     globalThis.PipCompanion.ContentPipLifecycle.isPipVideoStalled();
-  if (state.pipWindow && state.videoStash && current && !current.isConnected) {
+  if (pipActive && current && !current.isConnected) {
     pipSourceRecoveryStartedAt ||= Date.now();
-    const container = state.videoStash.parent;
+    const container = nativePipSource?.parent ?? state.videoStash?.parent;
     // 優先找原容器內的新影片；容器也被重建時才重新偵測主影片。
     const replacementInContainer =
       container?.isConnected && "querySelectorAll" in container
@@ -418,14 +459,15 @@ function scanPage() {
             (candidate) =>
               candidate.videoWidth > 0 &&
               !candidate.ended &&
-              (!replacedPipVideos.has(candidate) || !candidate.paused),
+              (!replacedPipVideos.has(candidate) || !candidate.paused) &&
+              !isPointerHoveringVideo(candidate),
           )
         : null;
     const replacement =
       replacementInContainer ??
       (container &&
       !container.isConnected &&
-      found?.ownerDocument === document &&
+      found?.ownerDocument === sourceDocument &&
       found.videoWidth > 0 &&
       !found.ended
         ? found
@@ -441,21 +483,22 @@ function scanPage() {
     else video = null;
   } else {
     pipSourceRecoveryStartedAt = 0;
-    const stashParent = state.videoStash?.parent;
+    const sourceParent = nativePipSource?.parent ?? state.videoStash?.parent;
     const sameContainer = Boolean(
-      stashParent?.isConnected && found && stashParent.contains(found),
+      sourceParent?.isConnected && found && sourceParent.contains(found),
     );
     // 舊影片移到 PiP 後仍是 connected，換片不能只靠元素是否離開 DOM 判斷。
     if (
-      state.pipWindow &&
-      stashParent &&
+      pipActive &&
+      sourceParent &&
       current &&
       found &&
       found !== current &&
-      found.ownerDocument === document &&
+      found.ownerDocument === sourceDocument &&
       found.videoWidth > 0 &&
       !found.ended &&
-      (!stashParent.isConnected ||
+      !isPointerHoveringVideo(found) &&
+      (!sourceParent.isConnected ||
         (sameContainer &&
           (current.paused ||
             current.ended ||
@@ -465,8 +508,7 @@ function scanPage() {
       video = found;
     else if (
       state.nextVideoRequested &&
-      state.pipWindow &&
-      state.videoStash &&
+      pipActive &&
       found &&
       found !== current &&
       !isPointerHoveringVideo(found) &&
@@ -476,8 +518,7 @@ function scanPage() {
       video = found; // 下一集換片才跟著切，避免誤綁廣告或預覽。
     else if (
       state.followPlaybackPip &&
-      state.pipWindow &&
-      state.videoStash &&
+      pipActive &&
       found &&
       found !== current &&
       !isPointerHoveringVideo(found)
@@ -509,7 +550,7 @@ function scanPage() {
   }
 
   if (video !== state.sourceVideo) {
-    if (state.pipWindow && current) replacedPipVideos.add(current);
+    if (pipActive && current) replacedPipVideos.add(current);
     globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
   } else if (
     state.nextVideoRequested &&
@@ -537,7 +578,11 @@ function scheduleScan() {
   state.scanTimer = window.setTimeout(
     () => {
       try {
-        if (!document.hidden || state.pipWindow) scanPage();
+        if (
+          !document.hidden ||
+          globalThis.PipCompanion.ContentPipLifecycle.isPipOpen()
+        )
+          scanPage();
       } finally {
         scheduleScan();
       }
@@ -551,7 +596,11 @@ function scheduleScan() {
 }
 
 function nudgeScan() {
-  if (document.hidden && !state.pipWindow) return;
+  if (
+    document.hidden &&
+    !globalThis.PipCompanion.ContentPipLifecycle.isPipOpen()
+  )
+    return;
   try {
     scanPage();
   } finally {

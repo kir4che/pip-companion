@@ -89,7 +89,10 @@ globalThis.PipCompanion.ContentVideo = (() => {
 
   const DEEP_SCAN_MS = 5000;
 
-  function findVideo(includeDeep = true): HTMLVideoElement | null {
+  function findVideo(
+    includeDeep = true,
+    forceDeep = false,
+  ): HTMLVideoElement | null {
     for (const selector of PREFERRED_SELECTORS) {
       const preferred = pickBestVideo(
         document.querySelectorAll<HTMLVideoElement>(selector),
@@ -102,12 +105,13 @@ globalThis.PipCompanion.ContentVideo = (() => {
     if (light) return light;
 
     if (
+      !forceDeep &&
       state.deepVideoCache?.isConnected &&
       scoreVideo(state.deepVideoCache) > 0
     )
       return state.deepVideoCache;
     if (!includeDeep) return null;
-    if (Date.now() - state.lastDeepScan < DEEP_SCAN_MS)
+    if (!forceDeep && Date.now() - state.lastDeepScan < DEEP_SCAN_MS)
       return state.deepVideoCache;
     state.lastDeepScan = Date.now();
     const collected: HTMLVideoElement[] = [];

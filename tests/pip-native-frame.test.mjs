@@ -116,6 +116,37 @@ for (const pauseOnPipClose of [true, false]) {
     assert.equal(video.paused, pauseOnPipClose);
     assert.equal(lifecycle.isPipOpen(), false);
 
+    video.paused = false;
+    assert.equal((await lifecycle.openPiP()).ok, true);
+    const replacement = {
+      ownerDocument: iframeDocument,
+      parentNode: parent,
+      paused: false,
+      pause() {
+        this.paused = true;
+      },
+      addEventListener(type, handler) {
+        const listeners = handlers.get(type) ?? [];
+        listeners.push(handler);
+        handlers.set(type, listeners);
+      },
+      removeEventListener(type, handler) {
+        handlers.set(
+          type,
+          (handlers.get(type) ?? []).filter((listener) => listener !== handler),
+        );
+      },
+      async requestPictureInPicture() {
+        iframeDocument.pictureInPictureElement = this;
+      },
+    };
+    await lifecycle.handoffNativePipVideo(replacement);
+    assert.equal(iframeDocument.pictureInPictureElement, replacement);
+    assert.equal(lifecycle.getActivePipSource().video, replacement);
+    assert.equal(video.paused, false);
+    await lifecycle.closePiP(true);
+    assert.equal(replacement.paused, pauseOnPipClose);
+
     let resolvePiPRequest;
     video.requestPictureInPicture = () =>
       new Promise((resolve) => {

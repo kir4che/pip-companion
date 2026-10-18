@@ -38,13 +38,14 @@ const state: State = {
   pipSession: { phase: "closed" },
   get pipWindow() {
     const session = this.pipSession;
-    return session.phase === "waiting" || session.phase === "active"
+    return session.phase === "waiting" ||
+      (session.phase === "active" && "window" in session)
       ? session.window
       : null;
   },
   get pipUi() {
     const session = this.pipSession;
-    return session.phase === "active" ? session.ui : null;
+    return session.phase === "active" && "ui" in session ? session.ui : null;
   },
   globalPipOpen: false,
   globalPipSourcePlaying: true,

@@ -19,7 +19,14 @@ type PipSession =
   | { phase: "closed" } // 沒有 PiP 視窗
   | { phase: "opening" } // 等待瀏覽器建立視窗
   | { phase: "waiting"; window: Window; waitTimer: number | null } // 等待影片
-  | { phase: "active"; window: Window; ui: PipUiHandle }; // 影片已掛載
+  | { phase: "active"; window: Window; ui: PipUiHandle } // 影片已掛載
+  | {
+      phase: "active";
+      mode: "native";
+      video: HTMLVideoElement;
+      ownerDocument: Document;
+      parent: Node | null;
+    }; // iframe 原生 PiP
 
 interface State {
   // 快捷鍵與功能開關
