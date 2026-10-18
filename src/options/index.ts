@@ -148,6 +148,9 @@ const screenshotToggle = document.querySelector(
 const followPlaybackPipToggle = document.querySelector(
   "#follow-playback-pip-toggle",
 ) as HTMLInputElement;
+const pauseOnPipCloseToggle = document.querySelector(
+  "#pause-on-pip-close-toggle",
+) as HTMLInputElement;
 const thumbnailPreviewToggle = document.querySelector(
   "#thumbnail-preview-toggle",
 ) as HTMLInputElement;
@@ -159,6 +162,7 @@ async function saveToggle(
     | "commentsEnabled"
     | "screenshotEnabled"
     | "followPlaybackPip"
+    | "pauseOnPipClose"
     | "thumbnailPreviewEnabled",
 ) {
   try {
@@ -181,24 +185,28 @@ async function loadToggles() {
       commentsEnabled: true,
       screenshotEnabled: true,
       followPlaybackPip: false,
+      pauseOnPipClose: true,
       thumbnailPreviewEnabled: true,
     });
     danmakuToggle.checked = stored.danmakuEnabled !== false;
     commentsToggle.checked = stored.commentsEnabled !== false;
     screenshotToggle.checked = stored.screenshotEnabled !== false;
     followPlaybackPipToggle.checked = stored.followPlaybackPip === true;
+    pauseOnPipCloseToggle.checked = stored.pauseOnPipClose !== false;
     thumbnailPreviewToggle.checked = stored.thumbnailPreviewEnabled !== false;
   } catch {
     danmakuToggle.checked = true;
     commentsToggle.checked = true;
     screenshotToggle.checked = true;
     followPlaybackPipToggle.checked = false;
+    pauseOnPipCloseToggle.checked = true;
     thumbnailPreviewToggle.checked = true;
   } finally {
     danmakuToggle.disabled = false;
     commentsToggle.disabled = false;
     screenshotToggle.disabled = false;
     followPlaybackPipToggle.disabled = false;
+    pauseOnPipCloseToggle.disabled = false;
     thumbnailPreviewToggle.disabled = false;
   }
 }
@@ -214,6 +222,9 @@ screenshotToggle.addEventListener("change", () => {
 });
 followPlaybackPipToggle.addEventListener("change", () => {
   void saveToggle(followPlaybackPipToggle, "followPlaybackPip");
+});
+pauseOnPipCloseToggle.addEventListener("change", () => {
+  void saveToggle(pauseOnPipCloseToggle, "pauseOnPipClose");
 });
 thumbnailPreviewToggle.addEventListener("change", () => {
   void saveToggle(thumbnailPreviewToggle, "thumbnailPreviewEnabled");
@@ -254,6 +265,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (changes.followPlaybackPip)
     followPlaybackPipToggle.checked =
       changes.followPlaybackPip.newValue === true;
+  if (changes.pauseOnPipClose)
+    pauseOnPipCloseToggle.checked = changes.pauseOnPipClose.newValue !== false;
   if (changes.thumbnailPreviewEnabled)
     thumbnailPreviewToggle.checked =
       changes.thumbnailPreviewEnabled.newValue !== false;

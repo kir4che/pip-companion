@@ -207,6 +207,10 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
   });
   await popupPage.goto(`chrome-extension://${extensionId}/popup.html`);
   await popupPage.waitForSelector("#open-pip");
+  assert.equal(
+    await popupPage.locator("#follow-playback-pip-toggle").count(),
+    0,
+  );
   await popupPage.evaluate(
     async ({ tabUrl }) => {
       const [tab] = await chrome.tabs.query({ url: tabUrl });
@@ -581,7 +585,7 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
       () => {
         const video = document.querySelector("#source-video");
         return (
-          video?.paused === false &&
+          video?.paused === true &&
           video.readyState >= 2 &&
           video.currentTime > 0
         );
@@ -615,4 +619,87 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
       .evaluate((video) => video.isConnected),
     true,
   );
+
+  const pausedTime = await fixturePage
+    .locator("#source-video")
+    .evaluate((video) => video.currentTime);
+  await delay(1000);
+  assert.equal(
+    await fixturePage
+      .locator("#source-video")
+      .evaluate((video) => video.paused),
+    true,
+  );
+  assert.equal(
+    await fixturePage
+      .locator("#source-video")
+      .evaluate((video) => video.currentTime),
+    pausedTime,
+  );
+
+  const optionsPage = await context.newPage();
+  await optionsPage.goto(
+    `chrome-extension://${extensionId}/${productionManifest.options_ui.page}`,
+  );
+  const pauseToggle = optionsPage.locator("#pause-on-pip-close-toggle");
+  await pauseToggle.waitFor();
+  await optionsPage.waitForFunction(
+    () => !document.querySelector("#pause-on-pip-close-toggle").disabled,
+  );
+  assert.equal(await pauseToggle.isChecked(), true);
+  assert.equal(
+    await optionsPage.locator("#follow-playback-pip-toggle").count(),
+    1,
+  );
+  for (const pauseOnPipClose of [false, true]) {
+    await pauseToggle.setChecked(pauseOnPipClose);
+    await optionsPage.waitForFunction(
+      (expected) =>
+        chrome.storage.local
+          .get("pauseOnPipClose")
+          .then((stored) => stored.pauseOnPipClose === expected),
+      pauseOnPipClose,
+    );
+    await optionsPage.reload();
+    await optionsPage.waitForFunction(
+      () => !document.querySelector("#pause-on-pip-close-toggle").disabled,
+    );
+    assert.equal(await pauseToggle.isChecked(), pauseOnPipClose);
+
+    await popupPage.locator("#open-pip").click();
+    await fixturePage.waitForFunction(() =>
+      window.documentPictureInPicture?.window?.document.querySelector(
+        "#source-video",
+      ),
+    );
+    await fixturePage.evaluate(async () => {
+      const pipWindow = window.documentPictureInPicture.window;
+      await pipWindow.document.querySelector("#source-video").play();
+      pipWindow.close();
+    });
+    await fixturePage.waitForFunction(
+      (expected) =>
+        !window.documentPictureInPicture?.window &&
+        document.querySelector("#source-video")?.paused === expected,
+      pauseOnPipClose,
+    );
+    await delay(500);
+    assert.equal(
+      await fixturePage
+        .locator("#source-video")
+        .evaluate((video) => video.paused),
+      pauseOnPipClose,
+    );
+    assert.equal(
+      await fixturePage
+        .locator("#source-video")
+        .evaluate((video) => video.parentElement.id),
+      originalParentId,
+    );
+    await popupPage.waitForFunction(() =>
+      chrome.runtime
+        .sendMessage({ type: "GET_PIP_STATE" })
+        .then((result) => result?.pipOpen === false),
+    );
+  }
 });

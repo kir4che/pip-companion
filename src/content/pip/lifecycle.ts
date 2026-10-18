@@ -184,7 +184,11 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       notifyPipState(true, !video.paused);
       notifySourcePlayback(!video.paused);
     };
-    nativePipLeaveHandler = () => clearNativePip(video);
+    nativePipLeaveHandler = () => {
+      if (nativePipVideo !== video) return;
+      clearNativePip(video);
+      if (state.pauseOnPipClose) video.pause();
+    };
     video.addEventListener("play", nativePipPlaybackHandler);
     video.addEventListener("pause", nativePipPlaybackHandler);
     video.addEventListener("leavepictureinpicture", nativePipLeaveHandler);
@@ -905,6 +909,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       if (video.ownerDocument.pictureInPictureElement === video)
         await video.ownerDocument.exitPictureInPicture();
       clearNativePip(video);
+      if (state.pauseOnPipClose) video.pause();
       return;
     }
     const session = state.pipSession;
@@ -936,6 +941,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       oldWindow && !oldWindow.closed
         ? flushPipBounds(true, oldWindow)
         : Promise.resolve();
+    // 關閉時先暫停，避免放回原頁面後被還原流程接續播放。
+    if (oldWindow && state.pauseOnPipClose) state.sourceVideo?.pause();
     const videoRestored = releasePipVideo();
     if (!videoRestored && closeWindow && oldWindow && !oldWindow.closed) {
       await boundsSave;

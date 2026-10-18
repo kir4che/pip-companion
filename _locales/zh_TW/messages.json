@@ -113,6 +113,9 @@
   "popupFollowPlayback": {
     "message": "跟隨播放中影片"
   },
+  "optionsPauseOnPipClose": {
+    "message": "關閉子母畫面後暫停影片"
+  },
   "popupBackToMenu": {
     "message": "返回主選單"
   },

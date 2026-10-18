@@ -113,6 +113,9 @@
   "popupFollowPlayback": {
     "message": "Follow video playback"
   },
+  "optionsPauseOnPipClose": {
+    "message": "Pause video when PiP closes"
+  },
   "popupBackToMenu": {
     "message": "Back to main menu"
   },

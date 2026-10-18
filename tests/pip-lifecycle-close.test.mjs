@@ -4,7 +4,7 @@ import test from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
 
-function createLifecycle() {
+function createLifecycle(video = null, pauseOnPipClose = true) {
   const messages = [];
   const boundsResolvers = [];
   const win = {
@@ -19,6 +19,8 @@ function createLifecycle() {
     },
   };
   const state = {
+    sourceVideo: video,
+    pauseOnPipClose,
     pipSession: {
       phase: "active",
       window: win,
@@ -85,6 +87,41 @@ test("PiP closure notifies cancellation and closes before bounds storage complet
   boundsResolvers[0]({ ok: true });
   await closing;
   assert.equal(win.closed, true);
+});
+
+for (const closeWindow of [true, false]) {
+  for (const pauseOnPipClose of [true, false]) {
+    test(`closing document PiP respects pause=${pauseOnPipClose} (closeWindow=${closeWindow})`, async () => {
+      const video = {
+        paused: false,
+        pause() {
+          this.paused = true;
+        },
+      };
+      const { context, state, win, boundsResolvers } = createLifecycle(
+        video,
+        pauseOnPipClose,
+      );
+      if (!closeWindow) win.closed = true;
+      const closing =
+        context.PipCompanion.ContentPipLifecycle.closePiP(closeWindow);
+      assert.equal(video.paused, pauseOnPipClose);
+      assert.equal(state.pipSession.phase, "closed");
+      boundsResolvers[0]?.({ ok: true });
+      await closing;
+    });
+  }
+}
+
+test("a repeated close does not pause playback resumed on the original page", async () => {
+  const video = {
+    pause() {
+      assert.fail("closed PiP must not pause the page video");
+    },
+  };
+  const { context, state } = createLifecycle(video);
+  state.pipSession = { phase: "closed" };
+  await context.PipCompanion.ContentPipLifecycle.closePiP(true);
 });
 
 test("PiP closure sends final bounds while an earlier save is still pending", async () => {

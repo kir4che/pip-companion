@@ -113,6 +113,9 @@
   "popupFollowPlayback": {
     "message": "跟随播放中视频"
   },
+  "optionsPauseOnPipClose": {
+    "message": "关闭画中画后暂停视频"
+  },
   "popupBackToMenu": {
     "message": "返回主菜单"
   },

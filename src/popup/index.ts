@@ -162,9 +162,6 @@ const commentsToggle = document.querySelector(
 const screenshotToggle = document.querySelector(
   "#screenshot-toggle",
 ) as HTMLInputElement;
-const followPlaybackPipToggle = document.querySelector(
-  "#follow-playback-pip-toggle",
-) as HTMLInputElement;
 globalThis.PipCompanion.extraBilibiliSettings.create({
   enabled: extraBilibiliEnabled,
   url: extraBilibiliUrl,
@@ -182,11 +179,7 @@ globalThis.PipCompanion.extraBilibiliSettings.create({
 
 async function saveToggle(
   toggle: HTMLInputElement,
-  key:
-    | "danmakuEnabled"
-    | "commentsEnabled"
-    | "screenshotEnabled"
-    | "followPlaybackPip",
+  key: "danmakuEnabled" | "commentsEnabled" | "screenshotEnabled",
   onRestore?: () => void,
 ) {
   try {
@@ -217,17 +210,14 @@ async function loadToggles() {
       danmakuEnabled: true,
       commentsEnabled: true,
       screenshotEnabled: true,
-      followPlaybackPip: false,
     });
     danmakuToggle.checked = stored.danmakuEnabled !== false;
     commentsToggle.checked = stored.commentsEnabled !== false;
     screenshotToggle.checked = stored.screenshotEnabled !== false;
-    followPlaybackPipToggle.checked = stored.followPlaybackPip === true;
   } catch {
     danmakuToggle.checked = true;
     commentsToggle.checked = true;
     screenshotToggle.checked = true;
-    followPlaybackPipToggle.checked = false;
   }
 }
 
@@ -248,9 +238,6 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     commentsToggle.checked = changes.commentsEnabled.newValue !== false;
   if (changes.screenshotEnabled)
     screenshotToggle.checked = changes.screenshotEnabled.newValue !== false;
-  if (changes.followPlaybackPip)
-    followPlaybackPipToggle.checked =
-      changes.followPlaybackPip.newValue === true;
   if (changes.launchShortcut)
     renderLaunchShortcut(changes.launchShortcut.newValue);
 
@@ -267,10 +254,6 @@ commentsToggle.addEventListener("change", () => {
 
 screenshotToggle.addEventListener("change", () => {
   void saveToggle(screenshotToggle, "screenshotEnabled");
-});
-
-followPlaybackPipToggle.addEventListener("change", () => {
-  void saveToggle(followPlaybackPipToggle, "followPlaybackPip");
 });
 
 openButton.addEventListener("click", async () => {

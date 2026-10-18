@@ -27,6 +27,7 @@ const state: State = {
   danmakuEnabled: true,
   thumbnailPreviewEnabled: true,
   followPlaybackPip: false,
+  pauseOnPipClose: true,
   seekSeconds: DEFAULT_SEEK_SECONDS,
   lastNonOneRate: 1.25,
   sourceVideo: null,

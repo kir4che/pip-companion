@@ -67,6 +67,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.followPlaybackPip = changes.followPlaybackPip.newValue === true;
     if (state.followPlaybackPip) void requestPipHandoff();
   }
+  if (changes.pauseOnPipClose)
+    state.pauseOnPipClose = changes.pauseOnPipClose.newValue !== false;
   if (changes.seekSeconds)
     state.seekSeconds = normalizeSeekSeconds(changes.seekSeconds.newValue);
   const subtitleStyleChange = changes[subtitleSettings.STORAGE_KEY];
@@ -138,6 +140,7 @@ async function loadSettings() {
       danmakuEnabled: true,
       thumbnailPreviewEnabled: true,
       followPlaybackPip: false,
+      pauseOnPipClose: true,
       seekSeconds: DEFAULT_SEEK_SECONDS,
       uiLanguage: "auto",
       [subtitleSettings.STORAGE_KEY]: subtitleSettings.DEFAULTS,
@@ -159,6 +162,7 @@ async function loadSettings() {
     state.danmakuEnabled = stored.danmakuEnabled !== false;
     state.thumbnailPreviewEnabled = stored.thumbnailPreviewEnabled !== false;
     state.followPlaybackPip = stored.followPlaybackPip === true;
+    state.pauseOnPipClose = stored.pauseOnPipClose !== false;
     state.seekSeconds = normalizeSeekSeconds(stored.seekSeconds);
     if (styleRevision === subtitleStyleRevision)
       state.subtitleStyle = subtitleSettings.normalize(
@@ -192,6 +196,7 @@ async function loadSettings() {
     state.danmakuEnabled = true;
     state.thumbnailPreviewEnabled = true;
     state.followPlaybackPip = false;
+    state.pauseOnPipClose = true;
     state.seekSeconds = DEFAULT_SEEK_SECONDS;
     if (styleRevision === subtitleStyleRevision)
       state.subtitleStyle = { ...subtitleSettings.DEFAULTS };
