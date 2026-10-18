@@ -7,6 +7,8 @@ interface NetflixPlayer {
   getTimedTextTrackList?: () => unknown;
   getTimedTextTrack?: () => unknown;
   setTimedTextTrack?: (track: unknown) => unknown;
+  getMovieId?: () => string | number;
+  getTrickPlayFrame?: (timeMs: number) => unknown;
 }
 
 interface NetflixTimedTextCue {
@@ -64,6 +66,98 @@ interface NetflixApp {
   let timedTextCacheScope = "";
   const WEBVTT_PROFILE = "webvtt-lssdh-ios8";
   const subtitleEntityDecoder = document.createElement("textarea");
+  const storyboardFrames = new Map<string, string>();
+  let storyboardScope = "";
+
+  function resetStoryboard() {
+    for (const url of storyboardFrames.values()) URL.revokeObjectURL(url);
+    storyboardFrames.clear();
+    storyboardScope = "";
+    if (document.documentElement)
+      delete document.documentElement.dataset.pipNetflixStoryboardFrame;
+  }
+
+  document.addEventListener(
+    "pip-companion-reset-netflix-storyboard",
+    resetStoryboard,
+  );
+  document.addEventListener(
+    "pip-companion-request-netflix-storyboard",
+    (event) => {
+      if (!(event instanceof CustomEvent) || !isRecord(event.detail)) return;
+      const { seconds, path } = event.detail;
+      const root = document.documentElement;
+      if (!root) return;
+      delete root.dataset.pipNetflixStoryboardFrame;
+      if (
+        path !== location.pathname ||
+        typeof seconds !== "number" ||
+        !Number.isFinite(seconds) ||
+        seconds < 0
+      )
+        return;
+      try {
+        const session = getActivePlayerSession(path);
+        const player = session?.player;
+        if (!session || !player?.getTrickPlayFrame) return;
+        const movieId = player.getMovieId?.();
+        if (movieId != null && `/watch/${movieId}` !== path) return;
+        const scope = `${path}:${session.sessionId}`;
+        if (scope !== storyboardScope) {
+          resetStoryboard();
+          storyboardScope = scope;
+        }
+        const frame = player.getTrickPlayFrame(seconds * 1000);
+        if (!isRecord(frame)) return;
+        const { image, width, height, time } = frame;
+        if (
+          !ArrayBuffer.isView(image) ||
+          image.byteLength === 0 ||
+          image.byteLength > 2 * 1024 * 1024 ||
+          typeof width !== "number" ||
+          !Number.isFinite(width) ||
+          width <= 0 ||
+          width > 2048 ||
+          typeof height !== "number" ||
+          !Number.isFinite(height) ||
+          height <= 0 ||
+          height > 2048 ||
+          typeof time !== "number" ||
+          !Number.isFinite(time) ||
+          time < 0
+        )
+          return;
+        const key = String(time);
+        let url = storyboardFrames.get(key);
+        if (!url) {
+          const bytes = new Uint8Array(
+            image.buffer,
+            image.byteOffset,
+            image.byteLength,
+          );
+          // 複製播放器提供的圖片資料，避免影響 Netflix 自己的縮圖快取。
+          url = URL.createObjectURL(
+            new Blob([new Uint8Array(bytes)], { type: "image/jpeg" }),
+          );
+          storyboardFrames.set(key, url);
+          while (storyboardFrames.size > 16) {
+            const oldest = storyboardFrames.keys().next().value!;
+            URL.revokeObjectURL(storyboardFrames.get(oldest)!);
+            storyboardFrames.delete(oldest);
+          }
+        }
+        root.dataset.pipNetflixStoryboardFrame = JSON.stringify({
+          path,
+          seconds,
+          url,
+          width,
+          height,
+        });
+      } catch {
+        // 播放器尚未載入縮圖時，維持只顯示時間。
+      }
+    },
+  );
 
   function getPlayerRepositoryRoot(
     sessionId: string,
@@ -363,7 +457,7 @@ interface NetflixApp {
     return getActivePlayerSession()?.player ?? null;
   }
 
-  function getActivePlayerSession(): {
+  function getActivePlayerSession(moviePath?: string): {
     player: NetflixPlayer;
     sessionId: string;
   } | null {
@@ -381,8 +475,16 @@ interface NetflixApp {
             ? [{ player, sessionId }]
             : [];
         });
-      const readyPlayers = players.filter(({ player }) => isReady(player));
-      const candidates = readyPlayers.length > 0 ? readyPlayers : players;
+      const matchingPlayers = moviePath
+        ? players.filter(
+            ({ player }) => `/watch/${player.getMovieId?.()}` === moviePath,
+          )
+        : players;
+      const readyPlayers = matchingPlayers.filter(({ player }) =>
+        isReady(player),
+      );
+      const candidates =
+        readyPlayers.length > 0 ? readyPlayers : matchingPlayers;
       return (
         candidates.find(({ player }) => isPlaying(player)) ??
         candidates[0] ??

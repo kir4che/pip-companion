@@ -18,7 +18,7 @@ A browser extension that brings web videos into Picture-in-Picture, with subtitl
 - **Picture-in-Picture controls:** play/pause, scrub the timeline, volume, playback speed, frame stepping, play next video, and more.
   - **Volume boost:** same-origin videos can be boosted up to 300%; cross-origin videos may be limited to 100%.
   - **Playback speed:** adjust from 0.25× to 5×; automatically hidden during live streams to preserve sync, and some websites may impose limits.
-  - **Progress bar & previews:** keeps the mini progress bar visible at the bottom when controls are hidden, and hovering over the seek bar previews thumbnails (thumbnail previews are supported only on YouTube, Bilibili, and Bahamut Anime Crazy).
+  - **Progress bar & previews:** keeps the mini progress bar visible at the bottom when controls are hidden, and hovering over the seek bar previews thumbnails.
   - **Jump to a timestamp:** enter a video time to jump directly to that point.
   - **Bilingual subtitles:** display subtitles that can be read from the video in PiP, with switchable tracks by the languages the video provides.
     - Customizable styles.

@@ -11,7 +11,7 @@
 | Danmaku / chat sending | ✅ (live; subject to channel permissions) | ✅ (subject to login and platform permissions) | ❌                   | ✅ (requires login and platform permissions) | ❌                    |
 | Next video             | ✅ (playlists)                            | ✅ (playlists / series)                        | ❌                   | ✅                                           | ✅                    |
 | Playlist               | ✅                                        | ✅                                             | ❌                   | ✅                                           | ❌                    |
-| Thumbnail previews     | ✅                                        | ✅                                             | ❌                   | ✅                                           | ❌                    |
+| Thumbnail previews     | ✅                                        | ✅                                             | ❌                   | ✅                                           | ✅                    |
 | Screenshots            | ✅                                        | ✅                                             | ✅                   | ✅                                           | ❌ (DRM restrictions) |
 | Add extra danmaku      | ✅                                        | ✅                                             | ✅                   | ❌ (crashes in tests)                        | ✅                    |
 | Provide extra danmaku  | ✅ (source tab required)                  | ✅                                             | ✅                   | ✅                                           | ❌                    |

@@ -535,7 +535,48 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     };
   }
 
-  type Platform = "youtube" | "bilibili" | "bahamut" | "unknown";
+  function getNetflixFrame(seconds: number): StoryboardFrame | null {
+    const root = document.documentElement;
+    if (!root) return null;
+    delete root.dataset.pipNetflixStoryboardFrame;
+    document.dispatchEvent(
+      new CustomEvent("pip-companion-request-netflix-storyboard", {
+        detail: { seconds, path: location.pathname },
+      }),
+    );
+    const raw = root.dataset.pipNetflixStoryboardFrame;
+    if (!raw) return null;
+    try {
+      const frame: unknown = JSON.parse(raw);
+      if (
+        !globalThis.PipCompanion.util.isRecord(frame) ||
+        frame.path !== location.pathname ||
+        frame.seconds !== seconds ||
+        typeof frame.url !== "string" ||
+        !frame.url.startsWith(`blob:${location.origin}/`) ||
+        typeof frame.width !== "number" ||
+        !Number.isFinite(frame.width) ||
+        frame.width <= 0 ||
+        frame.width > 2048 ||
+        typeof frame.height !== "number" ||
+        !Number.isFinite(frame.height) ||
+        frame.height <= 0 ||
+        frame.height > 2048
+      )
+        return null;
+      return {
+        url: frame.url,
+        x: 0,
+        y: 0,
+        width: frame.width,
+        height: frame.height,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  type Platform = "youtube" | "bilibili" | "bahamut" | "netflix" | "unknown";
 
   function getPlatform(): Platform {
     const site = globalThis.PipCompanion.site;
@@ -544,6 +585,7 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     if (site.isBilibiliHost(host) && !site.isBilibiliLiveHost(host))
       return "bilibili";
     if (site.isGamerHost(host)) return "bahamut";
+    if (site.isNetflixHost(host)) return "netflix";
     return "unknown";
   }
 
@@ -614,6 +656,11 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     if (!video) return;
     const platform = getPlatform();
 
+    if (platform === "netflix") {
+      getNetflixFrame(Math.max(0, video.currentTime));
+      return;
+    }
+
     if (platform === "youtube") {
       const videoId = getYouTubeVideoId();
       if (!videoId) return;
@@ -663,6 +710,8 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
 
     const platform = getPlatform();
 
+    if (platform === "netflix") return getNetflixFrame(seconds);
+
     if (platform === "youtube") {
       const videoId = getYouTubeVideoId();
       if (!videoId) return null;
@@ -693,6 +742,10 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
   }
 
   function reset() {
+    if (getPlatform() === "netflix")
+      document.dispatchEvent(
+        new CustomEvent("pip-companion-reset-netflix-storyboard"),
+      );
     cachedYtVideoId = "";
     cachedYtStoryboard = null;
     cachedBilibiliKey = "";
