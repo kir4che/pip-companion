@@ -184,21 +184,21 @@ async function loadToggles() {
       danmakuEnabled: true,
       commentsEnabled: true,
       screenshotEnabled: true,
-      followPlaybackPip: false,
+      followPlaybackPip: true,
       pauseOnPipClose: true,
       thumbnailPreviewEnabled: true,
     });
     danmakuToggle.checked = stored.danmakuEnabled !== false;
     commentsToggle.checked = stored.commentsEnabled !== false;
     screenshotToggle.checked = stored.screenshotEnabled !== false;
-    followPlaybackPipToggle.checked = stored.followPlaybackPip === true;
+    followPlaybackPipToggle.checked = stored.followPlaybackPip !== false;
     pauseOnPipCloseToggle.checked = stored.pauseOnPipClose !== false;
     thumbnailPreviewToggle.checked = stored.thumbnailPreviewEnabled !== false;
   } catch {
     danmakuToggle.checked = true;
     commentsToggle.checked = true;
     screenshotToggle.checked = true;
-    followPlaybackPipToggle.checked = false;
+    followPlaybackPipToggle.checked = true;
     pauseOnPipCloseToggle.checked = true;
     thumbnailPreviewToggle.checked = true;
   } finally {
@@ -264,7 +264,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     screenshotToggle.checked = changes.screenshotEnabled.newValue !== false;
   if (changes.followPlaybackPip)
     followPlaybackPipToggle.checked =
-      changes.followPlaybackPip.newValue === true;
+      changes.followPlaybackPip.newValue !== false;
   if (changes.pauseOnPipClose)
     pauseOnPipCloseToggle.checked = changes.pauseOnPipClose.newValue !== false;
   if (changes.thumbnailPreviewEnabled)

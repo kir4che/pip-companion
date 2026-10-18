@@ -64,7 +64,7 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.pipUi?.setDanmakuEnabled(state.danmakuEnabled);
   }
   if (changes.followPlaybackPip) {
-    state.followPlaybackPip = changes.followPlaybackPip.newValue === true;
+    state.followPlaybackPip = changes.followPlaybackPip.newValue !== false;
     if (state.followPlaybackPip) void requestPipHandoff();
   }
   if (changes.pauseOnPipClose)
@@ -139,7 +139,7 @@ async function loadSettings() {
       screenshotEnabled: true,
       danmakuEnabled: true,
       thumbnailPreviewEnabled: true,
-      followPlaybackPip: false,
+      followPlaybackPip: true,
       pauseOnPipClose: true,
       seekSeconds: DEFAULT_SEEK_SECONDS,
       uiLanguage: "auto",
@@ -161,7 +161,7 @@ async function loadSettings() {
     state.screenshotEnabled = stored.screenshotEnabled !== false;
     state.danmakuEnabled = stored.danmakuEnabled !== false;
     state.thumbnailPreviewEnabled = stored.thumbnailPreviewEnabled !== false;
-    state.followPlaybackPip = stored.followPlaybackPip === true;
+    state.followPlaybackPip = stored.followPlaybackPip !== false;
     state.pauseOnPipClose = stored.pauseOnPipClose !== false;
     state.seekSeconds = normalizeSeekSeconds(stored.seekSeconds);
     if (styleRevision === subtitleStyleRevision)
@@ -195,7 +195,7 @@ async function loadSettings() {
     state.screenshotEnabled = true;
     state.danmakuEnabled = true;
     state.thumbnailPreviewEnabled = true;
-    state.followPlaybackPip = false;
+    state.followPlaybackPip = true;
     state.pauseOnPipClose = true;
     state.seekSeconds = DEFAULT_SEEK_SECONDS;
     if (styleRevision === subtitleStyleRevision)
