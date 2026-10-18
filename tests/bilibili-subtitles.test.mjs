@@ -12,6 +12,8 @@ function setup({ nativeTracks = [], active = true } = {}) {
   const window = {
     addEventListener: (_type, listener) => listeners.push(listener),
     postMessage: (message) => posted.push(message),
+    setTimeout,
+    clearTimeout,
   };
   const context = {
     window,

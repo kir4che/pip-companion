@@ -147,3 +147,5 @@ type ExtensionMessage =
       provider: SubtitleTranslationProvider;
       config: SubtitleTranslationConfig;
     };
+
+type ExtensionMessageType = ExtensionMessage["type"];

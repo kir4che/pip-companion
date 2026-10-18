@@ -203,53 +203,61 @@ globalThis.PipCompanion.util = (() => {
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
 
-  const extensionMessageTypes = new Set([
-    "YOUTUBE_CHAT_PROBE",
-    "START_EXTRA_YOUTUBE_CHAT",
-    "YOUTUBE_CHAT_START",
-    "STOP_EXTRA_YOUTUBE_CHAT",
-    "YOUTUBE_CHAT_STOP",
-    "YOUTUBE_CHAT_CLOCK",
-    "EXTRA_YOUTUBE_CHAT_CLOCK",
-    "YOUTUBE_CHAT_ENDED",
-    "YOUTUBE_CHAT_MESSAGE",
-    "EXTRA_YOUTUBE_CHAT_MESSAGE",
-    "EXTRA_YOUTUBE_CHAT_STATUS",
-    "PING",
-    "GET_PIP_STATE",
-    "CLOSE_PIP",
-    "CLOSE_ALL_PIP",
-    "GET_PIP_BOUNDS",
-    "REQUEST_PIP_HANDOFF",
-    "OPEN_PIP",
-    "PIP_STATE_CHANGED",
-    "PIP_GLOBAL_STATE",
-    "SAVE_PIP_BOUNDS",
-    "RESTORE_PIP_BOUNDS",
-    "CENTER_PIP_BOUNDS",
-    "PIP_SOURCE_PLAYBACK_CHANGED",
-    "PIP_SUBTITLES_ENABLED_CHANGED",
-    "GET_EXTRA_DANMAKU_SOURCE",
-    "EXTRA_DANMAKU_SOURCE_STATUS",
-    "EXTRA_DANMAKU_SOURCE_CHANGED",
-    "SET_EXTRA_DANMAKU_SOURCE",
-    "RESIZE_PIP_WINDOW",
-    "GET_BILIBILI_DANMAKU",
-    "GET_BAHAMUT_DANMAKU",
-    "START_EXTRA_TWITCH_CHAT",
-    "STOP_EXTRA_TWITCH_CHAT",
-    "EXTRA_TWITCH_CHAT_STATUS",
-    "EXTRA_TWITCH_CHAT_MESSAGE",
-    "GET_BILIBILI_SUBTITLE_CUES",
-    "GET_SUBTITLE_TRANSLATION_LANGUAGES",
-    "GET_SUBTITLE_TRANSLATION_SERVICES",
-    "SET_SUBTITLE_TRANSLATION_PROVIDER",
-    "TRANSLATE_SUBTITLE_CUES",
-    "TEST_SUBTITLE_TRANSLATION",
-  ]);
+  const extensionMessageTypes = {
+    YOUTUBE_CHAT_PROBE: true,
+    START_EXTRA_YOUTUBE_CHAT: true,
+    YOUTUBE_CHAT_START: true,
+    STOP_EXTRA_YOUTUBE_CHAT: true,
+    YOUTUBE_CHAT_STOP: true,
+    YOUTUBE_CHAT_CLOCK: true,
+    EXTRA_YOUTUBE_CHAT_CLOCK: true,
+    YOUTUBE_CHAT_ENDED: true,
+    YOUTUBE_CHAT_MESSAGE: true,
+    EXTRA_YOUTUBE_CHAT_MESSAGE: true,
+    EXTRA_YOUTUBE_CHAT_STATUS: true,
+    PING: true,
+    GET_PIP_STATE: true,
+    CLOSE_PIP: true,
+    CLOSE_ALL_PIP: true,
+    GET_PIP_BOUNDS: true,
+    REQUEST_PIP_HANDOFF: true,
+    OPEN_PIP: true,
+    PIP_STATE_CHANGED: true,
+    PIP_GLOBAL_STATE: true,
+    SAVE_PIP_BOUNDS: true,
+    RESTORE_PIP_BOUNDS: true,
+    CENTER_PIP_BOUNDS: true,
+    PIP_SOURCE_PLAYBACK_CHANGED: true,
+    PIP_SUBTITLES_ENABLED_CHANGED: true,
+    GET_EXTRA_DANMAKU_SOURCE: true,
+    EXTRA_DANMAKU_SOURCE_STATUS: true,
+    EXTRA_DANMAKU_SOURCE_CHANGED: true,
+    SET_EXTRA_DANMAKU_SOURCE: true,
+    RESIZE_PIP_WINDOW: true,
+    GET_BILIBILI_DANMAKU: true,
+    GET_BAHAMUT_DANMAKU: true,
+    START_EXTRA_TWITCH_CHAT: true,
+    STOP_EXTRA_TWITCH_CHAT: true,
+    EXTRA_TWITCH_CHAT_STATUS: true,
+    EXTRA_TWITCH_CHAT_MESSAGE: true,
+    GET_BILIBILI_SUBTITLE_CUES: true,
+    GET_SUBTITLE_TRANSLATION_LANGUAGES: true,
+    GET_SUBTITLE_TRANSLATION_SERVICES: true,
+    SET_SUBTITLE_TRANSLATION_PROVIDER: true,
+    TRANSLATE_SUBTITLE_CUES: true,
+    TEST_SUBTITLE_TRANSLATION: true,
+  } satisfies Record<ExtensionMessageType, true>;
+  const extensionMessageTypeSet = new Set<ExtensionMessageType>(
+    Object.keys(extensionMessageTypes) as ExtensionMessageType[],
+  );
 
-  function isKnownExtensionMessageType(value: unknown): value is string {
-    return typeof value === "string" && extensionMessageTypes.has(value);
+  function isKnownExtensionMessageType(
+    value: unknown,
+  ): value is ExtensionMessageType {
+    return (
+      typeof value === "string" &&
+      extensionMessageTypeSet.has(value as ExtensionMessageType)
+    );
   }
 
   function isExtensionMessage(value: unknown): value is ExtensionMessage {

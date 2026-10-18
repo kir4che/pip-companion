@@ -17,12 +17,22 @@ function setup(options = { isYouTube: true, isNetflix: true }) {
   let now = 10000;
   const posted = [];
   const clearedTimers = [];
+  const timers = new Map();
+  let nextTimer = 0;
   const context = {
     Date: { now: () => now },
     location: { origin: "https://www.netflix.com" },
     window: {
       postMessage: (message, origin) => posted.push({ ...message, origin }),
-      clearTimeout: (id) => clearedTimers.push(id),
+      setTimeout: (callback, delay) => {
+        const id = ++nextTimer;
+        timers.set(id, { callback, due: now + delay });
+        return id;
+      },
+      clearTimeout: (id) => {
+        clearedTimers.push(id);
+        timers.delete(id);
+      },
     },
   };
   vm.runInNewContext(source, context);
@@ -32,7 +42,13 @@ function setup(options = { isYouTube: true, isNetflix: true }) {
     clearedTimers,
     advance: (milliseconds) => {
       now += milliseconds;
+      for (const [id, timer] of timers) {
+        if (timer.due > now) continue;
+        timers.delete(id);
+        timer.callback();
+      }
     },
+    timers,
   };
 }
 
@@ -71,7 +87,7 @@ for (const [channel, request, type, origin] of [
     select(remote, "en");
     remote[request]();
     remote[request]();
-    advance(5000);
+    advance(2999);
     remote[request]();
     assert.equal(posted.length, 1);
     assert.equal(controller.pendingTrack, "en");
@@ -218,9 +234,36 @@ test("track discovery retains throttling, forced Netflix refresh and reset behav
   const oldRequestId = posted.at(-1).requestId;
   remote.state.netflixSecondaryCueRetryTimer = 42;
   remote.reset();
-  assert.deepEqual(clearedTimers, [42]);
+  assert.ok(clearedTimers.includes(42));
   assert.ok(remote.state.netflixTrackRequestId > oldRequestId);
   remote.requestYouTubeTracks();
   remote.requestNetflixTracks();
   assert.equal(posted.length, 7);
+});
+
+test("cue requests time out, become retryable, and reject late responses", () => {
+  const { remote, posted, advance } = setup();
+  remote.netflixSecondary.reset("en");
+  remote.requestNetflixSecondaryCues();
+  const original = posted.at(-1);
+  assert.equal(remote.netflixSecondary.pendingTrack, "en");
+
+  advance(4999);
+  assert.equal(remote.netflixSecondary.pendingTrack, "en");
+  advance(1);
+  assert.equal(remote.netflixSecondary.pendingTrack, "");
+  assert.equal(
+    remote.netflixSecondary.matches(original.requestId, "en"),
+    false,
+  );
+
+  remote.requestNetflixSecondaryCues();
+  const retry = posted.at(-1);
+  assert.ok(retry.requestId > original.requestId);
+  remote.netflixSecondary.complete([cue]);
+  assert.equal(remote.netflixSecondary.loadedTrack, "en");
+  assert.equal(
+    remote.netflixSecondary.matches(original.requestId, "en"),
+    false,
+  );
 });

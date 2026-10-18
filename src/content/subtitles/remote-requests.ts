@@ -3,6 +3,8 @@
 globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.subtitleRemoteRequests = {
   create(options) {
+    const CUE_REQUEST_TIMEOUT_MS = 5000;
+
     function createCueRequest(
       type: string,
       targetOrigin: string,
@@ -14,6 +16,20 @@ globalThis.PipCompanion.subtitleRemoteRequests = {
       let pendingTrack = "";
       let requestId = 0;
       let lastRequest = 0;
+      let pendingTimer: number | null = null;
+
+      function clearPendingTimer() {
+        if (pendingTimer === null) return;
+        window.clearTimeout(pendingTimer);
+        pendingTimer = null;
+      }
+
+      function invalidatePendingRequest() {
+        clearPendingTimer();
+        requestId++;
+        pendingTrack = "";
+      }
+
       return {
         get trackKey() {
           return trackKey;
@@ -28,11 +44,10 @@ globalThis.PipCompanion.subtitleRemoteRequests = {
           return pendingTrack;
         },
         reset(key = "", resetThrottle = true) {
+          invalidatePendingRequest();
           trackKey = key;
           cues = null;
           loadedTrack = "";
-          pendingTrack = "";
-          requestId++;
           if (resetThrottle) lastRequest = 0;
         },
         request() {
@@ -46,20 +61,32 @@ globalThis.PipCompanion.subtitleRemoteRequests = {
           )
             return;
           requestId++;
+          const currentRequestId = requestId;
           pendingTrack = trackKey;
           lastRequest = now;
           window.postMessage({ type, requestId, key: trackKey }, targetOrigin);
+          pendingTimer = window.setTimeout(() => {
+            if (currentRequestId !== requestId || pendingTrack !== trackKey)
+              return;
+            pendingTimer = null;
+            pendingTrack = "";
+            cues = null;
+            loadedTrack = "";
+            lastRequest = 0;
+            requestId++;
+          }, CUE_REQUEST_TIMEOUT_MS);
         },
         matches(id, key) {
           return typeof id === "number" && id === requestId && key === trackKey;
         },
         complete(nextCues, loaded = Boolean(nextCues?.length)) {
+          clearPendingTimer();
           pendingTrack = "";
           cues = nextCues;
           loadedTrack = loaded ? trackKey : "";
         },
         retry() {
-          pendingTrack = "";
+          invalidatePendingRequest();
           cues = null;
           loadedTrack = "";
           lastRequest = 0;

@@ -324,7 +324,10 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       const parsed = globalThis.PipCompanion.subtitleCueData.parseTimedCue(cue);
       return parsed ? [parsed] : [];
     });
-    if (event.data.restored !== true) {
+    const loadSucceeded =
+      event.data.loaded === true ||
+      (event.data.loaded === undefined && event.data.restored === true);
+    if (!loadSucceeded) {
       netflixSecondary.retry();
       requestNetflixSubtitleTracks(true);
       if (

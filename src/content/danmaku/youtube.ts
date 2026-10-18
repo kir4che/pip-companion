@@ -318,7 +318,7 @@
           script.textContent || "",
           /ytInitialPlayerResponse\s*=\s*/,
         ) as {
-          videoDetails?: { isLiveContent?: unknown };
+          videoDetails?: { videoId?: unknown; isLiveContent?: unknown };
           microformat?: {
             playerMicroformatRenderer?: {
               liveBroadcastDetails?: {
@@ -328,7 +328,7 @@
             };
           };
         } | null;
-        if (!data) continue;
+        if (!data || data.videoDetails?.videoId !== videoId) continue;
 
         const liveBroadcastDetails =
           data.microformat?.playerMicroformatRenderer?.liveBroadcastDetails;
@@ -364,6 +364,9 @@
           script.textContent || "",
           /ytInitialData["']?\]?\s*=\s*/,
         ) as {
+          currentVideoEndpoint?: {
+            watchEndpoint?: { videoId?: unknown };
+          };
           contents?: {
             twoColumnWatchNextResults?: {
               conversationBar?: {
@@ -376,6 +379,8 @@
             };
           };
         } | null;
+        if (data?.currentVideoEndpoint?.watchEndpoint?.videoId !== videoId)
+          continue;
         const continuations =
           data?.contents?.twoColumnWatchNextResults?.conversationBar
             ?.liveChatRenderer?.continuations || [];

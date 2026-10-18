@@ -519,11 +519,12 @@ interface NetflixApp {
         : "";
   }
 
-  function parseJsonSubtitleCues(text: string): NetflixTimedTextCue[] {
+  function parseJsonSubtitleCues(text: string): NetflixTimedTextParseResult {
     try {
       const data: unknown = JSON.parse(text);
-      if (!isRecord(data) || !Array.isArray(data.events)) return [];
-      return data.events.flatMap((event) => {
+      if (!isRecord(data) || !Array.isArray(data.events))
+        return { cues: [], parsed: false };
+      const cues = data.events.flatMap((event) => {
         if (!isRecord(event)) return [];
         const from = parseTimedTextNumber(event.t);
         const duration = parseTimedTextNumber(event.d);
@@ -532,14 +533,15 @@ interface NetflixApp {
           ? [{ from, to: from + duration, content }]
           : [];
       });
+      return { cues, parsed: data.events.length === 0 || cues.length > 0 };
     } catch {
-      return [];
+      return { cues: [], parsed: false };
     }
   }
 
-  function parseSubtitleCues(text: string): NetflixTimedTextCue[] {
+  function parseSubtitleCues(text: string): NetflixTimedTextParseResult {
     const jsonCues = parseJsonSubtitleCues(text);
-    if (jsonCues.length) return jsonCues;
+    if (jsonCues.parsed) return jsonCues;
     try {
       const xml = new DOMParser().parseFromString(text, "text/xml");
       const cueElements = [
@@ -560,12 +562,11 @@ interface NetflixApp {
         seenCues.add(key);
         return [{ from, to, content }];
       });
-      if (cues.length) {
-        return cues;
-      }
+      if (cueElements.length > 0) return { cues, parsed: cues.length > 0 };
     } catch {}
 
     const vttCues: NetflixTimedTextCue[] = [];
+    const isWebVtt = /^\uFEFF?WEBVTT(?:\s|$)/i.test(text);
     const lines = text.replace(/^\uFEFF?WEBVTT[^\r\n]*/i, "").split(/\r?\n/);
     for (let index = 0; index < lines.length; index++) {
       const timing = lines[index]?.match(/^(\S+)\s+-->\s+(\S+)(?:\s+.*)?$/);
@@ -579,33 +580,44 @@ interface NetflixApp {
       const value = cleanSubtitleText(content.join(" "));
       if (value) vttCues.push({ from, to, content: value });
     }
-    if (vttCues.length) return vttCues;
-    return [];
+    return { cues: vttCues, parsed: isWebVtt };
+  }
+
+  interface NetflixTimedTextParseResult {
+    cues: NetflixTimedTextCue[];
+    parsed: boolean;
   }
 
   interface NetflixTimedTextCueResult {
     cues: NetflixTimedTextCue[];
+    loaded: boolean;
     restored: boolean;
   }
+
+  let activeTemporaryRestore: {
+    player: NetflixPlayer;
+    previous: Record<string, unknown>;
+    temporary: Record<string, unknown>;
+  } | null = null;
 
   async function getTimedTextCues(
     key: string,
     requestGeneration: number,
   ): Promise<NetflixTimedTextCueResult> {
     const session = getActivePlayerSession();
-    if (!session) return { cues: [], restored: false };
+    if (!session) return { cues: [], loaded: false, restored: false };
     const tracks = getTimedTextTracks(session.player);
     const track = tracks.find(
       (item, index) => getTrackKey(item, index) === key,
     );
-    if (!track) return { cues: [], restored: false };
+    if (!track) return { cues: [], loaded: false, restored: false };
     const cacheScope = getTimedTextCacheScope(session.sessionId);
     const cueCacheKey = scopedCacheKey(cacheScope, key);
     const cachedCues = timedTextCueCache.get(cueCacheKey);
     if (cachedCues) {
       timedTextCueCache.delete(cueCacheKey);
       timedTextCueCache.set(cueCacheKey, cachedCues);
-      return { cues: cachedCues, restored: true };
+      return { cues: cachedCues, loaded: true, restored: true };
     }
     const trackIds = getTimedTextIds(track);
     const languages = [track.bcp47, track.language]
@@ -631,10 +643,21 @@ interface NetflixApp {
       );
     };
     let url = findUrl();
-    const previous = session.player.getTimedTextTrack?.();
+    const current = session.player.getTimedTextTrack?.();
+    if (
+      activeTemporaryRestore &&
+      (activeTemporaryRestore.player !== session.player ||
+        !isRecord(current) ||
+        !sameTrack(activeTemporaryRestore.temporary, current))
+    )
+      activeTemporaryRestore = null;
+    const previous =
+      activeTemporaryRestore?.player === session.player
+        ? activeTemporaryRestore.previous
+        : current;
     let changed = false;
     let restored = true;
-    let fetched = false;
+    let loaded = false;
     let cues: NetflixTimedTextCue[] = [];
     try {
       if (requestGeneration !== subtitleCueRequestGeneration) {
@@ -646,6 +669,15 @@ interface NetflixApp {
         if (!isRecord(previous) || !sameTrack(track, previous)) {
           await Promise.resolve(session.player.setTimedTextTrack(track));
           changed = true;
+          if (!activeTemporaryRestore) {
+            if (isRecord(previous))
+              activeTemporaryRestore = {
+                player: session.player,
+                previous,
+                temporary: track,
+              };
+            else restored = false;
+          }
         }
         for (let attempt = 0; attempt < 30 && !url; attempt++) {
           if (requestGeneration !== subtitleCueRequestGeneration) {
@@ -667,14 +699,20 @@ interface NetflixApp {
         if (!response.ok) restored = false;
         else {
           const text = await response.text();
-          cues = parseSubtitleCues(text);
-          fetched = true;
+          const parsed = parseSubtitleCues(text);
+          if (!parsed.parsed) restored = false;
+          else {
+            cues = parsed.cues;
+            loaded = true;
+          }
         }
       } else if (!url) {
         restored = false;
       }
     } catch {
-      return { cues: [], restored: false };
+      loaded = false;
+      cues = [];
+      restored = false;
     } finally {
       if (changed) {
         try {
@@ -683,26 +721,25 @@ interface NetflixApp {
               session.player,
               previous,
               track,
-              requestGeneration,
             );
           else restored = false;
         } catch {}
+        if (restored && activeTemporaryRestore?.player === session.player)
+          activeTemporaryRestore = null;
         syncNetflixSubtitleTracks(session.player);
       }
     }
-    if (fetched && cacheScope === timedTextCacheScope)
+    if (loaded && cacheScope === timedTextCacheScope)
       cacheTimedTextCues(cueCacheKey, cues);
-    return { cues, restored };
+    return { cues, loaded, restored };
   }
 
   async function restoreTimedTextTrack(
     player: NetflixPlayer,
     previous: Record<string, unknown>,
     temporary: Record<string, unknown>,
-    requestGeneration: number,
   ): Promise<boolean> {
     for (let attempt = 0; attempt < 20; attempt++) {
-      if (requestGeneration !== subtitleCueRequestGeneration) return false;
       const current = player.getTimedTextTrack?.();
       if (isRecord(current) && sameTrack(previous, current)) return true;
       if (isRecord(current) && !sameTrack(temporary, current)) return true;
@@ -914,6 +951,7 @@ interface NetflixApp {
               requestId: data.requestId,
               key: data.key,
               cues: result.cues,
+              loaded: result.loaded,
               restored: result.restored,
             },
             location.origin,

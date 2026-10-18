@@ -497,7 +497,7 @@ interface PipCompanionUtil {
   SEEK_SECONDS_OPTIONS: readonly SeekSeconds[];
   normalizeSeekSeconds(value: unknown): SeekSeconds;
   isRecord(value: unknown): value is Record<string, unknown>;
-  isKnownExtensionMessageType(value: unknown): value is string;
+  isKnownExtensionMessageType(value: unknown): value is ExtensionMessageType;
   isValidExtraDanmakuSourceUrl(value: string): boolean;
   isExtensionMessage(value: unknown): value is ExtensionMessage;
   normalizeShortcut(value: unknown, fallback: Shortcut): Shortcut;
@@ -854,7 +854,7 @@ interface SubtitleTranslationOptionsApi {
 
 interface RuntimeMessageDispatcher {
   addListener(
-    types: string | readonly string[],
+    types: ExtensionMessageType | readonly ExtensionMessageType[],
     handler: (
       message: unknown,
       sender: chrome.runtime.MessageSender,
