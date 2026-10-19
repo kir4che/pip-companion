@@ -1,6 +1,8 @@
 "use strict";
 
 globalThis.PipCompanion.ContentVideo = (() => {
+  const PREVIEW_ANCESTORS =
+    'ytd-thumbnail, ytd-rich-grid-media, ytd-compact-video-renderer, ytd-video-renderer, ytd-video-preview, ytd-reel-item-renderer, ytm-video-with-context-renderer, ytm-compact-video-renderer, ytm-reel-item-renderer, #inline-preview-player, .ytp-inline-preview, .bili-video-card, .bili-video-card__wrap, .bpx-player-inline-area, .video-page-card, .video-card, .thumbnail-preview, [data-a-target="preview-card"], [data-a-target="video-preview"], .preview-card, .channel-card, .previewModal--container, [data-uia="previewModal"]';
   const PREFERRED_SELECTORS = [
     "video.html5-main-video", // YouTube
     '[data-a-target="video-player"] video', // Twitch main player
@@ -17,8 +19,25 @@ globalThis.PipCompanion.ContentVideo = (() => {
     return window.documentPictureInPicture ?? null;
   }
 
+  function isPreviewVideo(element: Element) {
+    let node: Node | null = element;
+    while (node) {
+      if (node.nodeType === 1) {
+        const element = node as Element;
+        if (element.matches(PREVIEW_ANCESTORS)) return true;
+        if (element.parentElement) {
+          node = element.parentElement;
+          continue;
+        }
+      }
+      const root = node.getRootNode();
+      node = root.nodeType === 11 ? (root as ShadowRoot).host : null;
+    }
+    return false;
+  }
+
   function scoreVideo(video: HTMLVideoElement, allowUnloaded = false): number {
-    if (!video || !video.isConnected) return -1;
+    if (!video || !video.isConnected || isPreviewVideo(video)) return -1;
     const width = video.videoWidth || 0;
     const height = video.videoHeight || 0;
     let area = width * height;
@@ -112,7 +131,9 @@ globalThis.PipCompanion.ContentVideo = (() => {
       return state.deepVideoCache;
     if (!includeDeep) return null;
     if (!forceDeep && Date.now() - state.lastDeepScan < DEEP_SCAN_MS)
-      return state.deepVideoCache;
+      return state.deepVideoCache && scoreVideo(state.deepVideoCache) > 0
+        ? state.deepVideoCache
+        : null;
     state.lastDeepScan = Date.now();
     const collected: HTMLVideoElement[] = [];
     collectVideosDeep(document, collected);
@@ -123,5 +144,6 @@ globalThis.PipCompanion.ContentVideo = (() => {
   return {
     getDocumentPip,
     findVideo,
+    isPreviewVideo,
   };
 })();

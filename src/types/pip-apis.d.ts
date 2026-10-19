@@ -528,6 +528,7 @@ interface ContentVideoApi {
     includeDeep?: boolean,
     forceDeep?: boolean,
   ): HTMLVideoElement | null;
+  isPreviewVideo(element: Element): boolean;
 }
 
 interface SubtitleTranslationRuntime {
@@ -650,7 +651,12 @@ interface ContentScreenshotApi {
 
 interface ContentPipLifecycleApi {
   bindSourceVideo(video: HTMLVideoElement): void;
-  closePiP(closeWindow: boolean): Promise<void>;
+  closePiP(
+    closeWindow: boolean,
+    onlyIfPaused?: boolean,
+    pausePlayback?: boolean,
+  ): Promise<void>;
+  closePiPIfPaused(preservePlayback?: boolean): Promise<boolean>;
   getActivePipSource(): {
     video: HTMLVideoElement;
     ownerDocument: Document;
@@ -658,6 +664,7 @@ interface ContentPipLifecycleApi {
   } | null;
   handoffNativePipVideo(video: HTMLVideoElement): Promise<void>;
   isPipOpen(): boolean;
+  isPipPlaying(): boolean;
   isPipVideoStalled(): boolean;
   recoverStalledPipVideo(): boolean;
   openPiP(): Promise<PipOperationResult>;

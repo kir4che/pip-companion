@@ -104,7 +104,7 @@ async function waitForDebugger(port) {
       const response = await fetch(url);
       if (response.ok) return await response.json();
     } catch {
-      // Chrome 尚未啟動完成。
+      // Chrome 尚未啟動完成
     }
     await sleep(100);
   }

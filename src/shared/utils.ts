@@ -218,6 +218,8 @@ globalThis.PipCompanion.util = (() => {
     PING: true,
     GET_PIP_STATE: true,
     CLOSE_PIP: true,
+    CLOSE_PIP_PRESERVE_PLAYBACK: true,
+    CLOSE_PIP_IF_PAUSED: true,
     CLOSE_ALL_PIP: true,
     GET_PIP_BOUNDS: true,
     REQUEST_PIP_HANDOFF: true,
@@ -333,6 +335,8 @@ globalThis.PipCompanion.util = (() => {
       case "PING":
       case "GET_PIP_STATE":
       case "CLOSE_PIP":
+      case "CLOSE_PIP_PRESERVE_PLAYBACK":
+      case "CLOSE_PIP_IF_PAUSED":
       case "CLOSE_ALL_PIP":
       case "GET_PIP_BOUNDS":
       case "REQUEST_PIP_HANDOFF":

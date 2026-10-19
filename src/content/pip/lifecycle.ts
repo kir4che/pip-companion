@@ -24,6 +24,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   let nativePipPlaybackHandler: (() => void) | null = null;
   let nativePipLeaveHandler: (() => void) | null = null;
   let nativePipHandoff: Promise<void> | null = null;
+  let suppressNativePipCloseNotification = false;
   let pipOperationGeneration = 0;
   let pipFrameVideo: HTMLVideoElement | null = null;
   let pipFrameCallbackId: number | null = null;
@@ -126,14 +127,17 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       .catch(() => {});
   }
 
-  function notifyPipState(pipOpen: boolean, playing = true) {
+  function notifyPipState(pipOpen: boolean, playing?: boolean) {
     try {
       if (!chrome.runtime?.id) return;
+      const activeVideo =
+        nativePipVideo ?? state.pipUi?.video ?? state.sourceVideo;
       void chrome.runtime
         .sendMessage({
           type: "PIP_STATE_CHANGED",
           pipOpen,
-          playing,
+          playing:
+            playing ?? Boolean(pipOpen && activeVideo && !activeVideo.paused),
           subtitlesEnabled: state.subtitlessOn,
         } satisfies ExtensionMessage)
         .catch(() => {});
@@ -207,7 +211,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     };
     nativePipLeaveHandler = () => {
       if (nativePipVideo !== video) return;
-      clearNativePip(video);
+      clearNativePip(video, !suppressNativePipCloseNotification);
       if (state.pauseOnPipClose) video.pause();
     };
     video.addEventListener("play", nativePipPlaybackHandler);
@@ -968,18 +972,47 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     state.nextVideoRequested = false;
   }
 
-  async function closePiP(closeWindow: boolean): Promise<void> {
-    pipOperationGeneration++;
-    stopPipFrameTracking();
-    globalThis.PipCompanion.ContentPlayback.cancelNextVideoRequest();
+  async function closePiP(
+    closeWindow: boolean,
+    onlyIfPaused = false,
+    pausePlayback = state.pauseOnPipClose,
+  ): Promise<void> {
+    if (onlyIfPaused && isPipPlaying()) return;
+    const onlyIfPausedOperation = onlyIfPaused ? pipOperationGeneration : -1;
+    if (onlyIfPaused && nativePipRequest) {
+      await nativePipRequest.catch(() => {});
+      if (isPipPlaying() || onlyIfPausedOperation !== pipOperationGeneration)
+        return;
+    }
+    if (!onlyIfPaused) {
+      pipOperationGeneration++;
+      stopPipFrameTracking();
+      globalThis.PipCompanion.ContentPlayback.cancelNextVideoRequest();
+    }
     if (nativePipVideo) {
       const video = nativePipVideo;
       const request = nativePipRequest;
       if (request) await request.catch(() => {});
-      if (video.ownerDocument.pictureInPictureElement === video)
-        await video.ownerDocument.exitPictureInPicture();
-      clearNativePip(video);
-      if (state.pauseOnPipClose) video.pause();
+      if (
+        onlyIfPaused &&
+        (isPipPlaying() || onlyIfPausedOperation !== pipOperationGeneration)
+      )
+        return;
+      if (onlyIfPaused) {
+        pipOperationGeneration++;
+        stopPipFrameTracking();
+        globalThis.PipCompanion.ContentPlayback.cancelNextVideoRequest();
+      }
+      suppressNativePipCloseNotification = onlyIfPaused;
+      try {
+        if (video.ownerDocument.pictureInPictureElement === video)
+          await video.ownerDocument.exitPictureInPicture();
+        if (onlyIfPaused && isPipPlaying()) return;
+        clearNativePip(video, !onlyIfPaused);
+      } finally {
+        suppressNativePipCloseNotification = false;
+      }
+      if (pausePlayback) video.pause();
       return;
     }
     const session = state.pipSession;
@@ -992,6 +1025,18 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       (session.phase === "active" && "window" in session)
         ? session.window
         : null;
+    const boundsSave =
+      oldWindow && !oldWindow.closed
+        ? flushPipBounds(true, oldWindow)
+        : Promise.resolve();
+    if (onlyIfPaused) {
+      await boundsSave;
+      if (isPipPlaying() || onlyIfPausedOperation !== pipOperationGeneration)
+        return;
+      pipOperationGeneration++;
+      stopPipFrameTracking();
+      globalThis.PipCompanion.ContentPlayback.cancelNextVideoRequest();
+    }
     if (session.phase === "waiting" && session.waitTimer !== null)
       window.clearTimeout(session.waitTimer);
     window.clearTimeout(state.feedbackTimer);
@@ -1008,12 +1053,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     boundsTimer = 0;
     window.clearTimeout(boundsDebounceTimer);
     boundsDebounceTimer = 0;
-    const boundsSave =
-      oldWindow && !oldWindow.closed
-        ? flushPipBounds(true, oldWindow)
-        : Promise.resolve();
     // 關閉時先暫停，避免放回原頁面後被還原流程接續播放。
-    if (oldWindow && state.pauseOnPipClose) state.sourceVideo?.pause();
+    if (oldWindow && pausePlayback) state.sourceVideo?.pause();
     const videoRestored = releasePipVideo();
     if (!videoRestored && closeWindow && oldWindow && !oldWindow.closed) {
       await boundsSave;
@@ -1022,7 +1063,7 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
 
     state.pipUi?.dispose();
     state.pipSession = { phase: "closed" };
-    if (oldWindow) notifyPipState(false);
+    if (oldWindow && !onlyIfPaused) notifyPipState(false);
     state.subtitleObserver?.disconnect();
     state.subtitleObserver = null;
     state.subtitleNode = null;
@@ -1043,6 +1084,12 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       }
     }
     await boundsSave;
+  }
+
+  async function closePiPIfPaused(preservePlayback = false) {
+    if (isPipPlaying()) return false;
+    await closePiP(true, true, !preservePlayback && state.pauseOnPipClose);
+    return state.pipSession.phase === "closed" && !isPipOpen();
   }
 
   async function openPiP(): Promise<PipOperationResult> {
@@ -1171,6 +1218,11 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     );
   }
 
+  function isPipPlaying() {
+    const video = nativePipVideo ?? state.pipUi?.video ?? state.sourceVideo;
+    return Boolean(isPipOpen() && video && !video.paused);
+  }
+
   function getActivePipSource() {
     const session = state.pipSession;
     if (
@@ -1188,9 +1240,11 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   return {
     bindSourceVideo,
     closePiP,
+    closePiPIfPaused,
     getActivePipSource,
     handoffNativePipVideo,
     isPipOpen,
+    isPipPlaying,
     isPipVideoStalled,
     recoverStalledPipVideo,
     openPiP,

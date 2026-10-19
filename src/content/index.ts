@@ -30,6 +30,7 @@ function findReplacementVideo(
           candidate !== current &&
           candidate.videoWidth > 0 &&
           !candidate.ended &&
+          !globalThis.PipCompanion.ContentVideo.isPreviewVideo(candidate) &&
           !isPointerHoveringVideo(candidate),
       )
       .sort((left, right) => Number(left.paused) - Number(right.paused))[0] ??
@@ -334,6 +335,8 @@ globalThis.PipCompanion.runtimeMessages.addListener(
     "PIP_SOURCE_PLAYBACK_CHANGED",
     "PING",
     "CLOSE_PIP",
+    "CLOSE_PIP_PRESERVE_PLAYBACK",
+    "CLOSE_PIP_IF_PAUSED",
     "OPEN_PIP",
   ],
   (message: unknown, _sender, sendResponse) => {
@@ -357,6 +360,7 @@ globalThis.PipCompanion.runtimeMessages.addListener(
       sendResponse({
         ok: true,
         pipOpen: globalThis.PipCompanion.ContentPipLifecycle.isPipOpen(),
+        pipPlaying: globalThis.PipCompanion.ContentPipLifecycle.isPipPlaying(),
       });
       return;
     }
@@ -364,6 +368,33 @@ globalThis.PipCompanion.runtimeMessages.addListener(
       void globalThis.PipCompanion.ContentPipLifecycle.closePiP(true).then(
         () => sendResponse({ ok: true }),
         () => sendResponse({ ok: false }),
+      );
+      return true;
+    }
+    if (message?.type === "CLOSE_PIP_PRESERVE_PLAYBACK") {
+      void globalThis.PipCompanion.ContentPipLifecycle.closePiP(
+        true,
+        false,
+        false,
+      ).then(
+        () => sendResponse({ ok: true }),
+        () => sendResponse({ ok: false }),
+      );
+      return true;
+    }
+    if (message?.type === "CLOSE_PIP_IF_PAUSED") {
+      const preservePlayback =
+        "preservePlayback" in message && message.preservePlayback === true;
+      void globalThis.PipCompanion.ContentPipLifecycle.closePiPIfPaused(
+        preservePlayback,
+      ).then(
+        (closed) =>
+          sendResponse({
+            ok: closed,
+            pipOpen: !closed,
+            ...(closed ? {} : { pipPlaying: true }),
+          }),
+        () => sendResponse({ ok: false, pipOpen: true }),
       );
       return true;
     }
@@ -464,6 +495,7 @@ function scanPage() {
             (candidate) =>
               candidate.videoWidth > 0 &&
               !candidate.ended &&
+              !globalThis.PipCompanion.ContentVideo.isPreviewVideo(candidate) &&
               (!replacedPipVideos.has(candidate) || !candidate.paused) &&
               !isPointerHoveringVideo(candidate),
           )
@@ -474,7 +506,8 @@ function scanPage() {
       !container.isConnected &&
       found?.ownerDocument === sourceDocument &&
       found.videoWidth > 0 &&
-      !found.ended
+      !found.ended &&
+      !globalThis.PipCompanion.ContentVideo.isPreviewVideo(found)
         ? found
         : null);
     if (replacement) {
@@ -502,6 +535,7 @@ function scanPage() {
       found.ownerDocument === sourceDocument &&
       found.videoWidth > 0 &&
       !found.ended &&
+      !globalThis.PipCompanion.ContentVideo.isPreviewVideo(found) &&
       !isPointerHoveringVideo(found) &&
       (!sourceParent.isConnected ||
         (sameContainer &&
@@ -517,6 +551,7 @@ function scanPage() {
       found &&
       found !== current &&
       !isPointerHoveringVideo(found) &&
+      !globalThis.PipCompanion.ContentVideo.isPreviewVideo(found) &&
       found.videoWidth > 0 &&
       !found.ended
     )
@@ -526,7 +561,8 @@ function scanPage() {
       pipActive &&
       found &&
       found !== current &&
-      !isPointerHoveringVideo(found)
+      !isPointerHoveringVideo(found) &&
+      !globalThis.PipCompanion.ContentVideo.isPreviewVideo(found)
     ) {
       if (
         found.videoWidth > 0 &&
@@ -613,7 +649,7 @@ function nudgeScan() {
   }
 }
 
-async function requestPipHandoff() {
+async function requestPipHandoff(playedVideo?: HTMLVideoElement) {
   if (
     Date.now() < pipHandoffRetryAfter ||
     !state.followPlaybackPip ||
@@ -624,15 +660,18 @@ async function requestPipHandoff() {
   )
     return;
 
-  let video = state.sourceVideo;
-  if (!video || !video.isConnected || video.paused || video.ended) {
+  let video = playedVideo ?? state.sourceVideo;
+  if (
+    !playedVideo &&
+    (!video || !video.isConnected || video.paused || video.ended)
+  ) {
     video = globalThis.PipCompanion.ContentVideo.findVideo();
-    if (video && video !== state.sourceVideo) {
-      if (isPointerHoveringVideo(video)) return;
-      globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
-    }
   }
   if (!video || video.paused || video.ended) return;
+  if (globalThis.PipCompanion.ContentVideo.isPreviewVideo(video)) return;
+  if (!playedVideo && isPointerHoveringVideo(video)) return;
+  if (video !== state.sourceVideo)
+    globalThis.PipCompanion.ContentPipLifecycle.bindSourceVideo(video);
 
   state.pipHandoffPending = true;
   try {
@@ -660,8 +699,6 @@ void chrome.runtime
   .then((response) => {
     state.globalPipOpen = response?.pipOpen === true;
     state.globalPipSourcePlaying = response?.sourcePlaying !== false;
-    if (state.globalPipOpen && !state.globalPipSourcePlaying)
-      void requestPipHandoff();
   })
   .catch(() => {});
 window.addEventListener("yt-navigate-finish", () => {
@@ -672,23 +709,17 @@ window.addEventListener("yt-navigate-finish", () => {
 window.addEventListener("yt-player-updated", nudgeScan);
 document.addEventListener(
   "play",
-  () => {
+  (event) => {
     pipHandoffRetryAfter = 0;
     nudgeScan();
-    void requestPipHandoff();
+    if (
+      event.target instanceof HTMLVideoElement &&
+      !globalThis.PipCompanion.ContentVideo.isPreviewVideo(event.target)
+    )
+      void requestPipHandoff(event.target);
   },
   true,
 );
-
-for (const gestureEvent of ["pointerdown", "keydown"] as const) {
-  document.addEventListener(
-    gestureEvent,
-    () => {
-      void requestPipHandoff();
-    },
-    true,
-  );
-}
 
 document.addEventListener("loadedmetadata", nudgeScan, true);
 document.addEventListener("visibilitychange", () => {

@@ -3,6 +3,8 @@ type SimpleExtensionMessageType =
   | "PING"
   | "GET_PIP_STATE"
   | "CLOSE_PIP"
+  | "CLOSE_PIP_PRESERVE_PLAYBACK"
+  | "CLOSE_PIP_IF_PAUSED"
   | "CLOSE_ALL_PIP"
   | "GET_PIP_BOUNDS"
   | "REQUEST_PIP_HANDOFF";
@@ -51,6 +53,8 @@ type ExtensionMessage =
       error: string;
     }
   | { type: SimpleExtensionMessageType }
+  | { type: "CLOSE_PIP_IF_PAUSED" }
+  | { type: "CLOSE_PIP_IF_PAUSED"; preservePlayback: boolean }
   | { type: "OPEN_PIP" }
   | {
       type: "PIP_STATE_CHANGED";

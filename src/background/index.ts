@@ -90,6 +90,37 @@ async function getOpenPipTabId(): Promise<number | null> {
   return null;
 }
 
+async function rollbackPipHandoff(sourceTabId: number, targetTabId: number) {
+  await chrome.tabs
+    .sendMessage(targetTabId, {
+      type: "CLOSE_PIP_PRESERVE_PLAYBACK",
+    } satisfies ExtensionMessage)
+    .catch(() => {});
+
+  let sourceState: unknown = null;
+  try {
+    sourceState = await chrome.tabs.sendMessage(sourceTabId, {
+      type: "PING",
+    } satisfies ExtensionMessage);
+  } catch {
+    // 來源分頁可能正在導覽或關閉，沿用原本的狀態清理流程。
+  }
+  if (isRecord(sourceState) && sourceState.pipOpen === true) {
+    await chrome.storage.session.set({
+      pipTabId: sourceTabId,
+      pipSourcePlaying: sourceState.pipPlaying !== false,
+    });
+    await broadcastPipState(true);
+    return;
+  }
+  await chrome.storage.session.set({
+    pipTabId: null,
+    pipSourcePlaying: true,
+  });
+  await chrome.storage.session.remove(PIP_WINDOW_ID_STORAGE_KEY);
+  await broadcastPipState(false);
+}
+
 async function broadcastPipState(pipOpen: boolean) {
   const { pipSourcePlaying } =
     await chrome.storage.session.get("pipSourcePlaying");
@@ -354,6 +385,19 @@ runtimeMessageDispatcher.addListener(
         }
 
         try {
+          const sourceState: unknown = await chrome.tabs.sendMessage(
+            sourceTabId,
+            { type: "PING" } satisfies ExtensionMessage,
+          );
+          if (
+            !isRecord(sourceState) ||
+            sourceState.pipOpen !== true ||
+            sourceState.pipPlaying !== false
+          ) {
+            sendResponse({ ok: false, pipOpen: true });
+            return;
+          }
+
           const result: unknown = await chrome.tabs.sendMessage(targetTabId, {
             type: "OPEN_PIP",
           } satisfies ExtensionMessage);
@@ -362,12 +406,51 @@ runtimeMessageDispatcher.addListener(
             return;
           }
 
-          try {
-            await chrome.tabs.sendMessage(sourceTabId, {
-              type: "CLOSE_PIP",
-            } satisfies ExtensionMessage);
-          } catch {
-            // 新 PiP 已建立時，來源分頁可能已被瀏覽器自動關閉。
+          const latestSourceState: unknown = await chrome.tabs
+            .sendMessage(sourceTabId, {
+              type: "PING",
+            } satisfies ExtensionMessage)
+            .catch(() => null);
+          if (!isRecord(latestSourceState)) {
+            await rollbackPipHandoff(sourceTabId, targetTabId);
+            sendResponse({ ok: false, pipOpen: true });
+            return;
+          }
+
+          if (latestSourceState.pipOpen === true) {
+            if (latestSourceState.pipPlaying !== false) {
+              await rollbackPipHandoff(sourceTabId, targetTabId);
+              sendResponse({ ok: false, pipOpen: true });
+              return;
+            }
+            let closeResult: unknown;
+            try {
+              closeResult = await chrome.tabs.sendMessage(sourceTabId, {
+                type: "CLOSE_PIP_IF_PAUSED",
+                preservePlayback: true,
+              } satisfies ExtensionMessage);
+            } catch {
+              // 原 PiP 分頁在交接中關閉時，沿用原本的跨分頁切換行為。
+            }
+            if (!isRecord(closeResult) || closeResult.ok !== true) {
+              let remainingSourcePip: unknown = null;
+              try {
+                remainingSourcePip = await chrome.tabs.sendMessage(
+                  sourceTabId,
+                  { type: "PING" } satisfies ExtensionMessage,
+                );
+              } catch {
+                // 舊的 PiP 分頁可能已導覽或關閉，沿用原本的跨分頁切換行為。
+              }
+              if (
+                isRecord(remainingSourcePip) &&
+                remainingSourcePip.pipOpen === true
+              ) {
+                await rollbackPipHandoff(sourceTabId, targetTabId);
+                sendResponse({ ok: false, pipOpen: true });
+                return;
+              }
+            }
           }
           await chrome.storage.session.set({
             pipTabId: targetTabId,
