@@ -136,8 +136,32 @@ seekSecondsSelect.addEventListener("change", () => {
 });
 
 // 功能開關
+const TOGGLE_DEFAULTS = {
+  danmakuEnabled: true,
+  danmakuJumpEnabled: false,
+  commentsEnabled: true,
+  screenshotEnabled: true,
+  followPlaybackPip: true,
+  pauseOnPipClose: true,
+  thumbnailPreviewEnabled: true,
+};
+
+type ToggleKey = keyof typeof TOGGLE_DEFAULTS;
+
+// 預設值單一來源：未儲存過的 key 回到 TOGGLE_DEFAULTS，已儲存的只認顯式 false。
+function readToggleValue(
+  stored: Record<string, unknown>,
+  key: ToggleKey,
+): boolean {
+  const value = stored[key];
+  return value === undefined ? TOGGLE_DEFAULTS[key] : value !== false;
+}
+
 const danmakuToggle = document.querySelector(
   "#danmaku-toggle",
+) as HTMLInputElement;
+const danmakuJumpToggle = document.querySelector(
+  "#danmaku-jump-toggle",
 ) as HTMLInputElement;
 const commentsToggle = document.querySelector(
   "#comments-toggle",
@@ -155,23 +179,14 @@ const thumbnailPreviewToggle = document.querySelector(
   "#thumbnail-preview-toggle",
 ) as HTMLInputElement;
 
-async function saveToggle(
-  toggle: HTMLInputElement,
-  key:
-    | "danmakuEnabled"
-    | "commentsEnabled"
-    | "screenshotEnabled"
-    | "followPlaybackPip"
-    | "pauseOnPipClose"
-    | "thumbnailPreviewEnabled",
-) {
+async function saveToggle(toggle: HTMLInputElement, key: ToggleKey) {
   try {
     await storage.local.set({ [key]: toggle.checked });
   } catch {
     showStatus(t("popupCannotSaveToggle"), true);
     try {
       const stored = await storage.local.get(key);
-      toggle.checked = stored[key] !== false;
+      toggle.checked = readToggleValue(stored, key);
     } catch {
       // 無法讀取
     }
@@ -180,29 +195,31 @@ async function saveToggle(
 
 async function loadToggles() {
   try {
-    const stored = await storage.local.get({
-      danmakuEnabled: true,
-      commentsEnabled: true,
-      screenshotEnabled: true,
-      followPlaybackPip: true,
-      pauseOnPipClose: true,
-      thumbnailPreviewEnabled: true,
-    });
-    danmakuToggle.checked = stored.danmakuEnabled !== false;
-    commentsToggle.checked = stored.commentsEnabled !== false;
-    screenshotToggle.checked = stored.screenshotEnabled !== false;
-    followPlaybackPipToggle.checked = stored.followPlaybackPip !== false;
-    pauseOnPipCloseToggle.checked = stored.pauseOnPipClose !== false;
-    thumbnailPreviewToggle.checked = stored.thumbnailPreviewEnabled !== false;
+    const stored = await storage.local.get(TOGGLE_DEFAULTS);
+    danmakuToggle.checked = readToggleValue(stored, "danmakuEnabled");
+    danmakuJumpToggle.checked = readToggleValue(stored, "danmakuJumpEnabled");
+    commentsToggle.checked = readToggleValue(stored, "commentsEnabled");
+    screenshotToggle.checked = readToggleValue(stored, "screenshotEnabled");
+    followPlaybackPipToggle.checked = readToggleValue(
+      stored,
+      "followPlaybackPip",
+    );
+    pauseOnPipCloseToggle.checked = readToggleValue(stored, "pauseOnPipClose");
+    thumbnailPreviewToggle.checked = readToggleValue(
+      stored,
+      "thumbnailPreviewEnabled",
+    );
   } catch {
-    danmakuToggle.checked = true;
-    commentsToggle.checked = true;
-    screenshotToggle.checked = true;
-    followPlaybackPipToggle.checked = true;
-    pauseOnPipCloseToggle.checked = true;
-    thumbnailPreviewToggle.checked = true;
+    danmakuToggle.checked = TOGGLE_DEFAULTS.danmakuEnabled;
+    danmakuJumpToggle.checked = TOGGLE_DEFAULTS.danmakuJumpEnabled;
+    commentsToggle.checked = TOGGLE_DEFAULTS.commentsEnabled;
+    screenshotToggle.checked = TOGGLE_DEFAULTS.screenshotEnabled;
+    followPlaybackPipToggle.checked = TOGGLE_DEFAULTS.followPlaybackPip;
+    pauseOnPipCloseToggle.checked = TOGGLE_DEFAULTS.pauseOnPipClose;
+    thumbnailPreviewToggle.checked = TOGGLE_DEFAULTS.thumbnailPreviewEnabled;
   } finally {
     danmakuToggle.disabled = false;
+    danmakuJumpToggle.disabled = false;
     commentsToggle.disabled = false;
     screenshotToggle.disabled = false;
     followPlaybackPipToggle.disabled = false;
@@ -213,6 +230,9 @@ async function loadToggles() {
 
 danmakuToggle.addEventListener("change", () => {
   void saveToggle(danmakuToggle, "danmakuEnabled");
+});
+danmakuJumpToggle.addEventListener("change", () => {
+  void saveToggle(danmakuJumpToggle, "danmakuJumpEnabled");
 });
 commentsToggle.addEventListener("change", () => {
   void saveToggle(commentsToggle, "commentsEnabled");
@@ -258,6 +278,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (changes.seekSeconds) setSeekSeconds(changes.seekSeconds.newValue);
   if (changes.danmakuEnabled)
     danmakuToggle.checked = changes.danmakuEnabled.newValue !== false;
+  if (changes.danmakuJumpEnabled)
+    danmakuJumpToggle.checked = changes.danmakuJumpEnabled.newValue === true;
   if (changes.commentsEnabled)
     commentsToggle.checked = changes.commentsEnabled.newValue !== false;
   if (changes.screenshotEnabled)

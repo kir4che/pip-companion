@@ -96,6 +96,17 @@ interface DanmakuRendererOptions {
       padding-right: 6px;
       border-right: 1px solid rgba(255, 255, 255, 0.4);
     }
+    .yt-danmaku-item.is-jump {
+      padding: 2px 8px;
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: 6px;
+      background: rgba(0, 0, 0, 0.45);
+      pointer-events: auto;
+      cursor: pointer;
+    }
+    .yt-danmaku-item.is-jump:hover {
+      animation-play-state: paused;
+    }
     @keyframes yt-danmaku-scroll {
       from {
         transform: translate3d(var(--dm-start-x, 1000px), 0, 0);
@@ -115,6 +126,7 @@ interface DanmakuRendererOptions {
     doc: Document;
     laneAvailableTime: Record<DanmakuType, number[]>;
     overlay: HTMLElement | null = null;
+    measureContainer: HTMLElement | null = null;
     resizeObserver: ResizeObserver | null = null;
     duration: number;
     playbackRate = 1;
@@ -310,6 +322,7 @@ interface DanmakuRendererOptions {
     }
 
     emit(data: DanmakuData, options: DanmakuEmitOptions = {}): void {
+      globalThis.PipCompanion.ContentDanmakuJump?.handle(data);
       if (
         !this.dependencies.isVisible() ||
         !this.overlay ||
@@ -452,6 +465,20 @@ interface DanmakuRendererOptions {
       }
     }
 
+    //站內播放器 CSS 可能讓 in-overlay 的強制版面計算卡死（巴哈動畫瘋實測），量測統一放在 body 下的隱藏容器
+    private getMeasureContainer(): HTMLElement {
+      if (!this.measureContainer || !this.measureContainer.isConnected) {
+        const container = this.doc.createElement("div");
+        container.className = "yt-danmaku-measure";
+        container.setAttribute("aria-hidden", "true");
+        container.style.cssText =
+          "position:absolute;left:-99999px;top:0;visibility:hidden;pointer-events:none;";
+        (this.doc.body ?? this.doc.documentElement).appendChild(container);
+        this.measureContainer = container;
+      }
+      return this.measureContainer;
+    }
+
     render(data: DanmakuData, options: DanmakuEmitOptions = {}): void {
       if (
         !this.dependencies.isVisible() ||
@@ -520,6 +547,18 @@ interface DanmakuRendererOptions {
           item.appendChild(amountSpan);
         }
       }
+      const jumpSeconds = data.text
+        ? globalThis.PipCompanion.danmakuJump.parseJumpSeconds(data.text)
+        : null;
+      if (jumpSeconds !== null) {
+        item.classList.add("is-jump");
+        item.addEventListener("click", (event) => {
+          // 阻止事件冒泡到站內播放器（避免點彈幕變成暫停影片）
+          event.preventDefault();
+          event.stopPropagation();
+          globalThis.PipCompanion.ContentDanmakuJump.seek(jumpSeconds);
+        });
+      }
 
       let animatedContent: HTMLElement | null = null;
       if (isAdvanced) {
@@ -564,7 +603,7 @@ interface DanmakuRendererOptions {
       if (!isAdvanced) {
         item.style.animation = "none";
         item.style.visibility = "hidden";
-        this.overlay.appendChild(item);
+        this.getMeasureContainer().appendChild(item);
         const measuredWidth = item.getBoundingClientRect().width;
         estimatedWidth = Math.max(
           50,
@@ -766,6 +805,8 @@ interface DanmakuRendererOptions {
         this.overlay.remove();
         this.overlay = null;
       }
+      this.measureContainer?.remove();
+      this.measureContainer = null;
       this.laneAvailableTime = { right: [], top: [], bottom: [] };
     }
   }

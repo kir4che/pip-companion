@@ -86,6 +86,8 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     state.danmakuEnabled = changes.danmakuEnabled.newValue !== false;
     state.pipUi?.setDanmakuEnabled(state.danmakuEnabled);
   }
+  if (changes.danmakuJumpEnabled)
+    state.danmakuJumpEnabled = changes.danmakuJumpEnabled.newValue === true;
   if (changes.followPlaybackPip) {
     state.followPlaybackPip = changes.followPlaybackPip.newValue !== false;
     if (state.followPlaybackPip) void requestPipHandoff();
@@ -161,6 +163,7 @@ async function loadSettings() {
       commentsEnabled: true,
       screenshotEnabled: true,
       danmakuEnabled: true,
+      danmakuJumpEnabled: false,
       thumbnailPreviewEnabled: true,
       followPlaybackPip: true,
       pauseOnPipClose: true,
@@ -183,6 +186,7 @@ async function loadSettings() {
     state.commentsEnabled = stored.commentsEnabled !== false;
     state.screenshotEnabled = stored.screenshotEnabled !== false;
     state.danmakuEnabled = stored.danmakuEnabled !== false;
+    state.danmakuJumpEnabled = stored.danmakuJumpEnabled === true;
     state.thumbnailPreviewEnabled = stored.thumbnailPreviewEnabled !== false;
     state.followPlaybackPip = stored.followPlaybackPip !== false;
     state.pauseOnPipClose = stored.pauseOnPipClose !== false;
@@ -217,6 +221,7 @@ async function loadSettings() {
     state.commentsEnabled = true;
     state.screenshotEnabled = true;
     state.danmakuEnabled = true;
+    state.danmakuJumpEnabled = false;
     state.thumbnailPreviewEnabled = true;
     state.followPlaybackPip = true;
     state.pauseOnPipClose = true;

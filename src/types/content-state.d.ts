@@ -34,6 +34,7 @@ interface State {
   commentsEnabled: boolean;
   screenshotEnabled: boolean;
   danmakuEnabled: boolean;
+  danmakuJumpEnabled: boolean;
   thumbnailPreviewEnabled: boolean;
   followPlaybackPip: boolean;
   pauseOnPipClose: boolean;

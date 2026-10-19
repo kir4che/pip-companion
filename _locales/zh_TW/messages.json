@@ -116,6 +116,15 @@
   "optionsPauseOnPipClose": {
     "message": "關閉子母畫面後暫停影片"
   },
+  "optionsDanmakuJump": {
+    "message": "彈幕出現「空降 MM:SS」時自動跳轉"
+  },
+  "optionsDanmakuJumpHelpLabel": {
+    "message": "關於彈幕空降自動跳轉"
+  },
+  "optionsDanmakuJumpHint": {
+    "message": "彈幕停用或不顯示時，該功能也會自動停用。"
+  },
   "popupBackToMenu": {
     "message": "返回主選單"
   },

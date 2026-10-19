@@ -80,6 +80,39 @@
           </div>
           <div class="setting-row">
             <div class="setting-info">
+              <label class="setting-title" for="danmaku-jump-toggle"
+                >__MSG_optionsDanmakuJump__</label
+              >
+              <span class="setting-help">
+                <button
+                  class="setting-help-trigger"
+                  type="button"
+                  aria-label="__MSG_optionsDanmakuJumpHelpLabel__"
+                  aria-describedby="danmaku-jump-help-tooltip"
+                >
+                  <span aria-hidden="true">?</span>
+                </button>
+                <span
+                  id="danmaku-jump-help-tooltip"
+                  class="setting-tooltip"
+                  role="tooltip"
+                >
+                  <span>__MSG_optionsDanmakuJump__</span>
+                  <span class="setting-tooltip-note"
+                    >__MSG_optionsDanmakuJumpHint__</span
+                  >
+                </span>
+              </span>
+            </div>
+            <input
+              class="toggle-switch"
+              type="checkbox"
+              id="danmaku-jump-toggle"
+              disabled
+            />
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
               <label class="setting-title" for="screenshot-toggle"
                 >__MSG_popupScreenshot__</label
               >
@@ -729,9 +762,9 @@
         <section id="subtitle-translation" class="settings-card">
           <div class="card-header">
             <h3>__MSG_popupSubtitleTranslation__</h3>
-            <span class="translation-help">
+            <span class="setting-help">
               <button
-                class="translation-help-trigger"
+                class="setting-help-trigger"
                 type="button"
                 aria-label="__MSG_subtitleTranslationHelpLabel__"
                 aria-describedby="subtitle-translation-help-tooltip"
@@ -740,7 +773,7 @@
               </button>
               <span
                 id="subtitle-translation-help-tooltip"
-                class="translation-tooltip"
+                class="setting-tooltip"
                 role="tooltip"
                 >__MSG_subtitleTranslationSetupHint__</span
               >

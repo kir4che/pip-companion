@@ -116,6 +116,15 @@
   "optionsPauseOnPipClose": {
     "message": "Pause video when PiP closes"
   },
+  "optionsDanmakuJump": {
+    "message": "Auto-seek when a danmaku shows \"空降 MM:SS\""
+  },
+  "optionsDanmakuJumpHelpLabel": {
+    "message": "About auto-seek on danmaku"
+  },
+  "optionsDanmakuJumpHint": {
+    "message": "This feature is also turned off while danmaku is disabled or hidden."
+  },
   "popupBackToMenu": {
     "message": "Back to main menu"
   },

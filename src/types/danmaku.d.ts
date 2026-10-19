@@ -189,6 +189,15 @@ interface ContentYouTubeDanmakuApi {
   ): ContentYouTubeDanmakuController;
 }
 
+interface DanmakuJumpApi {
+  parseJumpSeconds(text?: string | null): number | null;
+}
+
+interface ContentDanmakuJumpApi {
+  handle(data?: DanmakuData | null): void;
+  seek(seconds: number): void;
+}
+
 // 讓其他模組使用的頁面彈幕操作
 declare function toggleDanmaku(forceState?: boolean): boolean;
 declare function initDanmakuInPip(win: Window, video: HTMLVideoElement): void;

@@ -25,6 +25,7 @@ const state: State = {
   commentsEnabled: true,
   screenshotEnabled: true,
   danmakuEnabled: true,
+  danmakuJumpEnabled: false,
   thumbnailPreviewEnabled: true,
   followPlaybackPip: true,
   pauseOnPipClose: true,

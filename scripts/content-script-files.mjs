@@ -2,6 +2,7 @@ export const contentScriptFiles = [
   "shared/locales.js",
   "shared/extra-danmaku-url.js",
   "shared/utils.js",
+  "shared/danmaku-jump.js",
   "shared/site-utils.js",
   "shared/danmaku-settings.js",
   "shared/subtitle-settings.js",

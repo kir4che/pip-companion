@@ -116,6 +116,15 @@
   "optionsPauseOnPipClose": {
     "message": "关闭画中画后暂停视频"
   },
+  "optionsDanmakuJump": {
+    "message": "弹幕出现「空降 MM:SS」时自动跳转"
+  },
+  "optionsDanmakuJumpHelpLabel": {
+    "message": "关于弹幕空降自动跳转"
+  },
+  "optionsDanmakuJumpHint": {
+    "message": "弹幕停用或不显示时，该功能也会自动停用。"
+  },
   "popupBackToMenu": {
     "message": "返回主菜单"
   },

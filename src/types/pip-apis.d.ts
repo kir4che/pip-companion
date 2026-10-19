@@ -964,8 +964,10 @@ interface PipCompanionGlobal {
   ContentDanmakuSender: ContentDanmakuSenderApi;
   ContentDanmakuRenderer: ContentDanmakuRendererApi;
   ContentDanmakuSources: ContentDanmakuSourcesApi;
+  ContentDanmakuJump: ContentDanmakuJumpApi;
   ContentYouTubeDanmaku: ContentYouTubeDanmakuApi;
   bilibiliDanmakuConfig: BilibiliDanmakuConfigApi;
+  danmakuJump: DanmakuJumpApi;
   danmakuSettings: DanmakuSettingsApi;
   subtitleSettings: SubtitleSettingsApi;
   subtitleTranslationSettings: SubtitleTranslationSettingsApi;

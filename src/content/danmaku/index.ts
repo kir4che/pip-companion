@@ -133,7 +133,10 @@ function ensureMainRenderer(): DanmakuRendererHandle | null {
     mainDanmakuRenderer?.destroy();
     mainDanmakuRenderer = globalThis.PipCompanion.ContentDanmakuRenderer.create(
       player,
-      { getStyle: () => danmakuStyle, isVisible: isDanmakuVisible },
+      {
+        getStyle: () => danmakuStyle,
+        isVisible: isDanmakuVisible,
+      },
       { isPip: false },
     );
     mainDanmakuRenderer.setPlaybackRate(danmakuPlaybackRate);
@@ -153,7 +156,10 @@ function initDanmakuInPip(
   pipDanmakuRenderer?.destroy();
   pipDanmakuRenderer = globalThis.PipCompanion.ContentDanmakuRenderer.create(
     screen,
-    { getStyle: () => danmakuStyle, isVisible: isDanmakuVisible },
+    {
+      getStyle: () => danmakuStyle,
+      isVisible: isDanmakuVisible,
+    },
     { isPip: true },
   );
   pipDanmakuRenderer.updateVisibility();
@@ -195,6 +201,44 @@ function broadcastDanmaku(
   ensureMainRenderer();
   mainDanmakuRenderer?.emit(data, options);
   pipDanmakuRenderer?.emit(data, options);
+}
+
+// 冷卻時間用來擋掉主畫面與 PiP 重複發射、以及跳轉後補發的彈幕
+const DANMAKU_JUMP_COOLDOWN_MS = 2000;
+const DANMAKU_JUMP_MIN_DELTA_SECONDS = 1;
+let lastDanmakuJumpAt = 0;
+
+function handleDanmakuJump(data?: DanmakuData | null): void {
+  // 彈幕停用或不顯示時，跳轉一併停用。
+  if (!state.danmakuJumpEnabled || !isDanmakuVisible() || !data?.text) return;
+  const seconds = globalThis.PipCompanion.danmakuJump.parseJumpSeconds(
+    data.text,
+  );
+  if (seconds === null) return;
+  const video = state.sourceVideo;
+  if (!video || !Number.isFinite(video.duration) || seconds >= video.duration)
+    return;
+  // 只往前跳：時間戳可能來自舊剪輯或亂喊，往回拉會打斷觀看；也順帶擋掉跳轉後補發的彈幕迴圈。
+  if (seconds - video.currentTime < DANMAKU_JUMP_MIN_DELTA_SECONDS) return;
+  const now = Date.now();
+  if (now - lastDanmakuJumpAt < DANMAKU_JUMP_COOLDOWN_MS) return;
+  lastDanmakuJumpAt = now;
+  video.currentTime = seconds;
+}
+
+// 使用者手動點擊空降彈幕：不做冷卻與 1 秒門檻（明確的點擊意圖），但只擋無效目標
+function seekDanmakuJump(seconds: number): void {
+  const video = state.sourceVideo;
+  if (
+    !video ||
+    !Number.isFinite(seconds) ||
+    !Number.isFinite(video.duration) ||
+    seconds >= video.duration
+  )
+    return;
+  // 點擊後也進冷卻，避免來源補發的彈幕立刻觸發自動跳轉
+  lastDanmakuJumpAt = Date.now();
+  video.currentTime = seconds;
 }
 
 function clearDanmaku(): void {
@@ -310,6 +354,11 @@ Object.assign(globalThis, {
   checkAndBindSiteDanmaku,
   broadcastDanmaku,
 });
+
+globalThis.PipCompanion.ContentDanmakuJump = {
+  handle: handleDanmakuJump,
+  seek: seekDanmakuJump,
+};
 
 if (DANMAKU_IS_YOUTUBE) {
   window.addEventListener("yt-navigate-finish", () => {

@@ -439,15 +439,15 @@ body {
   gap: 6px;
 }
 
-.translation-help {
+.setting-help {
   position: relative;
   flex: 0 0 auto;
 }
 
-.translation-help-trigger {
+.setting-help-trigger {
   display: grid;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   place-items: center;
   border: 1px solid #52525b;
@@ -459,14 +459,20 @@ body {
   cursor: help;
 }
 
-.translation-help-trigger:hover,
-.translation-help-trigger:focus-visible {
+/* ? 在系統字型的字框中偏左 0.34px、偏上 0.22px，grid 置中的是字框不是墨跡
+   shortcut: 只在 system-ui@12px 下量測，換字型或字級需重新量測 */
+.setting-help-trigger > span {
+  transform: translate(0.375px, 0.2px);
+}
+
+.setting-help-trigger:hover,
+.setting-help-trigger:focus-visible {
   border-color: #a1a1aa;
   color: #f4f4f5;
   background: #27272a;
 }
 
-.translation-tooltip {
+.setting-tooltip {
   position: absolute;
   z-index: 20;
   top: calc(100% + 8px);
@@ -487,11 +493,33 @@ body {
   transition: opacity 0.12s ease;
 }
 
-.translation-help:hover .translation-tooltip,
-.translation-help:focus-within .translation-tooltip {
+.setting-help:hover .setting-tooltip,
+.setting-help:focus-within .setting-tooltip {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+}
+
+.setting-info {
+  position: relative;
+}
+
+.setting-info .setting-help {
+  display: inline-flex;
+  align-items: center;
+  position: static;
+  margin-left: 6px;
+}
+
+.setting-info .setting-tooltip {
+  right: auto;
+  left: 0;
+}
+
+.setting-tooltip-note {
+  display: block;
+  margin-top: 4px;
+  color: #a1a1aa;
 }
 
 .translation-provider-field {

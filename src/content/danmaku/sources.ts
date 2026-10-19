@@ -261,11 +261,11 @@
         if (candidate) candidates.push(candidate);
       }
 
-      if (SOURCE_IS_BAHAMUT)
-        return candidates.filter(
-          (candidate) => !candidate.querySelector(selector),
-        );
-      return candidates;
+      return candidates.filter(
+        (candidate) =>
+          !candidate.closest('[class*="yt-danmaku"]') &&
+          (!SOURCE_IS_BAHAMUT || !candidate.querySelector(selector)),
+      );
     }
 
     function extractSiteDanmaku(node: Element): DanmakuData | null {
