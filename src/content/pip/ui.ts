@@ -1430,6 +1430,9 @@ globalThis.PipCompanion.PipUI = (() => {
       }
 
       timeTooltip.hidden = false;
+      const progressRect = progress.getBoundingClientRect();
+      const tooltipBottom = controlsRect.bottom - progressRect.top + 4;
+      timeTooltip.style.bottom = `${Math.max(0, tooltipBottom)}px`;
       const halfWidth = timeTooltip.offsetWidth / 2;
       timeTooltip.style.left = `${Math.max(halfWidth, Math.min(controlsRect.width - halfWidth, e.clientX - controlsRect.left))}px`;
     });

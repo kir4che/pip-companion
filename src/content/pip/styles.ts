@@ -193,7 +193,7 @@ globalThis.PipCompanion.PipStyles = {
       .time-tooltip {
         position: absolute;
         z-index: 2;
-        bottom: 52px;
+        bottom: 30px;
         left: 0;
         transform: translateX(-50%);
         display: flex;
