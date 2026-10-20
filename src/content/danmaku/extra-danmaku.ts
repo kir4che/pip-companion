@@ -437,11 +437,27 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
     }
 
     function mergeMessages(incoming: ExtraBilibiliMessage[]): void {
-      const ids = new Set(messages.map((msg) => msg.messageId || msg.id));
+      const ids = new Set(
+        messages
+          .map((msg) => msg.messageId || msg.id)
+          .filter((id): id is string => Boolean(id && id !== "0")),
+      );
+      const keys = new Set(
+        messages.map(
+          (msg) =>
+            `${msg.replayTime.toFixed(3)}:${msg.type || ""}:${msg.color || ""}:${msg.text || ""}`,
+        ),
+      );
       for (const message of incoming) {
         const id = message.messageId || message.id;
-        if (id && ids.has(id)) continue;
-        if (id) ids.add(id);
+        if (id && id !== "0") {
+          if (ids.has(id)) continue;
+          ids.add(id);
+        } else {
+          const key = `${message.replayTime.toFixed(3)}:${message.type || ""}:${message.color || ""}:${message.text || ""}`;
+          if (keys.has(key)) continue;
+          keys.add(key);
+        }
         messages.push(message);
       }
       messages.sort((a, b) => a.replayTime - b.replayTime);
@@ -774,7 +790,10 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
           video.addEventListener(
             "seeking",
             () => {
-              if (identity?.kind !== "youtube") return;
+              if (identity?.kind !== "youtube") {
+                dependencies.clear?.();
+                return;
+              }
               youtubeSeekRevision++;
               messages = [];
               messageIndex = 0;
@@ -794,7 +813,6 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
               messageIndex = findMessageIndex(
                 video.currentTime - LATE_TOLERANCE_SECONDS,
               );
-              if (identity?.kind !== "youtube") restoreRecent(video);
               ensureSegments(video);
               sendYouTubeClock();
             },

@@ -267,10 +267,12 @@ interface DanmakuJumpApi {
 interface ContentDanmakuJumpApi {
   handle(data?: DanmakuData | null): void;
   seek(seconds: number): void;
+  clearDanmaku?(): void;
 }
 
 // 讓其他模組使用的頁面彈幕操作
 declare function toggleDanmaku(forceState?: boolean): boolean;
+declare function clearDanmaku(): void;
 declare function initDanmakuInPip(win: Window, video: HTMLVideoElement): void;
 declare function destroyDanmakuInPip(): void;
 declare function setDanmakuPaused(paused: boolean): void;

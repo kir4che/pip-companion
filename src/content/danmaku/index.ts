@@ -115,11 +115,17 @@ function getMainPlayer(): HTMLElement | null {
   if (DANMAKU_IS_YOUTUBE)
     return document.querySelector<HTMLElement>("#movie_player");
   const video =
-    state.sourceVideo ?? globalThis.PipCompanion.ContentVideo.findVideo();
-  const player = video?.closest<HTMLElement>(
+    (state.sourceVideo?.ownerDocument === document
+      ? state.sourceVideo
+      : null) ?? globalThis.PipCompanion.ContentVideo.findVideo();
+  if (!video || video.ownerDocument !== document) return null;
+  const player = video.closest<HTMLElement>(
     "video-js, .video-js, [data-uia='player'], .watch-video, #ani_video, .anime_video_area",
   );
-  return player ?? video?.parentElement ?? null;
+  const mainPlayer = player ?? video.parentElement ?? null;
+  return mainPlayer && mainPlayer.ownerDocument === document
+    ? mainPlayer
+    : null;
 }
 
 function ensureMainRenderer(): DanmakuRendererHandle | null {
@@ -145,6 +151,8 @@ function ensureMainRenderer(): DanmakuRendererHandle | null {
   return mainDanmakuRenderer;
 }
 
+let pipVideoAbortController: AbortController | null = null;
+
 function initDanmakuInPip(
   win: Window | null,
   video: HTMLVideoElement | null,
@@ -167,6 +175,15 @@ function initDanmakuInPip(
     video?.playbackRate ?? danmakuPlaybackRate,
   );
   pipDanmakuRenderer.setPaused(video?.paused ?? danmakuPaused);
+
+  pipVideoAbortController?.abort();
+  if (video) {
+    pipVideoAbortController = new AbortController();
+    const signal = pipVideoAbortController.signal;
+    video.addEventListener("seeking", clearDanmaku, { signal });
+    video.addEventListener("seeked", clearDanmaku, { signal });
+  }
+
   if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE) {
     bilibiliDanmakuController.setSourceVideo(video);
     bilibiliDanmakuController.checkAndBind(video);
@@ -177,6 +194,8 @@ function initDanmakuInPip(
 }
 
 function destroyDanmakuInPip(): void {
+  pipVideoAbortController?.abort();
+  pipVideoAbortController = null;
   bilibiliDanmakuController.destroy();
   pipDanmakuRenderer?.destroy();
   pipDanmakuRenderer = null;
@@ -199,8 +218,15 @@ function broadcastDanmaku(
   options: DanmakuEmitOptions = {},
 ): void {
   if (!data || !danmakuSettingsLoaded || !isDanmakuVisible()) return;
-  ensureMainRenderer();
-  mainDanmakuRenderer?.emit(data, options);
+  const main = ensureMainRenderer();
+  if (
+    main &&
+    main.container &&
+    main.container !== pipDanmakuRenderer?.container &&
+    main.container.ownerDocument === document
+  ) {
+    main.emit(data, options);
+  }
   pipDanmakuRenderer?.emit(data, options);
 }
 
@@ -224,6 +250,7 @@ function handleDanmakuJump(data?: DanmakuData | null): void {
   const now = Date.now();
   if (now - lastDanmakuJumpAt < DANMAKU_JUMP_COOLDOWN_MS) return;
   lastDanmakuJumpAt = now;
+  clearDanmaku();
   video.currentTime = seconds;
 }
 
@@ -239,6 +266,7 @@ function seekDanmakuJump(seconds: number): void {
     return;
   // 點擊後也進冷卻，避免來源補發的彈幕立刻觸發自動跳轉
   lastDanmakuJumpAt = Date.now();
+  clearDanmaku();
   video.currentTime = seconds;
 }
 
@@ -359,6 +387,7 @@ Object.assign(globalThis, {
 globalThis.PipCompanion.ContentDanmakuJump = {
   handle: handleDanmakuJump,
   seek: seekDanmakuJump,
+  clearDanmaku,
 };
 
 let bahamutFullMessages: DanmakuData[] | null = null;

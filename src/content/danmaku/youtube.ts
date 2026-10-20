@@ -219,35 +219,16 @@
         () => {
           const currentTime = video.currentTime;
           replaySeeking = false;
-          const restoreWindow = Math.max(
-            dependencies.restoreWindowSeconds,
-            dependencies.getMainRenderer()?.duration || 0,
-            dependencies.getPipRenderer()?.duration || 0,
-          );
+          dependencies.clear();
           const entries = [...replayMessages.values()].sort(
             (a, b) => a.replayTime - b.replayTime,
           );
           dependencies.ensureMainRenderer();
-
-          const restoringRenderers = [
-            dependencies.getMainRenderer(),
-            dependencies.getPipRenderer(),
-          ].filter((r): r is DanmakuRendererHandle => r !== null);
-
-          for (const renderer of restoringRenderers)
-            renderer.beginSeekRestore();
           pendingReplayMessages.clear();
-          try {
-            for (const entry of entries) {
-              const elapsed = currentTime - entry.replayTime;
-              entry.emitted = elapsed >= 0;
-              if (elapsed < 0) pendingReplayMessages.add(entry);
-              if (elapsed < 0 || elapsed > restoreWindow) continue;
-              dependencies.broadcast(entry.data, { elapsed, restore: true });
-            }
-          } finally {
-            for (const renderer of restoringRenderers)
-              renderer.endSeekRestore();
+          for (const entry of entries) {
+            const elapsed = currentTime - entry.replayTime;
+            entry.emitted = elapsed >= 0;
+            if (elapsed < 0) pendingReplayMessages.add(entry);
           }
           processReplayMessages();
           syncYouTubeReplayChat();

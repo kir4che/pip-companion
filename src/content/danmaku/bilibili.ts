@@ -163,7 +163,6 @@ globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
   const BILIBILI_SEGMENT_SECONDS =
     globalThis.PipCompanion.bilibiliDanmakuConfig.segmentSeconds;
-  const MAX_SEEK_RESTORE_MESSAGES = 100;
   const isBilibili = globalThis.PipCompanion.site.isBilibiliHost(
     location.hostname,
   );
@@ -186,7 +185,6 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
     const bilibiliUnavailableSegments = new Set<number>();
     const bilibiliSegmentRetryAt = new Map<number, number>();
     let bilibiliSegmentCount = 0;
-    let bilibiliPendingRestore = false;
     let bilibiliLegacyFallback = false;
     let bilibiliEmittedMessages = new WeakSet<BilibiliDanmakuMessage>();
 
@@ -201,7 +199,6 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       bilibiliUnavailableSegments.clear();
       bilibiliSegmentRetryAt.clear();
       bilibiliSegmentCount = 0;
-      bilibiliPendingRestore = false;
       bilibiliLegacyFallback = false;
       bilibiliEmittedMessages = new WeakSet();
     }
@@ -326,52 +323,6 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       return bilibiliMessageIndex;
     }
 
-    function restoreRecentBilibiliDanmaku(video: HTMLVideoElement): void {
-      const renderer = dependencies.getRenderer();
-      if (!renderer || !bilibiliMessagesLoaded) return;
-      const currentTime = video.currentTime;
-      if (!Number.isFinite(currentTime)) return;
-      renderer.clear();
-      const restoreWindow = Math.max(
-        dependencies.restoreWindowSeconds,
-        renderer.duration,
-        dependencies.maxAdvancedRestoreSeconds,
-      );
-      const start = findBilibiliMessageIndex(
-        Math.max(0, currentTime - restoreWindow),
-      );
-      const end = resetBilibiliPlaybackCursor(currentTime);
-      const recentMessages = bilibiliMessages
-        .slice(start, end)
-        .filter((msg) => {
-          const elapsed = currentTime - msg.replayTime;
-          const lifetime = msg.advanced
-            ? msg.advanced.durationMs /
-              1000 /
-              (dependencies.getSpeedScale() / 100)
-            : msg.type === "top" || msg.type === "bottom"
-              ? dependencies.maxFixedRestoreSeconds
-              : Math.min(
-                  renderer.duration,
-                  dependencies.maxScrollRestoreSeconds,
-                );
-          return elapsed < lifetime;
-        })
-        .slice(-MAX_SEEK_RESTORE_MESSAGES);
-      renderer.beginSeekRestore();
-      try {
-        for (const message of recentMessages) {
-          renderer.emit(message, {
-            elapsed: currentTime - message.replayTime,
-            restore: true,
-          });
-        }
-      } finally {
-        renderer.endSeekRestore();
-      }
-      processBilibiliDanmaku(video);
-    }
-
     function startBilibiliDanmakuAtCurrentTime(video: HTMLVideoElement): void {
       const renderer = dependencies.getRenderer();
       if (!renderer || !bilibiliMessagesLoaded) return;
@@ -434,11 +385,21 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
           .map((msg) => msg.id)
           .filter((id): id is string => Boolean(id && id !== "0")),
       );
+      const knownKeys = new Set(
+        bilibiliMessages.map(
+          (msg) =>
+            `${msg.replayTime.toFixed(3)}:${msg.type}:${msg.color || ""}:${msg.text || ""}`,
+        ),
+      );
       let addedMessages = false;
       for (const message of messages) {
         if (message.id && message.id !== "0") {
           if (knownIds.has(message.id)) continue;
           knownIds.add(message.id);
+        } else {
+          const key = `${message.replayTime.toFixed(3)}:${message.type}:${message.color || ""}:${message.text || ""}`;
+          if (knownKeys.has(key)) continue;
+          knownKeys.add(key);
         }
         bilibiliMessages.push(message);
         addedMessages = true;
@@ -579,22 +540,14 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
             }
             if (bilibiliSeekedBeforeLoad) {
               bilibiliSeekedBeforeLoad = false;
-              restoreRecentBilibiliDanmaku(playbackVideo);
-              if (
-                bilibiliLegacyFallback ||
-                areBilibiliRestoreSegmentsLoaded(playbackVideo)
-              )
-                bilibiliPendingRestore = false;
+              if (playbackVideo) {
+                dependencies.getRenderer()?.clear();
+                resetBilibiliPlaybackCursor(playbackVideo.currentTime);
+                processBilibiliDanmaku(playbackVideo);
+              }
             } else startBilibiliDanmakuAtCurrentTime(playbackVideo);
           } else {
-            if (bilibiliPendingRestore) {
-              restoreRecentBilibiliDanmaku(playbackVideo);
-              if (
-                bilibiliLegacyFallback ||
-                areBilibiliRestoreSegmentsLoaded(playbackVideo)
-              )
-                bilibiliPendingRestore = false;
-            } else processBilibiliDanmaku(playbackVideo);
+            processBilibiliDanmaku(playbackVideo);
           }
         })
         .catch(() => {
@@ -647,20 +600,19 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       );
     }
 
-    function areBilibiliRestoreSegmentsLoaded(
-      video: HTMLVideoElement,
-    ): boolean {
-      const currentSegment =
-        Math.floor(video.currentTime / BILIBILI_SEGMENT_SECONDS) + 1;
-      return (
-        bilibiliLoadedSegments.has(currentSegment) &&
-        bilibiliLoadedSegments.has(getBilibiliRestoreStartSegment(video))
-      );
-    }
-
     function checkAndBindBilibiliDanmaku(video: HTMLVideoElement | null): void {
       const renderer = dependencies.getRenderer();
       if (!isBilibili || !dependencies.isSettingsLoaded()) return;
+      if (!dependencies.isVisible() || !renderer) {
+        if (bilibiliVideoController || bilibiliPipVideo) {
+          bilibiliVideoController?.abort();
+          bilibiliVideoController = null;
+          bilibiliPipVideo = null;
+          bilibiliPageKey = "";
+          resetBilibiliState();
+        }
+        return;
+      }
       if (video) bilibiliPipSourceVideo = video;
 
       const targetVideo =
@@ -671,15 +623,13 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
               "#bilibili-player video, .bpx-player-video-wrap video, video",
             ) ?? null));
       const identity = getBilibiliVideoIdentity();
-      if (!dependencies.isVisible() || !identity || !targetVideo) {
-        if (renderer) {
-          bilibiliVideoController?.abort();
-          bilibiliVideoController = null;
-          bilibiliPipVideo = null;
-          bilibiliPageKey = "";
-          resetBilibiliState();
-          renderer.clear();
-        }
+      if (!identity || !targetVideo) {
+        bilibiliVideoController?.abort();
+        bilibiliVideoController = null;
+        bilibiliPipVideo = null;
+        bilibiliPageKey = "";
+        resetBilibiliState();
+        renderer.clear();
         return;
       }
 
@@ -730,17 +680,10 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
           () => {
             seeking = false;
             bilibiliSeekedBeforeLoad = true;
+            dependencies.getRenderer()?.clear();
+            resetBilibiliPlaybackCursor(targetVideo.currentTime);
             ensureBilibiliSegments(targetVideo);
-            if (
-              bilibiliLegacyFallback ||
-              areBilibiliRestoreSegmentsLoaded(targetVideo)
-            ) {
-              bilibiliPendingRestore = false;
-              restoreRecentBilibiliDanmaku(targetVideo);
-            } else {
-              bilibiliPendingRestore = true;
-              resetBilibiliPlaybackCursor(targetVideo.currentTime);
-            }
+            processBilibiliDanmaku(targetVideo);
           },
           { signal: controller.signal },
         );

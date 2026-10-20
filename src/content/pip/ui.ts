@@ -11,6 +11,7 @@ globalThis.PipCompanion.PipUI = (() => {
       videoSource: HTMLVideoElement,
       targetSeconds: number,
     ) => {
+      globalThis.PipCompanion.ContentDanmakuJump?.clearDanmaku?.();
       if (globalThis.PipCompanion.site.isNetflixHost(location.hostname)) {
         window.postMessage(
           { type: "PIP_NETFLIX_SEEK", targetSeconds },

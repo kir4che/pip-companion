@@ -39,9 +39,9 @@ globalThis.PipCompanion.genericSubtitleOverlayDetection = {
 
     if (!scored.length) return null;
     const populated = scored.filter((entry) => entry.hasText);
-    const candidates = populated.length ? populated : scored;
-    const best = Math.max(...candidates.map((entry) => entry.score));
-    const top = candidates
+    if (!populated.length) return null;
+    const best = Math.max(...populated.map((entry) => entry.score));
+    const top = populated
       .filter((entry) => entry.score === best)
       .map((entry) => entry.element);
     return (

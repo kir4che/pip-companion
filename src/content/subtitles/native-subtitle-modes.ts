@@ -30,12 +30,6 @@ globalThis.PipCompanion.nativeSubtitleModes = {
         }
       },
       restore() {
-        if (options.isNativeControlOverride()) {
-          options.setChangedTracks(null);
-          options.resetSelection();
-          options.clearInitiallyEnabled();
-          return;
-        }
         for (const [track, mode] of options.getChangedTracks() ?? []) {
           if (track.mode !== mode) track.mode = mode;
         }

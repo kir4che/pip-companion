@@ -238,7 +238,6 @@ interface NativeSubtitleModesApi {
     getTracks: () => TextTrack[];
     getChangedTracks: () => Map<TextTrack, TextTrackMode> | null;
     setChangedTracks: (tracks: Map<TextTrack, TextTrackMode> | null) => void;
-    isNativeControlOverride: () => boolean;
     resetSelection: () => void;
     getYouTubeSubtitleButton: () => HTMLElement | null;
     getInitiallyEnabled: () => boolean | null;

@@ -45,8 +45,6 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       setChangedTracks: (tracks) => {
         state.nativeSubtitleTracks = tracks;
       },
-      isNativeControlOverride: () =>
-        subtitleEnabledOverride?.nativeControl === true,
       resetSelection: () => {
         selectedNativeTrack = null;
         nativeSecondaryTrack.clear();
@@ -906,9 +904,9 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     selectedNativeTrack = null;
     nativeSecondaryTrack.clear();
     setSubtitlesEnabled(false);
-    const button = getYouTubeSubtitleButton();
-    if (button) {
-      setSubtitlesEnabled(button.getAttribute("aria-pressed") === "true");
+    if (IS_YOUTUBE) {
+      const button = getYouTubeSubtitleButton();
+      setSubtitlesEnabled(button?.getAttribute("aria-pressed") === "true");
       applySubtitleEnabledOverride();
       return;
     }

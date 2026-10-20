@@ -204,6 +204,7 @@ function createBilibiliDanmakuEnvironment(
 
   return {
     controller,
+    context,
     mockLocation,
     mockDocument,
     mockVideo,
@@ -358,4 +359,115 @@ test("Bilibili danmaku detects active item bvid in playlist without URL bvid par
   assert.equal(env.sentMessages.length, 1);
   assert.equal(env.sentMessages[0].bvid, "BV1xx411c7mD");
   assert.equal(env.sentMessages[0].page, 1);
+});
+
+test("Bilibili danmaku deduplicates messages without id across segment requests", async () => {
+  const flush = async () => {
+    for (let i = 0; i < 3; i++)
+      await new Promise((resolve) => setTimeout(resolve, 0));
+  };
+  const env = createBilibiliDanmakuEnvironment(
+    "https://www.bilibili.com/video/BV1xx411c7mD/",
+    {
+      messagesFor: () => [
+        { replayTime: 1.5, type: "right", color: "#ffffff", text: "彈幕1" },
+        { replayTime: 2.0, type: "right", color: "#ffffff", text: "彈幕2" },
+      ],
+    },
+  );
+
+  env.controller.checkAndBind(env.mockVideo);
+  await flush();
+  assert.equal(env.controller.getMessages().length, 2);
+
+  // 模擬再次載入相同訊息（例如分段重新請求）
+  await env.controller.loadAllMessages();
+  await flush();
+  assert.equal(env.controller.getMessages().length, 2);
+});
+
+test("Bilibili danmaku does not request segments when renderer is null (PiP closed)", () => {
+  let activeRenderer = null;
+  const env = createBilibiliDanmakuEnvironment(
+    "https://www.bilibili.com/video/BV1xx411c7mD/",
+  );
+  // 覆寫 controller，使其 dependencies.getRenderer 回傳 null
+  const nullRendererController =
+    env.context.PipCompanion.ContentBilibiliDanmaku.create({
+      getRenderer: () => activeRenderer,
+      isSettingsLoaded: () => true,
+      isVisible: () => true,
+      getSpeedScale: () => 100,
+      lateToleranceSeconds: 0.5,
+      restoreWindowSeconds: 5,
+      maxScrollRestoreSeconds: 3,
+      maxFixedRestoreSeconds: 2,
+      maxAdvancedRestoreSeconds: 1200,
+    });
+
+  nullRendererController.checkAndBind(env.mockVideo);
+  assert.equal(env.sentMessages.length, 0);
+});
+
+test("Bilibili danmaku clears previous danmaku on seek and does not restore old messages", async () => {
+  const flush = async () => {
+    for (let i = 0; i < 3; i++)
+      await new Promise((resolve) => setTimeout(resolve, 0));
+  };
+  const env = createBilibiliDanmakuEnvironment(
+    "https://www.bilibili.com/video/BV1xx411c7mD/",
+    {
+      messagesFor: () => [
+        {
+          id: "1",
+          replayTime: 1.0,
+          type: "right",
+          color: "#ffffff",
+          text: "彈幕1",
+        },
+        {
+          id: "2",
+          replayTime: 2.0,
+          type: "right",
+          color: "#ffffff",
+          text: "彈幕2",
+        },
+        {
+          id: "3",
+          replayTime: 10.0,
+          type: "right",
+          color: "#ffffff",
+          text: "彈幕3",
+        },
+      ],
+    },
+  );
+
+  env.controller.checkAndBind(env.mockVideo);
+  await flush();
+
+  // 播放到 1.5 秒，彈幕1 已經發射
+  env.mockVideo.currentTime = 1.5;
+  env.mockVideo.dispatchEvent("timeupdate");
+  assert.equal(env.emittedMessages.length, 1);
+  assert.equal(env.emittedMessages[0].text, "彈幕1");
+
+  // 手動跳轉到 8.0 秒（seeking -> seeked）
+  const initialClears = env.clearedRenderers.length;
+  env.mockVideo.seeking = true;
+  env.mockVideo.dispatchEvent("seeking");
+  assert.ok(env.clearedRenderers.length > initialClears);
+
+  env.mockVideo.currentTime = 8.0;
+  env.mockVideo.seeking = false;
+  env.mockVideo.dispatchEvent("seeked");
+
+  // 跳轉後先前 1.0/2.0 的彈幕不應被補發恢復（emittedMessages 仍保持 1）
+  assert.equal(env.emittedMessages.length, 1);
+
+  // 播放到 10.5 秒時，正常發射該時間點的彈幕3。
+  env.mockVideo.currentTime = 10.5;
+  env.mockVideo.dispatchEvent("timeupdate");
+  assert.equal(env.emittedMessages.length, 2);
+  assert.equal(env.emittedMessages[1].text, "彈幕3");
 });

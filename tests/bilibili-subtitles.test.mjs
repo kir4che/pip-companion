@@ -12,8 +12,18 @@ function setup({ nativeTracks = [], active = true } = {}) {
   const window = {
     addEventListener: (_type, listener) => listeners.push(listener),
     postMessage: (msg) => posted.push(msg),
-    setTimeout,
+    setTimeout: (...args) => {
+      const id = setTimeout(...args);
+      if (id?.unref) id.unref();
+      return id;
+    },
     clearTimeout,
+    setInterval: (...args) => {
+      const id = setInterval(...args);
+      if (id?.unref) id.unref();
+      return id;
+    },
+    clearInterval,
   };
   const context = {
     window,
@@ -149,7 +159,12 @@ function setupSubtitles({
     NativeSecondarySubtitleTrack: {
       create: () => ({ getTrack: () => null, clear() {} }),
     },
-    SubtitleTranslation: { create: () => ({ onSubtitlesEnabledChanged() {} }) },
+    SubtitleTranslation: {
+      create: () => ({
+        onSubtitlesEnabledChanged() {},
+        getRenderedSubtitleLines: (lines) => lines,
+      }),
+    },
     standardTextTrack: {
       getTracks: () => [],
       getSelectedTrack: () => null,
@@ -438,6 +453,80 @@ test("reopening PiP re-reads the native subtitle switch", () => {
   nativeState.enabled = true;
   subtitles.initializeSubtitlesOn();
   assert.equal(context.state.subtitlessOn, true);
+});
+
+test("PiP subtitles remain off when native video has no subtitles or default off", () => {
+  const { subtitles, context } = setupSubtitles({
+    nativeEnabled: false,
+    overlayText: "",
+  });
+  subtitles.initializeSubtitlesOn();
+  assert.equal(context.state.subtitlessOn, false);
+});
+
+test("YouTube subtitles default off when button is missing or unpressed", () => {
+  let ariaPressed = "false";
+  let buttonExists = true;
+  const { subtitles, context } = setupSubtitles({ platform: "youtube" });
+  context.document.querySelector = (sel) => {
+    if (sel.includes("ytp-subtitles-button")) {
+      return buttonExists
+        ? {
+            getAttribute: (attr) =>
+              attr === "aria-pressed" ? ariaPressed : null,
+          }
+        : null;
+    }
+    return null;
+  };
+
+  subtitles.initializeSubtitlesOn();
+  assert.equal(context.state.subtitlessOn, false);
+
+  // 原生無按鈕（無字幕可開）
+  buttonExists = false;
+  subtitles.initializeSubtitlesOn();
+  assert.equal(context.state.subtitlessOn, false);
+
+  // 原生有按鈕且開啟
+  buttonExists = true;
+  ariaPressed = "true";
+  subtitles.initializeSubtitlesOn();
+  assert.equal(context.state.subtitlessOn, true);
+});
+
+test("manual override in PiP does not persist to subsequent PiP sessions if native is off", () => {
+  let ariaPressed = "false";
+  const { subtitles, context } = setupSubtitles({ platform: "youtube" });
+  let clicks = 0;
+  context.document.querySelector = (sel) => {
+    if (sel.includes("ytp-subtitles-button")) {
+      return {
+        getAttribute: (attr) => (attr === "aria-pressed" ? ariaPressed : null),
+        click: () => {
+          clicks++;
+          ariaPressed = ariaPressed === "true" ? "false" : "true";
+        },
+      };
+    }
+    return null;
+  };
+
+  subtitles.initializeSubtitlesOn();
+  assert.equal(context.state.subtitlessOn, false);
+
+  // 在本次 PiP 內使用者特別手動開了字幕
+  subtitles.setSubtitlesEnabledFromPipShortcut(true);
+  assert.equal(context.state.subtitlessOn, true);
+
+  // 關閉 PiP 時會還原原生模式
+  subtitles.restoreNativeSubtitleModes();
+  assert.equal(clicks, 2);
+  assert.equal(ariaPressed, "false");
+
+  // 重新進入 PiP（原生仍為關閉狀態）
+  subtitles.initializeSubtitlesOn();
+  assert.equal(context.state.subtitlessOn, false);
 });
 
 test("unknown native switch retains the existing overlay fallback", () => {

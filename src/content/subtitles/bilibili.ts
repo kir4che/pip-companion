@@ -260,9 +260,17 @@ const bilibiliSubtitles = (() => {
         if (
           document.querySelector(
             ".bpx-player-ctrl-subtitle-language-item.bpx-state-active",
-          )
+          ) ||
+          document.querySelector(
+            ".bpx-player-ctrl-subtitle.bpx-state-active",
+          ) ||
+          document.querySelector(".bilibili-player-video-btn-subtitle.active")
         )
           return true;
+        const subtitleBtn =
+          document.querySelector(".bpx-player-ctrl-subtitle") ||
+          document.querySelector(".bilibili-player-video-btn-subtitle");
+        if (subtitleBtn) return false;
         return null;
       },
       requestTracks,
