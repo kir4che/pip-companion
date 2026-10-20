@@ -21,6 +21,9 @@
           <a href="#features" class="nav-item">__MSG_popupFeatureSettings__</a>
           <a href="#shortcuts" class="nav-item">__MSG_popupShortcuts__</a>
           <a href="#danmaku" class="nav-item">__MSG_popupDanmakuStyle__</a>
+          <a href="#danmaku-blocklist" class="nav-item"
+            >__MSG_optionsDanmakuBlocklistTitle__</a
+          >
           <a href="#subtitless" class="nav-item">__MSG_popupSubtitleStyle__</a>
           <a href="#subtitle-translation" class="nav-item"
             >__MSG_popupSubtitleTranslation__</a
@@ -664,6 +667,33 @@
           </div>
         </section>
 
+        <!-- 彈幕過濾設定 -->
+        <section id="danmaku-blocklist" class="settings-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h3>__MSG_optionsDanmakuBlocklistTitle__</h3>
+              <span class="setting-help">
+                <button
+                  class="setting-help-trigger"
+                  type="button"
+                  aria-label="__MSG_optionsDanmakuBlocklistHelpLabel__"
+                  aria-describedby="danmaku-blocklist-help-tooltip"
+                >
+                  <span aria-hidden="true">?</span>
+                </button>
+                <span
+                  id="danmaku-blocklist-help-tooltip"
+                  class="setting-tooltip"
+                  role="tooltip"
+                  >__MSG_optionsDanmakuBlocklistDesc__</span
+                >
+              </span>
+            </div>
+            <span class="blocklist-count">0 / 50</span>
+          </div>
+          <div id="danmaku-blocklist-container"></div>
+        </section>
+
         <!-- 字幕樣式設定 -->
         <section id="subtitless" class="settings-card">
           <div class="card-header">
@@ -1122,6 +1152,8 @@
     <script src="../../shared/extra-danmaku-url.js"></script>
     <script src="../../shared/utils.js"></script>
     <script src="../../shared/danmaku-settings.js"></script>
+    <script src="../../shared/danmaku-blocklist.js"></script>
+    <script src="../../shared/danmaku-blocklist-ui.js"></script>
     <script src="../../shared/subtitle-settings.js"></script>
     <script src="../../shared/subtitle-style-storage.js"></script>
     <script src="../../shared/subtitle-style-store.js"></script>

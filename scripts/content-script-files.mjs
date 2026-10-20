@@ -4,6 +4,7 @@ export const contentScriptFiles = [
   "shared/extra-danmaku-url.js",
   "shared/utils.js",
   "shared/danmaku-jump.js",
+  "shared/danmaku-blocklist.js",
   "shared/danmaku-search.js",
   "shared/site-utils.js",
   "shared/danmaku-settings.js",

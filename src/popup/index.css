@@ -918,3 +918,34 @@ select:focus-visible {
     box-shadow: none;
   }
 }
+
+.blocklist-manage-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+  background: transparent;
+  border-color: #3f3f46;
+  color: #a1a1aa;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.blocklist-manage-link:hover {
+  background: #27272a;
+  color: #f4f4f5;
+  border-color: #52525b;
+}
+
+.blocklist-manage-link svg {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.blocklist-manage-link:hover svg {
+  opacity: 1;
+}

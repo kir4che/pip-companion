@@ -808,5 +808,38 @@
   },
   "optionsThemeColorCustom": {
     "message": "Custom"
+  },
+  "optionsDanmakuBlocklistTitle": {
+    "message": "Danmaku Blocklist"
+  },
+  "optionsDanmakuBlocklistHelpLabel": {
+    "message": "About danmaku blocklist"
+  },
+  "optionsDanmakuBlocklistDesc": {
+    "message": "Danmaku containing specific keywords (case-insensitive) or matching regular expressions (e.g. /regex/i) will be hidden. Up to 50 rules."
+  },
+  "optionsDanmakuBlocklistPlaceholder": {
+    "message": "Enter keyword or /regex/..."
+  },
+  "optionsDanmakuBlocklistClear": {
+    "message": "Clear input"
+  },
+  "optionsDanmakuBlocklistHint": {
+    "message": "💡 Regex examples: <code class=\"blocklist-code\">/spoiler|leak/i</code> (synonyms), <code class=\"blocklist-code\">/(.)\\1{4,}/</code> (repeated chars spam)"
+  },
+  "optionsDanmakuBlocklistAdd": {
+    "message": "Add"
+  },
+  "optionsDanmakuBlocklistLimitReached": {
+    "message": "Reached maximum limit of 50 rules"
+  },
+  "optionsDanmakuBlocklistDuplicate": {
+    "message": "This filter rule already exists"
+  },
+  "optionsDanmakuBlocklistDelete": {
+    "message": "Delete"
+  },
+  "popupDanmakuBlocklistManage": {
+    "message": "Manage Danmaku Blocklist"
   }
 }

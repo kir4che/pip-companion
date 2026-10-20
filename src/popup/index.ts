@@ -388,3 +388,12 @@ void loadLaunchShortcut();
 void danmakuStyleOptions.load();
 void subtitleStyleOptions.load();
 void syncPipState();
+
+const openBlocklistButton = document.querySelector(
+  "#danmaku-blocklist-open-options",
+) as HTMLButtonElement | null;
+openBlocklistButton?.addEventListener("click", () => {
+  const url = chrome.runtime.getURL("ui/options/index.html#danmaku-blocklist");
+  if (chrome.tabs?.create) chrome.tabs.create({ url });
+  else window.open(url);
+});

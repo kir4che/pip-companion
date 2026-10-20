@@ -3,6 +3,8 @@
 const DANMAKU_STORAGE_KEY = "danmakuEnabled";
 const DANMAKU_STYLE_STORAGE_KEY =
   globalThis.PipCompanion.danmakuSettings.STORAGE_KEY;
+const DANMAKU_BLOCKLIST_STORAGE_KEY =
+  globalThis.PipCompanion.danmakuBlocklist?.STORAGE_KEY ?? "danmakuBlocklist";
 const danmakuSiteUtils = globalThis.PipCompanion.site;
 const DANMAKU_IS_YOUTUBE = danmakuSiteUtils.isYouTubeHost(location.hostname);
 const DANMAKU_IS_BILIBILI = danmakuSiteUtils.isBilibiliHost(location.hostname);
@@ -29,6 +31,8 @@ let danmakuSettingsLoaded = false;
 let danmakuEnabledChangedDuringLoad = false;
 let danmakuStyleChangedDuringLoad = false;
 let danmakuStyle = globalThis.PipCompanion.danmakuSettings.normalize(null);
+let danmakuBlocklist: string[] = [];
+let isDanmakuBlocked: (text?: string | null) => boolean = () => false;
 let danmakuPlaybackRate = 1;
 let danmakuPaused = false;
 let mainDanmakuRenderer: DanmakuRendererHandle | null = null;
@@ -142,6 +146,7 @@ function ensureMainRenderer(): DanmakuRendererHandle | null {
       {
         getStyle: () => danmakuStyle,
         isVisible: isDanmakuVisible,
+        isBlocked: (text) => isDanmakuBlocked(text),
       },
       { isPip: false },
     );
@@ -167,6 +172,7 @@ function initDanmakuInPip(
     {
       getStyle: () => danmakuStyle,
       isVisible: isDanmakuVisible,
+      isBlocked: (text) => isDanmakuBlocked(text),
     },
     { isPip: true },
   );
@@ -217,7 +223,13 @@ function broadcastDanmaku(
   data?: DanmakuData | null,
   options: DanmakuEmitOptions = {},
 ): void {
-  if (!data || !danmakuSettingsLoaded || !isDanmakuVisible()) return;
+  if (
+    !data ||
+    !danmakuSettingsLoaded ||
+    !isDanmakuVisible() ||
+    isDanmakuBlocked(data.text)
+  )
+    return;
   const main = ensureMainRenderer();
   if (
     main &&
@@ -237,7 +249,13 @@ let lastDanmakuJumpAt = 0;
 
 function handleDanmakuJump(data?: DanmakuData | null): void {
   // 彈幕停用或不顯示時，跳轉一併停用。
-  if (!state.danmakuJumpEnabled || !isDanmakuVisible() || !data?.text) return;
+  if (
+    !state.danmakuJumpEnabled ||
+    !isDanmakuVisible() ||
+    !data?.text ||
+    isDanmakuBlocked(data.text)
+  )
+    return;
   const seconds = globalThis.PipCompanion.danmakuJump.parseJumpSeconds(
     data.text,
   );
@@ -327,6 +345,17 @@ function checkAndBindExtraBilibiliDanmaku(
 }
 
 try {
+  function applyDanmakuBlocklist(raw: unknown) {
+    danmakuBlocklist =
+      globalThis.PipCompanion.danmakuBlocklist?.normalize?.(raw) ?? [];
+    isDanmakuBlocked =
+      globalThis.PipCompanion.danmakuBlocklist?.createFilter?.(
+        danmakuBlocklist,
+      ) ?? (() => false);
+    mainDanmakuRenderer?.purgeBlocked?.(isDanmakuBlocked);
+    pipDanmakuRenderer?.purgeBlocked?.(isDanmakuBlocked);
+  }
+
   if (typeof chrome !== "undefined" && chrome.storage?.onChanged) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName !== "local") return;
@@ -343,11 +372,18 @@ try {
         danmakuEnabled = val === undefined ? true : Boolean(val);
         updateAllDanmakuVisibility();
       }
+      if (changes[DANMAKU_BLOCKLIST_STORAGE_KEY]) {
+        applyDanmakuBlocklist(changes[DANMAKU_BLOCKLIST_STORAGE_KEY].newValue);
+      }
     });
   }
 
   chrome.storage.local.get(
-    [DANMAKU_STORAGE_KEY, DANMAKU_STYLE_STORAGE_KEY],
+    [
+      DANMAKU_STORAGE_KEY,
+      DANMAKU_STYLE_STORAGE_KEY,
+      DANMAKU_BLOCKLIST_STORAGE_KEY,
+    ],
     (result) => {
       if (!danmakuEnabledChangedDuringLoad) {
         const storedValue = result?.[DANMAKU_STORAGE_KEY];
@@ -358,6 +394,7 @@ try {
         danmakuStyle = globalThis.PipCompanion.danmakuSettings.normalize(
           result?.[DANMAKU_STYLE_STORAGE_KEY],
         );
+      applyDanmakuBlocklist(result?.[DANMAKU_BLOCKLIST_STORAGE_KEY]);
       danmakuSettingsLoaded = true;
       updateAllDanmakuStyles();
       updateAllDanmakuVisibility();
@@ -421,23 +458,28 @@ async function loadBahamutDanmakuMessages(): Promise<DanmakuData[]> {
 }
 
 function getAllDanmakuMessages(): DanmakuData[] {
+  let list: DanmakuData[] = [];
   if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE)
-    return bilibiliDanmakuController.getMessages?.() || [];
-  if (DANMAKU_IS_BAHAMUT) return bahamutFullMessages || [];
-  if (DANMAKU_IS_YOUTUBE) return youtubeDanmakuController.getMessages?.() || [];
-  return extraBilibiliDanmakuController.getMessages?.() || [];
+    list = bilibiliDanmakuController.getMessages?.() || [];
+  else if (DANMAKU_IS_BAHAMUT) list = bahamutFullMessages || [];
+  else if (DANMAKU_IS_YOUTUBE)
+    list = youtubeDanmakuController.getMessages?.() || [];
+  else list = extraBilibiliDanmakuController.getMessages?.() || [];
+  return list.filter((m) => !isDanmakuBlocked(m.text));
 }
 
 async function loadAllDanmakuMessages(): Promise<DanmakuData[]> {
-  if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE)
-    return (
+  let list: DanmakuData[] = [];
+  if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE) {
+    list =
       (await bilibiliDanmakuController.loadAllMessages?.()) ||
       bilibiliDanmakuController.getMessages?.() ||
-      []
-    );
-  if (DANMAKU_IS_BAHAMUT) return await loadBahamutDanmakuMessages();
-  if (DANMAKU_IS_YOUTUBE) return youtubeDanmakuController.getMessages?.() || [];
-  return extraBilibiliDanmakuController.getMessages?.() || [];
+      [];
+  } else if (DANMAKU_IS_BAHAMUT) list = await loadBahamutDanmakuMessages();
+  else if (DANMAKU_IS_YOUTUBE)
+    list = youtubeDanmakuController.getMessages?.() || [];
+  else list = extraBilibiliDanmakuController.getMessages?.() || [];
+  return list.filter((m) => !isDanmakuBlocked(m.text));
 }
 
 globalThis.PipCompanion.ContentDanmakuSearch = {

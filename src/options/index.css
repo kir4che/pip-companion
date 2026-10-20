@@ -1528,3 +1528,192 @@ body.is-dragging-active .mock-pip-slot-tooltip {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
   font-weight: 600;
 }
+
+.danmaku-blocklist-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.blocklist-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blocklist-input-form {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.blocklist-input-hint {
+  font-size: 12px;
+  color: #a1a1aa;
+  line-height: 1.5;
+}
+
+.blocklist-code {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 4px;
+  color: #93c5fd;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.blocklist-code:hover {
+  background: #2563eb;
+  border-color: #3b82f6;
+  color: #fff;
+}
+
+.blocklist-input-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.blocklist-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 32px 8px 12px;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  color: #f4f4f5;
+  font: inherit;
+  font-size: 13px;
+  line-height: normal;
+}
+
+.blocklist-input:focus {
+  outline: none;
+  border-color: #3ea6ff;
+}
+
+.blocklist-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.blocklist-clear-btn[hidden] {
+  display: none;
+}
+
+.blocklist-clear-btn:hover {
+  color: #fff;
+}
+
+.blocklist-clear-btn:focus-visible {
+  outline: none;
+  color: #fff;
+}
+
+.blocklist-add-btn {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+  border: 1px solid #3b82f6;
+  font-size: 13px;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.blocklist-add-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #2563eb;
+}
+
+.blocklist-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.blocklist-count {
+  font-size: 13px;
+  color: #a1a1aa;
+  font-variant-numeric: tabular-nums;
+}
+
+.blocklist-error {
+  font-size: 12px;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.blocklist-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.blocklist-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 9999px;
+  font-size: 13px;
+  color: #f4f4f5;
+  word-break: break-all;
+  user-select: text;
+}
+
+.blocklist-delete-btn {
+  background: transparent;
+  border: none;
+  color: #a1a1aa;
+  cursor: pointer;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.blocklist-delete-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+}

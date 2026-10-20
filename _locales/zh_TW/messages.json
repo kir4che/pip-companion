@@ -838,5 +838,38 @@
   },
   "optionsThemeColorCustom": {
     "message": "自訂顏色"
+  },
+  "optionsDanmakuBlocklistTitle": {
+    "message": "彈幕關鍵字過濾"
+  },
+  "optionsDanmakuBlocklistHelpLabel": {
+    "message": "關於彈幕關鍵字過濾"
+  },
+  "optionsDanmakuBlocklistDesc": {
+    "message": "包含特定文字（不分大小寫，區分繁簡）或符合正規表示式（如 /regex/i）的彈幕將不會顯示，最多可設定 50 個。"
+  },
+  "optionsDanmakuBlocklistPlaceholder": {
+    "message": "輸入關鍵字或 /正則/..."
+  },
+  "optionsDanmakuBlocklistClear": {
+    "message": "清除輸入內容"
+  },
+  "optionsDanmakuBlocklistHint": {
+    "message": "💡 正則範例：<code class=\"blocklist-code\">/[劇剧]透/</code>（繁簡通擋）、<code class=\"blocklist-code\">/劇透|暴雷/</code>（多詞過濾）、<code class=\"blocklist-code\">/(.)\\1{4,}/</code>（重複字洗版）"
+  },
+  "optionsDanmakuBlocklistAdd": {
+    "message": "新增"
+  },
+  "optionsDanmakuBlocklistLimitReached": {
+    "message": "已達 50 個過濾規則上限"
+  },
+  "optionsDanmakuBlocklistDuplicate": {
+    "message": "該過濾規則已存在"
+  },
+  "optionsDanmakuBlocklistDelete": {
+    "message": "刪除"
+  },
+  "popupDanmakuBlocklistManage": {
+    "message": "管理彈幕過濾關鍵字"
   }
 }

@@ -100,6 +100,7 @@ interface DanmakuRendererHandle {
   setPaused(paused: boolean): void;
   setPlaybackRate(rate: number): void;
   clear(): void;
+  purgeBlocked?(predicate: (text?: string | null) => boolean): void;
   beginSeekRestore(): void;
   endSeekRestore(): void;
   emit(data: DanmakuData, options?: DanmakuEmitOptions): void;
@@ -109,6 +110,7 @@ interface DanmakuRendererHandle {
 interface ContentDanmakuRendererDependencies {
   getStyle(): DanmakuStyleSettings;
   isVisible(): boolean;
+  isBlocked?(text?: string | null): boolean;
 }
 
 interface ContentDanmakuRendererApi {
@@ -258,6 +260,31 @@ interface DanmakuSearchPanelApi {
       shortcutHint?: string | undefined;
     },
   ): DanmakuSearchPanelElements;
+}
+
+interface DanmakuBlocklistApi {
+  STORAGE_KEY: string;
+  MAX_BLOCKLIST_ITEMS: number;
+  MAX_PATTERN_LENGTH: number;
+  normalize(raw: unknown): string[];
+  compileRule(rule: string): ((text: string) => boolean) | null;
+  createFilter(rules: readonly string[]): (text?: string | null) => boolean;
+}
+
+interface DanmakuBlocklistUiOptions {
+  countElement?: HTMLElement | null;
+}
+
+interface DanmakuBlocklistUiInstance {
+  reload(): void;
+}
+
+interface DanmakuBlocklistUiApi {
+  create(
+    container: HTMLElement,
+    t: (key: string, substitutions?: string | string[]) => string,
+    options?: DanmakuBlocklistUiOptions,
+  ): DanmakuBlocklistUiInstance;
 }
 
 interface DanmakuJumpApi {

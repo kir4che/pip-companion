@@ -838,5 +838,38 @@
   },
   "optionsThemeColorCustom": {
     "message": "自定义颜色"
+  },
+  "optionsDanmakuBlocklistTitle": {
+    "message": "弹幕关键词过滤"
+  },
+  "optionsDanmakuBlocklistHelpLabel": {
+    "message": "关于弹幕关键词过滤"
+  },
+  "optionsDanmakuBlocklistDesc": {
+    "message": "包含特定文字（不分大小写，区分繁简）或符合正则表达式（如 /regex/i）的弹幕将不会显示，最多可设置 50 个。"
+  },
+  "optionsDanmakuBlocklistPlaceholder": {
+    "message": "输入关键词或 /正则/..."
+  },
+  "optionsDanmakuBlocklistClear": {
+    "message": "清除输入内容"
+  },
+  "optionsDanmakuBlocklistHint": {
+    "message": "💡 正则范例：<code class=\"blocklist-code\">/[剧劇]透/</code>（繁简通挡）、<code class=\"blocklist-code\">/剧透|暴雷/</code>（多词过滤）、<code class=\"blocklist-code\">/(.)\\1{4,}/</code>（重复字刷屏）"
+  },
+  "optionsDanmakuBlocklistAdd": {
+    "message": "添加"
+  },
+  "optionsDanmakuBlocklistLimitReached": {
+    "message": "已达 50 个过滤规则上限"
+  },
+  "optionsDanmakuBlocklistDuplicate": {
+    "message": "该过滤规则已存在"
+  },
+  "optionsDanmakuBlocklistDelete": {
+    "message": "删除"
+  },
+  "popupDanmakuBlocklistManage": {
+    "message": "管理弹幕过滤关键词"
   }
 }

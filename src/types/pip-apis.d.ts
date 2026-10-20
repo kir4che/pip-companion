@@ -1081,6 +1081,8 @@ interface PipCompanionGlobal {
   ContentYouTubeDanmaku: ContentYouTubeDanmakuApi;
   bilibiliDanmakuConfig: BilibiliDanmakuConfigApi;
   danmakuJump: DanmakuJumpApi;
+  danmakuBlocklist: DanmakuBlocklistApi;
+  danmakuBlocklistUi: DanmakuBlocklistUiApi;
   danmakuSearch: DanmakuSearchApi;
   danmakuSettings: DanmakuSettingsApi;
   subtitleSettings: SubtitleSettingsApi;

@@ -287,6 +287,19 @@ interface DanmakuRendererOptions {
       }
     }
 
+    purgeBlocked(predicate: (text?: string | null) => boolean): void {
+      if (!this.overlay) return;
+      this.pendingDanmaku = this.pendingDanmaku.filter(
+        (entry) => !predicate(entry.data.text),
+      );
+      for (const item of this.overlay.querySelectorAll<HTMLElement>(
+        ".yt-danmaku-item",
+      )) {
+        const text = item.dataset.danmakuText ?? item.textContent ?? "";
+        if (predicate(text)) item.remove();
+      }
+    }
+
     beginSeekRestore(): void {
       this.recalcLanes();
       this.restoreOccupancy = {
@@ -322,6 +335,7 @@ interface DanmakuRendererOptions {
     }
 
     emit(data: DanmakuData, options: DanmakuEmitOptions = {}): void {
+      if (this.dependencies.isBlocked?.(data.text)) return;
       globalThis.PipCompanion.ContentDanmakuJump?.handle(data);
       if (
         !this.dependencies.isVisible() ||
@@ -481,6 +495,7 @@ interface DanmakuRendererOptions {
 
     render(data: DanmakuData, options: DanmakuEmitOptions = {}): void {
       if (
+        this.dependencies.isBlocked?.(data.text) ||
         !this.dependencies.isVisible() ||
         !this.overlay ||
         !this.overlay.isConnected
@@ -530,6 +545,7 @@ interface DanmakuRendererOptions {
 
       const item: DanmakuItemElement = this.doc.createElement("span");
       item.className = "yt-danmaku-item";
+      if (typeof data.text === "string") item.dataset.danmakuText = data.text;
       if (isFixed && !isAdvanced) item.classList.add("is-fixed");
       if (isAdvanced) item.classList.add("is-advanced");
       item.classList.add(`is-${danmakuType}`);

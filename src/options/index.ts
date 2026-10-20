@@ -352,3 +352,17 @@ void danmakuStyleOptions.load();
 subtitleStyleOptions.load();
 void subtitleTranslationOptions.load();
 void playerControlsOptions.load();
+
+const danmakuBlocklistContainer = document.querySelector<HTMLElement>(
+  "#danmaku-blocklist-container",
+);
+const danmakuBlocklistCount = document.querySelector<HTMLElement>(
+  "#danmaku-blocklist .blocklist-count",
+);
+if (danmakuBlocklistContainer) {
+  globalThis.PipCompanion.danmakuBlocklistUi.create(
+    danmakuBlocklistContainer,
+    t,
+    { countElement: danmakuBlocklistCount },
+  );
+}
