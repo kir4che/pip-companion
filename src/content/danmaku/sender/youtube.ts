@@ -106,48 +106,42 @@ globalThis.PipCompanion.ContentYouTubeDanmakuSender = (() => {
     return getComposer() ? MAX_MESSAGE_LENGTH : null;
   }
 
-  function readText(element: HTMLElement): string {
-    return element instanceof HTMLInputElement ||
-      element instanceof HTMLTextAreaElement
-      ? element.value
-      : element.innerText || element.textContent || "";
+  function readText(el: HTMLElement): string {
+    return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
+      ? el.value
+      : el.innerText || el.textContent || "";
   }
 
-  function setText(element: HTMLElement, text: string): void {
-    if (
-      element instanceof HTMLInputElement ||
-      element instanceof HTMLTextAreaElement
-    ) {
+  function setText(el: HTMLElement, text: string): void {
+    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
       const setter = Object.getOwnPropertyDescriptor(
-        Object.getPrototypeOf(element),
+        Object.getPrototypeOf(el),
         "value",
       )?.set;
-      if (setter) setter.call(element, text);
-      else element.value = text;
-    } else if (!text) element.textContent = "";
+      if (setter) setter.call(el, text);
+      else el.value = text;
+    } else if (!text) el.textContent = "";
     else {
-      element.focus();
-      const doc = element.ownerDocument;
-      if (!doc.execCommand("insertText", false, text))
-        element.textContent = text;
+      el.focus();
+      const doc = el.ownerDocument;
+      if (!doc.execCommand("insertText", false, text)) el.textContent = text;
     }
-    const view = element.ownerDocument.defaultView;
+    const view = el.ownerDocument.defaultView;
     if (view) {
-      element.dispatchEvent(
+      el.dispatchEvent(
         new view.InputEvent("input", {
           bubbles: true,
           inputType: text ? "insertText" : "deleteContentBackward",
           data: text,
         }),
       );
-      element.dispatchEvent(new view.Event("change", { bubbles: true }));
+      el.dispatchEvent(new view.Event("change", { bubbles: true }));
     }
   }
 
-  function isDisabled(element: HTMLElement): boolean {
+  function isDisabled(el: HTMLElement): boolean {
     return (
-      element.matches(":disabled") ||
-      element.getAttribute("aria-disabled") === "true"
+      el.matches(":disabled") || el.getAttribute("aria-disabled") === "true"
     );
   }
 

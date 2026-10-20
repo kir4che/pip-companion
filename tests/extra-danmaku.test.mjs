@@ -4,10 +4,10 @@ import test from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
 
-const messages = Array.from({ length: 60000 }, (_, index) => ({
-  messageId: `message-${index}`,
-  replayTime: index / 10,
-  text: index === 55000 ? "target" : `message ${index}`,
+const messages = Array.from({ length: 60000 }, (_, i) => ({
+  messageId: `message-${i}`,
+  replayTime: i / 10,
+  text: i === 55000 ? "target" : `message ${i}`,
 }));
 
 function setup(kind, options = {}) {
@@ -92,9 +92,9 @@ function setup(kind, options = {}) {
       runtimeMessages: {
         addListener(types, listener) {
           const messageTypes = typeof types === "string" ? [types] : types;
-          runtimeListeners.push((message, sender, sendResponse) => {
-            if (messageTypes.includes(message.type))
-              return listener(message, sender, sendResponse);
+          runtimeListeners.push((msg, sender, sendResponse) => {
+            if (messageTypes.includes(msg.type))
+              return listener(msg, sender, sendResponse);
           });
         },
       },
@@ -138,7 +138,7 @@ function setup(kind, options = {}) {
   const controller = context.PipCompanion.ContentExtraBilibiliDanmaku.create({
     isVisible: () => true,
     isSourceAvailable: () => true,
-    broadcast: (message) => broadcasts.push(message),
+    broadcast: (msg) => broadcasts.push(msg),
     clear: () => clears++,
   });
   const url =
@@ -160,9 +160,9 @@ function setup(kind, options = {}) {
     intervals,
     timeouts,
     getClears: () => clears,
-    dispatchRuntimeMessage(message) {
+    dispatchRuntimeMessage(msg) {
       for (const listener of runtimeListeners)
-        listener(message, { id: "test-extension" }, () => {});
+        listener(msg, { id: "test-extension" }, () => {});
     },
   };
 }
@@ -179,7 +179,7 @@ for (const kind of ["bahamut", "bilibili"]) {
     );
     assert.equal(danmakuRequests.length, 1);
     assert.equal(
-      broadcasts.some((message) => message.text === "target"),
+      broadcasts.some((msg) => msg.text === "target"),
       true,
     );
 
@@ -216,7 +216,7 @@ test("a delayed response from the previous Bilibili source is ignored", async ()
   assert.equal(controller.getSource().url, nextUrl);
   assert.equal(controller.getSource().enabled, true);
   assert.equal(
-    broadcasts.some((message) => message.messageId === "old-source"),
+    broadcasts.some((msg) => msg.messageId === "old-source"),
     false,
   );
 
@@ -262,7 +262,7 @@ test("Twitch chat ignores messages from an old connection after channel switch",
   await new Promise((resolve) => setTimeout(resolve, 0));
 
   assert.deepEqual(
-    broadcasts.map((message) => message.text),
+    broadcasts.map((msg) => msg.text),
     ["current message"],
   );
   assert.equal(
@@ -367,9 +367,7 @@ test("YouTube source reports loading until the relay connects", async () => {
   });
   await flush();
   const statuses = () =>
-    s.requests.filter(
-      (message) => message.type === "EXTRA_DANMAKU_SOURCE_STATUS",
-    );
+    s.requests.filter((msg) => msg.type === "EXTRA_DANMAKU_SOURCE_STATUS");
   assert.equal(statuses().at(-1).loading, true);
   assert.equal(s.controller.getSource().loading, true);
 

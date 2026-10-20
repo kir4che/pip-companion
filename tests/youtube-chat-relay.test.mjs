@@ -57,9 +57,9 @@ function setup({ deferFirstStart = false, autoOpen = false } = {}) {
           if (!ids.includes(tabId)) throw new Error("No tab with id");
           return { id: tabId };
         },
-        sendMessage: async (tabId, message) => {
-          sent.push({ tabId, ...message });
-          if (message.type === "YOUTUBE_CHAT_PROBE") {
+        sendMessage: async (tabId, msg) => {
+          sent.push({ tabId, ...msg });
+          if (msg.type === "YOUTUBE_CHAT_PROBE") {
             if (probeFailures > 0) {
               probeFailures--;
               return null;
@@ -68,7 +68,7 @@ function setup({ deferFirstStart = false, autoOpen = false } = {}) {
               ? sourceProbe
               : null;
           }
-          if (message.type === "YOUTUBE_CHAT_START" && deferFirstStart) {
+          if (msg.type === "YOUTUBE_CHAT_START" && deferFirstStart) {
             deferFirstStart = false;
             await startGate;
           }
@@ -109,11 +109,11 @@ function setup({ deferFirstStart = false, autoOpen = false } = {}) {
     frameId: 0,
   });
   const dispatch = async (
-    message,
+    msg,
     from = sender(1, "https://www.twitch.tv/channel"),
   ) => {
     let response;
-    await handler(message, from, (value) => {
+    await handler(msg, from, (value) => {
       response = value;
     });
     return response;

@@ -16,18 +16,18 @@ export function isSupportedDanmakuSender(
 }
 
 export async function readResponseBytes(
-  response: Response,
+  res: Response,
   maxBytes: number,
   label: string,
 ): Promise<Uint8Array> {
-  if (!response.body) {
-    const buffer = await response.arrayBuffer();
+  if (!res.body) {
+    const buffer = await res.arrayBuffer();
     if (buffer.byteLength > maxBytes)
       throw new Error(`${label} response is too large`);
     return new Uint8Array(buffer);
   }
 
-  const reader = response.body.getReader();
+  const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
   try {

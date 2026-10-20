@@ -65,7 +65,7 @@ function isOwnTopFrameSender(sender: chrome.runtime.MessageSender): boolean {
 }
 
 function isAuthorizedSender(
-  message: Record<string, unknown>,
+  msg: Record<string, unknown>,
   sender: chrome.runtime.MessageSender,
 ): boolean {
   if (
@@ -75,14 +75,14 @@ function isAuthorizedSender(
       "EXTRA_YOUTUBE_CHAT_CLOCK",
       "YOUTUBE_CHAT_MESSAGE",
       "YOUTUBE_CHAT_ENDED",
-    ].includes(message.type as string)
+    ].includes(msg.type as string)
   )
     return isOwnTopFrameSender(sender);
-  if (sameOriginMessageTypes.has(message.type as string))
+  if (sameOriginMessageTypes.has(msg.type as string))
     return isSupportedDanmakuSender(sender);
-  if (webTabMessageTypes.has(message.type as string))
+  if (webTabMessageTypes.has(msg.type as string))
     return hasWebTabSender(sender);
-  if (message.type === "TEST_SUBTITLE_TRANSLATION")
+  if (msg.type === "TEST_SUBTITLE_TRANSLATION")
     return sender.url?.startsWith(chrome.runtime.getURL("")) === true;
   return true;
 }

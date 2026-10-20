@@ -20,13 +20,13 @@ function isBahamutDanmakuRequest(
 export function registerBahamutDanmakuListener(): void {
   runtimeMessageDispatcher.addListener(
     "GET_BAHAMUT_DANMAKU",
-    (message, _sender, sendResponse) => {
-      if (!isBahamutDanmakuRequest(message)) return;
+    (msg, _sender, sendResponse) => {
+      if (!isBahamutDanmakuRequest(msg)) return;
 
       void (async () => {
         try {
           const url = new URL("https://api.gamer.com.tw/anime/v1/danmu.php");
-          url.searchParams.set("videoSn", message.videoSn);
+          url.searchParams.set("videoSn", msg.videoSn);
           url.searchParams.set("geo", "TW,HK");
           const response = await fetch(url);
           if (!response.ok)
@@ -84,12 +84,12 @@ export function registerBahamutDanmakuListener(): void {
             ];
           });
           sendResponse({ ok: true, messages });
-        } catch (error) {
+        } catch (err) {
           sendResponse({
             ok: false,
             error:
-              error instanceof Error
-                ? error.message
+              err instanceof Error
+                ? err.message
                 : "Bahamut danmaku request failed",
           });
         }

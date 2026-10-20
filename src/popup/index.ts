@@ -30,13 +30,13 @@ const launchShortcutLabel = document.querySelector(
 ) as HTMLElement;
 const statusEl = document.querySelector("#status") as HTMLElement;
 
-function showStatus(message: string, error = false) {
-  statusEl.textContent = message;
-  statusEl.dataset.error = String(error);
+function showStatus(msg: string, err = false) {
+  statusEl.textContent = msg;
+  statusEl.dataset.error = String(err);
 }
 
-function isExtensionContextInvalidated(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error);
+function isExtensionContextInvalidated(err: unknown) {
+  const message = err instanceof Error ? err.message : String(err);
   return /extension context invalidated/i.test(message);
 }
 
@@ -110,12 +110,12 @@ async function syncPipState() {
 
 globalThis.PipCompanion.runtimeMessages.addListener(
   "PIP_GLOBAL_STATE",
-  (message: unknown) => {
+  (msg: unknown) => {
     if (
-      globalThis.PipCompanion.util.isExtensionMessage(message) &&
-      message.type === "PIP_GLOBAL_STATE"
+      globalThis.PipCompanion.util.isExtensionMessage(msg) &&
+      msg.type === "PIP_GLOBAL_STATE"
     )
-      setPipOpen(message.pipOpen);
+      setPipOpen(msg.pipOpen);
   },
 );
 
@@ -337,10 +337,10 @@ openButton.addEventListener("click", async () => {
       result = await chrome.tabs.sendMessage(tab.id, {
         type: "OPEN_PIP",
       } satisfies ExtensionMessage);
-    } catch (error) {
+    } catch (err) {
       result = {
         ok: false,
-        message: isExtensionContextInvalidated(error)
+        message: isExtensionContextInvalidated(err)
           ? t("pipExtensionContextInvalidated")
           : t("popupCannotOpenPip"),
       };
@@ -361,9 +361,9 @@ openButton.addEventListener("click", async () => {
     setPipOpen(true);
     showStatus("");
     window.close();
-  } catch (error) {
+  } catch (err) {
     showStatus(
-      isExtensionContextInvalidated(error)
+      isExtensionContextInvalidated(err)
         ? t("pipExtensionContextInvalidated")
         : t("popupCannotOperatePip"),
       true,

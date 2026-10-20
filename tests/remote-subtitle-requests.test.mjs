@@ -23,7 +23,7 @@ function setup(options = { isYouTube: true, isNetflix: true }) {
     Date: { now: () => now },
     location: { origin: "https://www.netflix.com" },
     window: {
-      postMessage: (message, origin) => posted.push({ ...message, origin }),
+      postMessage: (msg, origin) => posted.push({ ...msg, origin }),
       setTimeout: (callback, delay) => {
         const id = ++nextTimer;
         timers.set(id, { callback, due: now + delay });

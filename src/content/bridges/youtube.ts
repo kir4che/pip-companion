@@ -307,8 +307,8 @@
     return cues;
   }
 
-  async function readLimitedText(response: Response, maxBytes: number) {
-    const reader = response.body?.getReader();
+  async function readLimitedText(res: Response, maxBytes: number) {
+    const reader = res.body?.getReader();
     if (!reader) throw new Error("Missing response body");
     const chunks: Uint8Array[] = [];
     let size = 0;

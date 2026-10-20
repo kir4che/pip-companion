@@ -119,18 +119,18 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     );
   }
 
-  function isUsableNextControl(element: NextControl): boolean {
+  function isUsableNextControl(el: NextControl): boolean {
     return (
-      !element.disabled &&
-      element.getAttribute("aria-disabled") !== "true" &&
-      element.getClientRects().length > 0
+      !el.disabled &&
+      el.getAttribute("aria-disabled") !== "true" &&
+      el.getClientRects().length > 0
     );
   }
 
-  function getNextControlLabel(element: Element): string {
-    return `${element.getAttribute("aria-label") ?? ""} ${
-      element.getAttribute("title") ?? ""
-    } ${element.textContent ?? ""}`;
+  function getNextControlLabel(el: Element): string {
+    return `${el.getAttribute("aria-label") ?? ""} ${
+      el.getAttribute("title") ?? ""
+    } ${el.textContent ?? ""}`;
   }
 
   function findByNextLabel(root: Document | Element): NextControl | null {
@@ -577,9 +577,9 @@ globalThis.PipCompanion.ContentPlayback = (() => {
     setSourceVolumePercent,
     playNextVideo,
     getPlaylist: globalThis.PipCompanion.ContentPlaylist.getPlaylist,
-    selectPlaylistItem: (index: number) =>
+    selectPlaylistItem: (i: number) =>
       globalThis.PipCompanion.ContentPlaylist.selectPlaylistItem(
-        index,
+        i,
         prepareNextVideoRequest,
       ),
     applyPendingNextPlaybackState,

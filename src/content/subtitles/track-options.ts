@@ -6,12 +6,12 @@ globalThis.PipCompanion.subtitleTrackOptions = {
     tracks: TextTrack[],
     selectedTrack: TextTrack | null,
     getId: (track: TextTrack) => string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[] {
-    return tracks.map((track, index) => ({
+    return tracks.map((track, i) => ({
       id: getId(track),
-      index,
-      label: track.label.trim() || track.language.trim() || getLabel(index),
+      index: i,
+      label: track.label.trim() || track.language.trim() || getLabel(i),
       language: track.language,
       selected: track === selectedTrack,
     }));
@@ -21,17 +21,16 @@ globalThis.PipCompanion.subtitleTrackOptions = {
     primaryTrack: TextTrack | null,
     secondaryTrack: TextTrack | null,
     getId: (track: TextTrack) => string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[] {
-    return tracks.flatMap((track, index) =>
+    return tracks.flatMap((track, i) =>
       track === primaryTrack
         ? []
         : [
             {
               id: getId(track),
-              index,
-              label:
-                track.label.trim() || track.language.trim() || getLabel(index),
+              index: i,
+              label: track.label.trim() || track.language.trim() || getLabel(i),
               language: track.language,
               selected: track === secondaryTrack,
             },
@@ -40,12 +39,12 @@ globalThis.PipCompanion.subtitleTrackOptions = {
   },
   youtubePrimary(
     tracks: YouTubeSubtitleTrack[],
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[] {
-    return tracks.map((track, index) => ({
+    return tracks.map((track, i) => ({
       id: `youtube:${track.key}`,
-      index,
-      label: track.label || getLabel(index),
+      index: i,
+      label: track.label || getLabel(i),
       language: track.language,
       selected: track.selected,
     }));
@@ -53,7 +52,7 @@ globalThis.PipCompanion.subtitleTrackOptions = {
   netflixPrimary(
     tracks: NetflixSubtitleTrack[],
     selectedKey: string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[] {
     return tracks.map((track) => ({
       id: `netflix:${track.key}`,
@@ -66,17 +65,17 @@ globalThis.PipCompanion.subtitleTrackOptions = {
   youtubeSecondary(
     tracks: YouTubeSubtitleTrack[],
     secondaryKey: string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[] {
     const primaryKey = tracks.find((track) => track.selected)?.key;
-    return tracks.flatMap((track, index) =>
+    return tracks.flatMap((track, i) =>
       track.key === primaryKey || !track.canLoadCues
         ? []
         : [
             {
               id: `youtube:${track.key}`,
-              index,
-              label: track.label || getLabel(index),
+              index: i,
+              label: track.label || getLabel(i),
               language: track.language,
               selected: track.key === secondaryKey,
             },
@@ -87,7 +86,7 @@ globalThis.PipCompanion.subtitleTrackOptions = {
     tracks: NetflixSubtitleTrack[],
     primaryKey: string,
     secondaryKey: string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[] {
     return tracks.flatMap((track) =>
       track.key === primaryKey

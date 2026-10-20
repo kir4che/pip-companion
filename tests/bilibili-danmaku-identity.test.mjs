@@ -102,18 +102,18 @@ function createBilibiliDanmakuEnvironment(
     seeking: false,
     currentSrc: "blob:https://www.bilibili.com/source-1",
     src: "",
-    addEventListener(event, fn, options) {
-      if (!listeners.has(event)) listeners.set(event, new Set());
+    addEventListener(e, fn, options) {
+      if (!listeners.has(e)) listeners.set(e, new Set());
       const record = { fn, signal: options?.signal };
-      listeners.get(event).add(record);
+      listeners.get(e).add(record);
       if (options?.signal) {
         options.signal.addEventListener("abort", () => {
-          listeners.get(event)?.delete(record);
+          listeners.get(e)?.delete(record);
         });
       }
     },
-    dispatchEvent(event) {
-      for (const record of listeners.get(event) || []) {
+    dispatchEvent(e) {
+      for (const record of listeners.get(e) || []) {
         record.fn();
       }
     },

@@ -40,10 +40,10 @@ globalThis.PipCompanion.pipTimeInput = {
       focusText = input.value;
       input.select();
     });
-    eventScope.listen(input, "keydown", (event) => {
-      event.stopPropagation();
-      if (event.key === "Enter" && commit()) input.blur();
-      else if (event.key === "Escape") {
+    eventScope.listen(input, "keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter" && commit()) input.blur();
+      else if (e.key === "Escape") {
         render();
         focusText = input.value;
         input.blur();

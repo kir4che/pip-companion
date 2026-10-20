@@ -58,11 +58,11 @@ function setup() {
   const context = { PipCompanion: {} };
   vm.runInNewContext(compiled, context);
   context.PipCompanion.subtitleSettings = {
-    apply(element, style) {
-      element.appliedStyle = style;
+    apply(el, style) {
+      el.appliedStyle = style;
     },
-    applyLayout(element, layout) {
-      element.appliedLayout = layout;
+    applyLayout(el, layout) {
+      el.appliedLayout = layout;
     },
   };
   return {

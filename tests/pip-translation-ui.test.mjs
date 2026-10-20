@@ -123,10 +123,9 @@ class FakeElement {
     this.listeners.set(type, listeners);
   }
 
-  dispatchEvent(event) {
-    event.target ??= this;
-    for (const callback of this.listeners.get(event.type) ?? [])
-      callback(event);
+  dispatchEvent(e) {
+    e.target ??= this;
+    for (const callback of this.listeners.get(e.type) ?? []) callback(e);
     return true;
   }
 
@@ -278,7 +277,7 @@ function createUi(initialProvider, options = {}) {
     getVideo: () => video,
     isSubtitleTranslationSuspended: () => false,
     hasSubtitleSource: () => true,
-    showFeedback: (message) => feedback.push(message),
+    showFeedback: (msg) => feedback.push(msg),
   };
   const actions = new Proxy(methods, {
     get(target, key) {
@@ -334,7 +333,7 @@ function createUi(initialProvider, options = {}) {
   const ui = context.PipCompanion.PipUI.create(win, actions, video);
   const findByLabel = (label) =>
     [...allElements(doc.body)].find(
-      (element) => element.getAttribute("aria-label") === label,
+      (el) => el.getAttribute("aria-label") === label,
     );
   const service = findByLabel("pipTranslationSource");
   const mode = findByLabel("pipTranslationDisplayMode");
@@ -342,10 +341,10 @@ function createUi(initialProvider, options = {}) {
   const preferNative = findByLabel("pipTranslationPreferNative");
   const translationToggle = findByLabel("pipTranslationEnable");
   const panel = [...allElements(doc.body)].find(
-    (element) => element.id === "pip-subtitle-translation-panel",
+    (el) => el.id === "pip-subtitle-translation-panel",
   );
   const panelButton = [...allElements(doc.body)].find(
-    (element) => element.className === "translation-button",
+    (el) => el.className === "translation-button",
   );
   panelButton.click();
   return {

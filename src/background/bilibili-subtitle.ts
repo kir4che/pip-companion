@@ -15,8 +15,8 @@ function isBilibiliSubtitleRequest(
   );
 }
 
-async function readLimitedJson(response: Response): Promise<unknown> {
-  const reader = response.body?.getReader();
+async function readLimitedJson(res: Response): Promise<unknown> {
+  const reader = res.body?.getReader();
   if (!reader) throw new Error("Missing subtitle response body");
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -61,15 +61,15 @@ function sanitizeSubtitleCues(value: unknown) {
 export function registerBilibiliSubtitleListener() {
   runtimeMessageDispatcher.addListener(
     "GET_BILIBILI_SUBTITLE_CUES",
-    (message: unknown, sender, sendResponse) => {
-      if (!isBilibiliSubtitleRequest(message)) return false;
+    (msg: unknown, sender, sendResponse) => {
+      if (!isBilibiliSubtitleRequest(msg)) return false;
 
       const pageUrl = sender.tab?.url || sender.url || "";
       let page: URL;
       let subtitle: URL;
       try {
         page = new URL(pageUrl);
-        subtitle = new URL(message.url);
+        subtitle = new URL(msg.url);
       } catch {
         sendResponse({ ok: false });
         return false;
@@ -88,16 +88,16 @@ export function registerBilibiliSubtitleListener() {
       }
 
       void fetch(subtitle, { credentials: "omit" })
-        .then(async (response) => {
-          const contentLength = Number(response.headers.get("content-length"));
+        .then(async (res) => {
+          const contentLength = Number(res.headers.get("content-length"));
           if (
-            !response.ok ||
+            !res.ok ||
             (Number.isFinite(contentLength) &&
               contentLength > MAX_SUBTITLE_BYTES)
           )
             throw new Error("Subtitle request failed");
 
-          const data = await readLimitedJson(response);
+          const data = await readLimitedJson(res);
           if (!isRecord(data)) throw new Error("Invalid subtitle data");
           const cues = sanitizeSubtitleCues(data.body);
           if (!cues) throw new Error("Invalid subtitle cues");

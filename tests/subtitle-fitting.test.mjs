@@ -68,8 +68,8 @@ test("fits paired lines, then wraps lines that remain wider than the container",
   const pair = new FakeElement(0, [line]);
   const view = {
     HTMLElement: FakeElement,
-    getComputedStyle: (element) =>
-      element === segment
+    getComputedStyle: (el) =>
+      el === segment
         ? { fontSize: "20px" }
         : { paddingLeft: "4px", paddingRight: "4px" },
   };

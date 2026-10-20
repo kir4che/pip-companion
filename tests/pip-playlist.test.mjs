@@ -64,10 +64,10 @@ function setup({
       return selector === "li, [role='listitem']" ? listItems : [];
     },
   };
-  const links = paths.map((path, index) => {
-    const text = `第${index + 1}集 ${41 - index}:42`;
+  const links = paths.map((path, i) => {
+    const text = `第${i + 1}集 ${41 - i}:42`;
     const attributes =
-      index + 1 === currentMarkerEpisode ? { "aria-current": "page" } : {};
+      i + 1 === currentMarkerEpisode ? { "aria-current": "page" } : {};
     let link;
     const item = {
       getAttribute: (name) => attributes[name] ?? null,
@@ -131,10 +131,10 @@ function setup({
 function setupBahamut(currentSn) {
   const sns = ["ep-1", "ep-2"];
   const clicked = [];
-  const links = sns.map((sn, index) => ({
+  const links = sns.map((sn, i) => ({
     dataset: { aniVideoSn: sn },
     href: `https://ani.gamer.com.tw/animeVideo.php?sn=${sn}`,
-    textContent: `第${index + 1}集`,
+    textContent: `第${i + 1}集`,
     closest: () => ({ classList: { contains: () => false } }),
     querySelectorAll: () => [],
     click() {
@@ -160,9 +160,9 @@ function setupBahamut(currentSn) {
 
 function setupBilibiliBangumi(currentEpId) {
   const clicked = [];
-  const items = ["476877", "476878"].map((epId, index) => ({
+  const items = ["476877", "476878"].map((epId, i) => ({
     dataset: { epId },
-    textContent: `第${index + 1}話`,
+    textContent: `第${i + 1}話`,
     classList: { contains: () => false },
     getAttribute: () => null,
     contains: () => false,
@@ -194,9 +194,9 @@ function setupBilibiliBangumi(currentEpId) {
 }
 
 function setupBilibili(currentBvid) {
-  const items = ["BV1", "BV2"].map((bvid, index) => ({
+  const items = ["BV1", "BV2"].map((bvid, i) => ({
     dataset: { key: bvid },
-    textContent: `第${index + 1}集`,
+    textContent: `第${i + 1}集`,
     classList: { contains: () => false },
     getAttribute: () => null,
     contains: () => false,
@@ -300,8 +300,8 @@ test("next playback selects the following generic episode", () => {
       ContentPlaylist: {
         getNextItemState: () => "available",
         getPlaylist: () => ({ items: [{}, {}], currentIndex: 0 }),
-        selectPlaylistItem(index) {
-          selected.push(index);
+        selectPlaylistItem(i) {
+          selected.push(i);
         },
       },
     },

@@ -59,8 +59,8 @@ for (const pauseOnPipClose of [true, false]) {
       chrome: {
         runtime: {
           id: "test-extension",
-          sendMessage(message) {
-            messages.push(message);
+          sendMessage(msg) {
+            messages.push(msg);
             return Promise.resolve({ ok: false });
           },
         },
@@ -92,9 +92,7 @@ for (const pauseOnPipClose of [true, false]) {
     assert.equal(video.parentNode, parent);
     assert.equal(lifecycle.isPipOpen(), true);
     assert.equal(
-      messages.some(
-        (message) => message.type === "PIP_STATE_CHANGED" && message.pipOpen,
-      ),
+      messages.some((msg) => msg.type === "PIP_STATE_CHANGED" && msg.pipOpen),
       true,
     );
 
@@ -104,9 +102,7 @@ for (const pauseOnPipClose of [true, false]) {
     assert.equal(lifecycle.isPipOpen(), false);
     assert.equal(video.paused, pauseOnPipClose);
     assert.equal(
-      messages.some(
-        (message) => message.type === "PIP_STATE_CHANGED" && !message.pipOpen,
-      ),
+      messages.some((msg) => msg.type === "PIP_STATE_CHANGED" && !msg.pipOpen),
       true,
     );
 
@@ -239,8 +235,8 @@ test("document PiP closes a window that resolves after a rapid cancel", async ()
     chrome: {
       runtime: {
         id: "test-extension",
-        sendMessage(message) {
-          messages.push(message);
+        sendMessage(msg) {
+          messages.push(msg);
           return Promise.resolve({ ok: true });
         },
       },
@@ -272,9 +268,7 @@ test("document PiP closes a window that resolves after a rapid cancel", async ()
   assert.equal(pipWindow.closed, true);
   assert.equal(lifecycle.isPipOpen(), false);
   assert.equal(
-    messages.some(
-      (message) => message.type === "PIP_STATE_CHANGED" && message.pipOpen,
-    ),
+    messages.some((msg) => msg.type === "PIP_STATE_CHANGED" && msg.pipOpen),
     false,
   );
 });
@@ -482,8 +476,8 @@ test("stalled PiP recovery does not overwrite a later seek", async () => {
     chrome: {
       runtime: {
         id: "test-extension",
-        sendMessage(message) {
-          if (message.type === "GET_PIP_BOUNDS")
+        sendMessage(msg) {
+          if (msg.type === "GET_PIP_BOUNDS")
             return Promise.resolve({ ok: false });
           return Promise.resolve({ ok: true });
         },

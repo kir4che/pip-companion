@@ -45,8 +45,8 @@ globalThis.PipCompanion.subtitleFitting = {
         availableWidth,
         minimumScale,
       );
-      lines.forEach((line, index) => {
-        const fontSize = fontSizes[index] ?? 0;
+      lines.forEach((line, i) => {
+        const fontSize = fontSizes[i] ?? 0;
         if (fontSize > 0)
           line.style.setProperty(
             "--subtitle-fit-font-size",

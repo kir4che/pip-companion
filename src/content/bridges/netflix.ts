@@ -81,83 +81,80 @@ interface NetflixApp {
     "pip-companion-reset-netflix-storyboard",
     resetStoryboard,
   );
-  document.addEventListener(
-    "pip-companion-request-netflix-storyboard",
-    (event) => {
-      if (!(event instanceof CustomEvent) || !isRecord(event.detail)) return;
-      const { seconds, path } = event.detail;
-      const root = document.documentElement;
-      if (!root) return;
-      delete root.dataset.pipNetflixStoryboardFrame;
+  document.addEventListener("pip-companion-request-netflix-storyboard", (e) => {
+    if (!(e instanceof CustomEvent) || !isRecord(e.detail)) return;
+    const { seconds, path } = e.detail;
+    const root = document.documentElement;
+    if (!root) return;
+    delete root.dataset.pipNetflixStoryboardFrame;
+    if (
+      path !== location.pathname ||
+      typeof seconds !== "number" ||
+      !Number.isFinite(seconds) ||
+      seconds < 0
+    )
+      return;
+    try {
+      const session = getActivePlayerSession(path);
+      const player = session?.player;
+      if (!session || !player?.getTrickPlayFrame) return;
+      const movieId = player.getMovieId?.();
+      if (movieId != null && `/watch/${movieId}` !== path) return;
+      const scope = `${path}:${session.sessionId}`;
+      if (scope !== storyboardScope) {
+        resetStoryboard();
+        storyboardScope = scope;
+      }
+      const frame = player.getTrickPlayFrame(seconds * 1000);
+      if (!isRecord(frame)) return;
+      const { image, width, height, time } = frame;
       if (
-        path !== location.pathname ||
-        typeof seconds !== "number" ||
-        !Number.isFinite(seconds) ||
-        seconds < 0
+        !ArrayBuffer.isView(image) ||
+        image.byteLength === 0 ||
+        image.byteLength > 2 * 1024 * 1024 ||
+        typeof width !== "number" ||
+        !Number.isFinite(width) ||
+        width <= 0 ||
+        width > 2048 ||
+        typeof height !== "number" ||
+        !Number.isFinite(height) ||
+        height <= 0 ||
+        height > 2048 ||
+        typeof time !== "number" ||
+        !Number.isFinite(time) ||
+        time < 0
       )
         return;
-      try {
-        const session = getActivePlayerSession(path);
-        const player = session?.player;
-        if (!session || !player?.getTrickPlayFrame) return;
-        const movieId = player.getMovieId?.();
-        if (movieId != null && `/watch/${movieId}` !== path) return;
-        const scope = `${path}:${session.sessionId}`;
-        if (scope !== storyboardScope) {
-          resetStoryboard();
-          storyboardScope = scope;
+      const key = String(time);
+      let url = storyboardFrames.get(key);
+      if (!url) {
+        const bytes = new Uint8Array(
+          image.buffer,
+          image.byteOffset,
+          image.byteLength,
+        );
+        // 複製播放器提供的圖片資料，避免影響 Netflix 自己的縮圖快取。
+        url = URL.createObjectURL(
+          new Blob([new Uint8Array(bytes)], { type: "image/jpeg" }),
+        );
+        storyboardFrames.set(key, url);
+        while (storyboardFrames.size > 16) {
+          const oldest = storyboardFrames.keys().next().value!;
+          URL.revokeObjectURL(storyboardFrames.get(oldest)!);
+          storyboardFrames.delete(oldest);
         }
-        const frame = player.getTrickPlayFrame(seconds * 1000);
-        if (!isRecord(frame)) return;
-        const { image, width, height, time } = frame;
-        if (
-          !ArrayBuffer.isView(image) ||
-          image.byteLength === 0 ||
-          image.byteLength > 2 * 1024 * 1024 ||
-          typeof width !== "number" ||
-          !Number.isFinite(width) ||
-          width <= 0 ||
-          width > 2048 ||
-          typeof height !== "number" ||
-          !Number.isFinite(height) ||
-          height <= 0 ||
-          height > 2048 ||
-          typeof time !== "number" ||
-          !Number.isFinite(time) ||
-          time < 0
-        )
-          return;
-        const key = String(time);
-        let url = storyboardFrames.get(key);
-        if (!url) {
-          const bytes = new Uint8Array(
-            image.buffer,
-            image.byteOffset,
-            image.byteLength,
-          );
-          // 複製播放器提供的圖片資料，避免影響 Netflix 自己的縮圖快取。
-          url = URL.createObjectURL(
-            new Blob([new Uint8Array(bytes)], { type: "image/jpeg" }),
-          );
-          storyboardFrames.set(key, url);
-          while (storyboardFrames.size > 16) {
-            const oldest = storyboardFrames.keys().next().value!;
-            URL.revokeObjectURL(storyboardFrames.get(oldest)!);
-            storyboardFrames.delete(oldest);
-          }
-        }
-        root.dataset.pipNetflixStoryboardFrame = JSON.stringify({
-          path,
-          seconds,
-          url,
-          width,
-          height,
-        });
-      } catch {
-        // 播放器尚未載入縮圖時，維持只顯示時間。
       }
-    },
-  );
+      root.dataset.pipNetflixStoryboardFrame = JSON.stringify({
+        path,
+        seconds,
+        url,
+        width,
+        height,
+      });
+    } catch {
+      // 播放器尚未載入縮圖時，維持只顯示時間。
+    }
+  });
 
   function getPlayerRepositoryRoot(
     sessionId: string,
@@ -626,11 +623,11 @@ interface NetflixApp {
       const data: unknown = JSON.parse(text);
       if (!isRecord(data) || !Array.isArray(data.events))
         return { cues: [], parsed: false };
-      const cues = data.events.flatMap((event) => {
-        if (!isRecord(event)) return [];
-        const from = parseTimedTextNumber(event.t);
-        const duration = parseTimedTextNumber(event.d);
-        const content = cleanSubtitleText(getJsonCueText(event.c));
+      const cues = data.events.flatMap((e) => {
+        if (!isRecord(e)) return [];
+        const from = parseTimedTextNumber(e.t);
+        const duration = parseTimedTextNumber(e.d);
+        const content = cleanSubtitleText(getJsonCueText(e.c));
         return from !== null && duration !== null && duration > 0 && content
           ? [{ from, to: from + duration, content }]
           : [];
@@ -649,7 +646,7 @@ interface NetflixApp {
       const cueElements = [
         ...Array.from(xml.getElementsByTagName("p")),
         ...Array.from(xml.getElementsByTagNameNS("*", "p")),
-      ].filter((cue, index, elements) => elements.indexOf(cue) === index);
+      ].filter((cue, i, elements) => elements.indexOf(cue) === i);
       const seenCues = new Set<string>();
       const cues = cueElements.flatMap((cue) => {
         const from = parseTtmlTime(cue.getAttribute("begin"));
@@ -709,9 +706,7 @@ interface NetflixApp {
     const session = getActivePlayerSession();
     if (!session) return { cues: [], loaded: false, restored: false };
     const tracks = getTimedTextTracks(session.player);
-    const track = tracks.find(
-      (item, index) => getTrackKey(item, index) === key,
-    );
+    const track = tracks.find((item, i) => getTrackKey(item, i) === key);
     if (!track) return { cues: [], loaded: false, restored: false };
     const cacheScope = getTimedTextCacheScope(session.sessionId);
     const cueCacheKey = scopedCacheKey(cacheScope, key);
@@ -863,10 +858,10 @@ interface NetflixApp {
     }
   }
 
-  function getTrackKey(track: Record<string, unknown>, index: number): string {
+  function getTrackKey(track: Record<string, unknown>, i: number): string {
     const id =
       track.trackId ?? track.track_id ?? track.new_track_id ?? track.id;
-    return id == null ? `index:${index}` : String(id);
+    return id == null ? `index:${i}` : String(id);
   }
 
   function trackLabel(track: Record<string, unknown>): string {
@@ -927,13 +922,13 @@ interface NetflixApp {
         } catch {}
       }
     }
-    const trackOptions = tracks.flatMap((track, index) =>
+    const trackOptions = tracks.flatMap((track, i) =>
       track.isNoneTrack
         ? []
         : [
             {
-              key: getTrackKey(track, index),
-              index,
+              key: getTrackKey(track, i),
+              index: i,
               label: trackLabel(track),
               language:
                 typeof (track.bcp47 ?? track.language) === "string"
@@ -987,13 +982,9 @@ interface NetflixApp {
     subtitlesEnabled: boolean | null;
   } | null = null;
   let lastFailure = "";
-  window.addEventListener("message", (event) => {
-    const data = event.data;
-    if (
-      event.source !== window ||
-      event.origin !== location.origin ||
-      !isRecord(data)
-    )
+  window.addEventListener("message", (e) => {
+    const data = e.data;
+    if (e.source !== window || e.origin !== location.origin || !isRecord(data))
       return;
 
     if (data.type === "PIP_REQUEST_NETFLIX_SUBTITLE_TRACKS") {
@@ -1018,7 +1009,7 @@ interface NetflixApp {
         if (!player || typeof player.setTimedTextTrack !== "function") return;
         const tracks = getTimedTextTracks(player);
         const track = tracks.find(
-          (item, index) => getTrackKey(item, index) === data.key,
+          (item, i) => getTrackKey(item, i) === data.key,
         );
         if (!track) return;
         try {
@@ -1077,9 +1068,9 @@ interface NetflixApp {
         throw new Error("Netflix video player session was not found");
       player.seek(targetSeconds * 1000);
       lastFailure = "";
-    } catch (error) {
+    } catch (err) {
       const message =
-        error instanceof Error ? error.message : "Netflix seek failed";
+        err instanceof Error ? err.message : "Netflix seek failed";
       if (message !== lastFailure) lastFailure = message;
     }
   });

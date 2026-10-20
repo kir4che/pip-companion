@@ -51,7 +51,7 @@ function setup({ stored = {}, getFails = false } = {}) {
     },
     settings: subtitleSettings,
     t: (key) => key,
-    showStatus: (message, error) => statuses.push([message, Boolean(error)]),
+    showStatus: (msg, err) => statuses.push([msg, Boolean(err)]),
     onChange: () => {},
   });
   return {

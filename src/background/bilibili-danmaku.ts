@@ -69,9 +69,9 @@ async function fetchWithRetry(
       )
         return response;
       lastError = new Error(`${label} HTTP ${response.status}`);
-    } catch (error) {
-      lastError = error;
-      if (attempt === BILIBILI_RETRY_DELAYS_MS.length) throw error;
+    } catch (err) {
+      lastError = err;
+      if (attempt === BILIBILI_RETRY_DELAYS_MS.length) throw err;
     }
 
     const retryDelay = BILIBILI_RETRY_DELAYS_MS[attempt];
@@ -100,7 +100,7 @@ function md5(input: string): string {
   ];
   const constants = Array.from(
     { length: 64 },
-    (_, index) => Math.floor(Math.abs(Math.sin(index + 1)) * 2 ** 32) >>> 0,
+    (_, i) => Math.floor(Math.abs(Math.sin(i + 1)) * 2 ** 32) >>> 0,
   );
   const words = new Uint32Array(16);
 
@@ -181,7 +181,7 @@ async function getWbiMixinKey(): Promise<string> {
   if (!isRecord(result) || result.code !== 0 || source.length < 64)
     throw new Error("Bilibili WBI keys are unavailable");
 
-  cachedWbiMixinKey = WBI_MIXIN_KEY_TABLE.map((index) => source[index])
+  cachedWbiMixinKey = WBI_MIXIN_KEY_TABLE.map((i) => source[i])
     .join("")
     .slice(0, 32);
   cachedWbiKeyExpiresAt = Date.now() + 60 * 60 * 1000;
@@ -613,17 +613,17 @@ function parseBilibiliSegment(bytes: Uint8Array) {
 export function registerBilibiliDanmakuListener() {
   runtimeMessageDispatcher.addListener(
     "GET_BILIBILI_DANMAKU",
-    (message: unknown, _sender, sendResponse) => {
-      if (!isBilibiliDanmakuRequest(message)) return;
+    (msg: unknown, _sender, sendResponse) => {
+      if (!isBilibiliDanmakuRequest(msg)) return;
 
-      const bvid = message.bvid || "";
-      const avid = message.avid || "";
-      const epId = message.epId || "";
-      const page = message.page;
-      const requestedStartSegment = message.startSegment ?? 1;
-      const requestedEndSegment = message.endSegment ?? requestedStartSegment;
+      const bvid = msg.bvid || "";
+      const avid = msg.avid || "";
+      const epId = msg.epId || "";
+      const page = msg.page;
+      const requestedStartSegment = msg.startSegment ?? 1;
+      const requestedEndSegment = msg.endSegment ?? requestedStartSegment;
       const rangeRequested =
-        message.startSegment !== undefined || message.endSegment !== undefined;
+        msg.startSegment !== undefined || msg.endSegment !== undefined;
 
       const hasVideoTarget =
         /^BV[\w]{10}$/i.test(bvid) || /^\d+$/.test(avid) || /^\d+$/.test(epId);
@@ -635,8 +635,8 @@ export function registerBilibiliDanmakuListener() {
         !Number.isInteger(page) ||
         page < 1 ||
         page > 1000 ||
-        (message.startSegment !== undefined && requestedStartSegment < 1) ||
-        (message.endSegment !== undefined && requestedEndSegment < 1) ||
+        (msg.startSegment !== undefined && requestedStartSegment < 1) ||
+        (msg.endSegment !== undefined && requestedEndSegment < 1) ||
         (rangeRequested &&
           (requestedEndSegment < requestedStartSegment ||
             requestedEndSegment - requestedStartSegment > 5))
@@ -893,10 +893,10 @@ export function registerBilibiliDanmakuListener() {
                 unavailableSegments.length,
                 ...remainingSegments,
               );
-            } catch (error) {
+            } catch (err) {
               fallbackError =
-                error instanceof Error
-                  ? error.message
+                err instanceof Error
+                  ? err.message
                   : "Legacy danmaku fallback failed";
             }
           }
@@ -913,13 +913,11 @@ export function registerBilibiliDanmakuListener() {
             unavailableSegments,
             fallbackError,
           });
-        } catch (error) {
+        } catch (err) {
           sendResponse({
             ok: false,
             error:
-              error instanceof Error
-                ? error.message
-                : "Bilibili request failed",
+              err instanceof Error ? err.message : "Bilibili request failed",
           });
         }
       })();

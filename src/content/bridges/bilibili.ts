@@ -9,12 +9,12 @@ interface BilibiliPlaylistComponent {
 (() => {
   window.addEventListener(
     "message",
-    (event) => {
-      const requestId = event.data?.requestId;
+    (e) => {
+      const requestId = e.data?.requestId;
       if (
-        event.source !== window ||
-        event.origin !== location.origin ||
-        event.data?.type !== "PIP_REQUEST_BILI_SUBTITLE_TRACKS" ||
+        e.source !== window ||
+        e.origin !== location.origin ||
+        e.data?.type !== "PIP_REQUEST_BILI_SUBTITLE_TRACKS" ||
         !Number.isSafeInteger(requestId) ||
         requestId < 1
       )
@@ -109,38 +109,36 @@ interface BilibiliPlaylistComponent {
             return;
           }
 
-          const tracks = result.data.subtitle.subtitles.flatMap(
-            (track, index) => {
-              if (
-                !track ||
-                typeof track !== "object" ||
-                !("lan" in track) ||
-                typeof track.lan !== "string" ||
-                !("subtitle_url" in track) ||
-                typeof track.subtitle_url !== "string" ||
-                !track.subtitle_url
-              )
-                return [];
+          const tracks = result.data.subtitle.subtitles.flatMap((track, i) => {
+            if (
+              !track ||
+              typeof track !== "object" ||
+              !("lan" in track) ||
+              typeof track.lan !== "string" ||
+              !("subtitle_url" in track) ||
+              typeof track.subtitle_url !== "string" ||
+              !track.subtitle_url
+            )
+              return [];
 
-              const isAi = track.lan.startsWith("ai-");
-              const language =
-                "lan_doc" in track && typeof track.lan_doc === "string"
-                  ? track.lan_doc
-                  : track.lan;
-              return [
-                {
-                  key:
-                    "id_str" in track && typeof track.id_str === "string"
-                      ? track.id_str
-                      : String(index),
-                  label: `${language}${isAi ? " (AI)" : ""}`,
-                  language: isAi ? track.lan.slice(3) : track.lan,
-                  subtitleUrl: track.subtitle_url,
-                  isAi,
-                },
-              ];
-            },
-          );
+            const isAi = track.lan.startsWith("ai-");
+            const language =
+              "lan_doc" in track && typeof track.lan_doc === "string"
+                ? track.lan_doc
+                : track.lan;
+            return [
+              {
+                key:
+                  "id_str" in track && typeof track.id_str === "string"
+                    ? track.id_str
+                    : String(i),
+                label: `${language}${isAi ? " (AI)" : ""}`,
+                language: isAi ? track.lan.slice(3) : track.lan,
+                subtitleUrl: track.subtitle_url,
+                isAi,
+              },
+            ];
+          });
           respond(true, tracks);
         } catch {
           respond(false);

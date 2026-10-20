@@ -11,7 +11,7 @@ function setup({ nativeTracks = [], active = true } = {}) {
   const events = [];
   const window = {
     addEventListener: (_type, listener) => listeners.push(listener),
-    postMessage: (message) => posted.push(message),
+    postMessage: (msg) => posted.push(msg),
     setTimeout,
     clearTimeout,
   };
@@ -29,9 +29,9 @@ function setup({ nativeTracks = [], active = true } = {}) {
     },
     chrome: {
       runtime: {
-        sendMessage(message) {
+        sendMessage(msg) {
           return new Promise((resolve, reject) => {
-            requests.push({ message, resolve, reject });
+            requests.push({ message: msg, resolve, reject });
           });
         },
       },
@@ -140,7 +140,7 @@ function setupSubtitles({
   Object.assign(context.PipCompanion, {
     util: { ...context.PipCompanion.util, getMessage: (key) => key },
     ContentFeedback: {
-      showFeedback: (message) => fixture.events.push(message),
+      showFeedback: (msg) => fixture.events.push(msg),
     },
     site: {
       isNetflixHost: () => platform === "netflix",
@@ -466,7 +466,7 @@ test("generic subtitle overlay detection prefers visible, populated captions", (
   const nested = makeElement({ text: "nested" });
   const preferred = makeElement({
     text: "visible",
-    contains: (element) => element === nested,
+    contains: (el) => el === nested,
   });
   const blank = makeElement({ text: "" });
   const candidates = [
@@ -482,8 +482,8 @@ test("generic subtitle overlay detection prefers visible, populated captions", (
   const detected =
     context.PipCompanion.genericSubtitleOverlayDetection.findNode(
       context.document,
-      (element) =>
-        element === candidates[0]
+      (el) =>
+        el === candidates[0]
           ? { position: "static", pointerEvents: "none" }
           : { position: "absolute", pointerEvents: "none" },
       600,
@@ -671,7 +671,7 @@ test("failed cue loads report failure once and do not retry on every refresh", a
     if (response instanceof Error) requests[0].reject(response);
     else requests[0].resolve(response);
     await flush();
-    assert.equal(events.filter((event) => event === "failure").length, 1);
+    assert.equal(events.filter((e) => e === "failure").length, 1);
     controller.loadTrack(controller.primaryKey);
     assert.equal(requests.length, 1);
   }

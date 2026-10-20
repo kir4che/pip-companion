@@ -82,9 +82,9 @@ globalThis.PipCompanion.ContentScreenshot = (() => {
       globalThis.PipCompanion.ContentFeedback.showFeedback(
         globalThis.PipCompanion.util.getMessage("screenshotSaved"),
       );
-    } catch (error) {
+    } catch (err) {
       globalThis.PipCompanion.ContentFeedback.showFeedback(
-        error instanceof Error && error.name === "SecurityError"
+        err instanceof Error && err.name === "SecurityError"
           ? globalThis.PipCompanion.util.getMessage("screenshotCrossOrigin")
           : globalThis.PipCompanion.util.getMessage("screenshotFailed"),
       );

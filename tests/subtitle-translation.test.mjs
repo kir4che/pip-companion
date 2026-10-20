@@ -40,9 +40,9 @@ function client() {
     clearTimeout: (id) => timers.delete(id),
     chrome: {
       runtime: {
-        sendMessage: (message) =>
+        sendMessage: (msg) =>
           new Promise((resolve, reject) =>
-            requests.push({ message, resolve, reject }),
+            requests.push({ message: msg, resolve, reject }),
           ),
       },
     },
@@ -58,7 +58,7 @@ function client() {
     hasSupportedTrack: () => true,
     prefersNativeSubtitle: () => false,
     getPreferNativeSecondaryLines: () => null,
-    showFeedback: (message) => feedback.push(message),
+    showFeedback: (msg) => feedback.push(msg),
     render: () => runtime.getRenderedSubtitleLines(lines),
   });
   return {
@@ -89,8 +89,8 @@ function client() {
       Object.assign(preferences, patch);
       runtime.onPreferencesChanged(previous, preferences);
     },
-    async succeed(index = requests.length - 1) {
-      const request = requests[index];
+    async succeed(i = requests.length - 1) {
+      const request = requests[i];
       request.resolve({
         ok: true,
         translations: request.message.texts.map((text) => `translated ${text}`),
@@ -204,10 +204,10 @@ function background({ delayEnabled = false, ignoreAbort = false } = {}) {
         handlers.push(handler);
         messageHandlers.set(type, handlers);
       }
-      listener = (message, sender, sendResponse) => {
+      listener = (msg, sender, sendResponse) => {
         let keepChannelOpen = false;
-        for (const handler of messageHandlers.get(message.type) ?? [])
-          if (handler(message, sender, sendResponse) === true)
+        for (const handler of messageHandlers.get(msg.type) ?? [])
+          if (handler(msg, sender, sendResponse) === true)
             keepChannelOpen = true;
         return keepChannelOpen;
       };
@@ -264,8 +264,7 @@ function background({ delayEnabled = false, ignoreAbort = false } = {}) {
   vm.runInNewContext(backgroundCode, context);
   context.exports.registerSubtitleTranslationListener();
   const sender = { tab: { id: 1 }, url: "https://example.org/watch" };
-  const send = (message, callback = () => {}) =>
-    listener(message, sender, callback);
+  const send = (msg, callback = () => {}) => listener(msg, sender, callback);
   send({ type: "PIP_STATE_CHANGED", pipOpen: true, subtitlesEnabled: true });
   return {
     fetches,
@@ -284,8 +283,8 @@ function background({ delayEnabled = false, ignoreAbort = false } = {}) {
         callback,
       );
     },
-    succeed(index = fetches.length - 1) {
-      fetches[index].resolve({
+    succeed(i = fetches.length - 1) {
+      fetches[i].resolve({
         ok: true,
         json: async () => [
           { translations: [{ text: "translated", to: "en" }] },
@@ -327,16 +326,15 @@ test("closing PiP invalidates requests still awaiting storage", async () => {
 test("background coalesces identical requests and reuses completed results", async () => {
   const b = background();
   const responses = [];
-  for (let i = 0; i < 30; i++)
-    b.translate((response) => responses.push(response));
+  for (let i = 0; i < 30; i++) b.translate((res) => responses.push(res));
   await flush();
   assert.equal(b.fetches.length, 1);
   b.succeed();
   await flush();
   assert.equal(responses.length, 30);
-  assert.ok(responses.every((response) => response.ok));
+  assert.ok(responses.every((res) => res.ok));
   b.advance();
-  b.translate((response) => responses.push(response));
+  b.translate((res) => responses.push(res));
   await flush();
   assert.equal(b.fetches.length, 1);
   assert.equal(responses.at(-1).ok, true);
@@ -387,7 +385,7 @@ for (const [status, error] of [
   test(`HTTP ${status} stops new and repeated captions until explicit recovery`, async () => {
     const b = background();
     const responses = [];
-    b.translate((response) => responses.push(response));
+    b.translate((res) => responses.push(res));
     await flush();
     b.fetches[0].resolve({ ok: false, status });
     await flush();

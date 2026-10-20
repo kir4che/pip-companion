@@ -3,12 +3,12 @@
 globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.shortcutInput = {
   fromKeyboard(
-    event: KeyboardEvent,
+    e: KeyboardEvent,
     key: ShortcutKey,
     platform: string,
-    hasMetaModifier: (event: KeyboardEvent) => boolean,
+    hasMetaModifier: (e: KeyboardEvent) => boolean,
   ): ShortcutInputResult {
-    if (event.key === "Escape") return { type: "cancel" };
+    if (e.key === "Escape") return { type: "cancel" };
     if (key === "pipResizeShortcut")
       return {
         type: "status",
@@ -17,22 +17,21 @@ globalThis.PipCompanion.shortcutInput = {
       };
 
     const isMetaKey =
-      event.key === "Meta" ||
-      event.key === "OS" ||
-      event.code === "MetaLeft" ||
-      event.code === "MetaRight";
-    const meta = hasMetaModifier(event);
+      e.key === "Meta" ||
+      e.key === "OS" ||
+      e.code === "MetaLeft" ||
+      e.code === "MetaRight";
+    const meta = hasMetaModifier(e);
     if (platform.includes("Win") && (meta || isMetaKey))
       return { type: "status", message: "popupWinKeyUnsupported", error: true };
-    if (["Control", "Alt", "Shift"].includes(event.key))
-      return { type: "ignore" };
+    if (["Control", "Alt", "Shift"].includes(e.key)) return { type: "ignore" };
     if (isMetaKey)
       return {
         type: "status",
         message: "popupModifierKey",
         parameter: platform.includes("Mac") ? "Command" : "Meta",
       };
-    if (event.code === "Unidentified")
+    if (e.code === "Unidentified")
       return { type: "status", message: "popupUnrecognizedKey", error: true };
 
     const isNavigationKey = [
@@ -41,14 +40,13 @@ globalThis.PipCompanion.shortcutInput = {
       "Backspace",
       "Delete",
       "CapsLock",
-    ].includes(event.key);
-    const allowedEnter =
-      event.key === "Enter" && key === "pipDanmakuInputShortcut";
+    ].includes(e.key);
+    const allowedEnter = e.key === "Enter" && key === "pipDanmakuInputShortcut";
     if (
-      !event.ctrlKey &&
-      !event.altKey &&
-      !event.metaKey &&
-      !event.shiftKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      !e.metaKey &&
+      !e.shiftKey &&
       isNavigationKey &&
       !allowedEnter
     )
@@ -57,19 +55,19 @@ globalThis.PipCompanion.shortcutInput = {
     return {
       type: "shortcut",
       shortcut: {
-        code: event.code,
-        ctrl: event.ctrlKey,
-        alt: event.altKey,
-        shift: event.shiftKey,
+        code: e.code,
+        ctrl: e.ctrlKey,
+        alt: e.altKey,
+        shift: e.shiftKey,
         meta,
       },
     };
   },
-  fromWheel(event: WheelEvent, platform: string): ShortcutInputResult {
-    const meta = event.metaKey || event.getModifierState("Meta");
+  fromWheel(e: WheelEvent, platform: string): ShortcutInputResult {
+    const meta = e.metaKey || e.getModifierState("Meta");
     if (platform.includes("Win") && meta)
       return { type: "status", message: "popupWinKeyUnsupported", error: true };
-    if (!event.ctrlKey && !event.altKey && !event.shiftKey && !meta)
+    if (!e.ctrlKey && !e.altKey && !e.shiftKey && !meta)
       return {
         type: "status",
         message: "popupResizeNeedsModifier",
@@ -79,9 +77,9 @@ globalThis.PipCompanion.shortcutInput = {
       type: "shortcut",
       shortcut: {
         code: "Wheel",
-        ctrl: event.ctrlKey,
-        alt: event.altKey,
-        shift: event.shiftKey,
+        ctrl: e.ctrlKey,
+        alt: e.altKey,
+        shift: e.shiftKey,
         meta,
       },
     };

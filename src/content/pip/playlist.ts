@@ -86,12 +86,12 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     );
   }
 
-  function getPlaylistTitle(index: number, item?: HTMLElement): string {
+  function getPlaylistTitle(i: number, item?: HTMLElement): string {
     return (
       item?.querySelector("#video-title")?.textContent?.trim() ||
       item?.querySelector("[title]")?.getAttribute("title")?.trim() ||
       item?.getAttribute("title")?.trim() ||
-      t("playlistVideo", String(index + 1))
+      t("playlistVideo", String(i + 1))
     );
   }
 
@@ -103,11 +103,11 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
   }
 
   function getElementDuration(
-    element: HTMLElement | null | undefined,
+    el: HTMLElement | null | undefined,
     selector: string,
   ): string | undefined {
-    if (!element) return undefined;
-    for (const candidate of element.querySelectorAll<HTMLElement>(selector)) {
+    if (!el) return undefined;
+    for (const candidate of el.querySelectorAll<HTMLElement>(selector)) {
       const duration = normalizeDuration(candidate.textContent);
       if (duration) return duration;
     }
@@ -119,11 +119,10 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     return title.slice(0, -duration.length).trimEnd() || title;
   }
 
-  function getPlaylistIndexInfo(index: number, itemCount: number) {
-    const currentIndexKnown =
-      Number.isInteger(index) && index >= 0 && index < itemCount;
+  function getPlaylistIndexInfo(i: number, itemCount: number) {
+    const currentIndexKnown = Number.isInteger(i) && i >= 0 && i < itemCount;
     return {
-      currentIndex: currentIndexKnown ? index : 0,
+      currentIndex: currentIndexKnown ? i : 0,
       currentIndexKnown,
     };
   }
@@ -240,14 +239,14 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
             elementsByVideoId.set(element.dataset.videoId, element);
         }
         return {
-          items: ids.map((id, index) => {
+          items: ids.map((id, i) => {
             const element = elementsByVideoId.get(id);
             const duration =
               getElementDuration(element, YOUTUBE_DURATION_SELECTOR) ??
               initialItemsById.get(id)?.duration;
             return {
-              index,
-              title: getPlaylistTitle(index, element),
+              index: i,
+              title: getPlaylistTitle(i, element),
               videoId: id,
               ...(duration ? { duration } : {}),
             };
@@ -262,8 +261,8 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
           initialItems.length,
         );
         return {
-          items: initialItems.map((item, index) => ({
-            index,
+          items: initialItems.map((item, i) => ({
+            index: i,
             title: item.title,
             videoId: item.id,
             ...(item.duration ? { duration: item.duration } : {}),
@@ -276,16 +275,13 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
       if (elements.length >= 2) {
         const indexInfo = getPlaylistIndexInfo(currentIndex, elements.length);
         return {
-          items: elements.map((element, index) => {
-            const duration = getElementDuration(
-              element,
-              YOUTUBE_DURATION_SELECTOR,
-            );
+          items: elements.map((el, i) => {
+            const duration = getElementDuration(el, YOUTUBE_DURATION_SELECTOR);
             return {
-              index,
+              index: i,
               title:
-                element.querySelector("#video-title")?.textContent?.trim() ||
-                t("playlistVideo", String(index + 1)),
+                el.querySelector("#video-title")?.textContent?.trim() ||
+                t("playlistVideo", String(i + 1)),
               ...(duration ? { duration } : {}),
             };
           }),
@@ -312,10 +308,10 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
       );
     }
     return elements.filter(
-      (element, index) =>
+      (el, i) =>
         elements.findIndex(
-          (candidate) => candidate === element || candidate.contains(element),
-        ) === index,
+          (candidate) => candidate === el || candidate.contains(el),
+        ) === i,
     );
   }
 
@@ -359,19 +355,16 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
               ),
           );
     return {
-      items: elements.map((element, index) => {
-        const duration = getElementDuration(
-          element,
-          BILIBILI_DURATION_SELECTOR,
-        );
+      items: elements.map((el, i) => {
+        const duration = getElementDuration(el, BILIBILI_DURATION_SELECTOR);
         const rawTitle =
-          element.textContent?.replace(/\s+/g, " ").trim() ||
-          t("playlistEpisode", String(index + 1));
+          el.textContent?.replace(/\s+/g, " ").trim() ||
+          t("playlistEpisode", String(i + 1));
         return {
-          index,
+          index: i,
           title: removeDurationSuffix(rawTitle, duration),
           ...(duration ? { duration } : {}),
-          ...(element.dataset.key ? { videoId: element.dataset.key } : {}),
+          ...(el.dataset.key ? { videoId: el.dataset.key } : {}),
         };
       }),
       ...getPlaylistIndexInfo(currentIndex, elements.length),
@@ -392,30 +385,26 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     if (elements.length < 2) return null;
     const currentSn = new URLSearchParams(location.search).get("sn");
     const routeCurrentIndex = currentSn
-      ? elements.findIndex(
-          (element) => element.dataset.aniVideoSn === currentSn,
-        )
+      ? elements.findIndex((el) => el.dataset.aniVideoSn === currentSn)
       : -1;
     const currentIndex =
       routeCurrentIndex >= 0
         ? routeCurrentIndex
-        : elements.findIndex((element) =>
-            element.closest("li")?.classList.contains("playing"),
+        : elements.findIndex((el) =>
+            el.closest("li")?.classList.contains("playing"),
           );
     return {
-      items: elements.map((element, index) => {
-        const duration = getElementDuration(element, BAHAMUT_DURATION_SELECTOR);
-        const rawEpisode = element.textContent?.trim() || String(index + 1);
+      items: elements.map((el, i) => {
+        const duration = getElementDuration(el, BAHAMUT_DURATION_SELECTOR);
+        const rawEpisode = el.textContent?.trim() || String(i + 1);
         const episode = removeDurationSuffix(rawEpisode, duration);
         return {
-          index,
+          index: i,
           title: /^(?:第|Episode\b)/i.test(episode)
             ? episode
             : t("playlistEpisode", episode),
           ...(duration ? { duration } : {}),
-          ...(element.dataset.aniVideoSn
-            ? { videoId: element.dataset.aniVideoSn }
-            : {}),
+          ...(el.dataset.aniVideoSn ? { videoId: el.dataset.aniVideoSn } : {}),
         };
       }),
       ...getPlaylistIndexInfo(currentIndex, elements.length),
@@ -467,27 +456,25 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
         });
         if (elements.length < 2) continue;
 
-        const currentIndexes = elements.flatMap((link, index) => {
+        const currentIndexes = elements.flatMap((link, i) => {
           const item = link.closest("li, [role='listitem']");
           const currentElements = item ? [link, item] : [link];
-          return currentElements.some((element) => {
-            const ariaCurrent = element
-              .getAttribute("aria-current")
-              ?.toLowerCase();
+          return currentElements.some((el) => {
+            const ariaCurrent = el.getAttribute("aria-current")?.toLowerCase();
             return (
               (ariaCurrent && ariaCurrent !== "false") ||
-              element.getAttribute("aria-selected") === "true"
+              el.getAttribute("aria-selected") === "true"
             );
           })
-            ? [index]
+            ? [i]
             : [];
         });
         if (currentIndexes.length > 1) continue;
 
-        const pathIndexes = elements.flatMap((link, index) =>
+        const pathIndexes = elements.flatMap((link, i) =>
           (new URL(link.href, location.href).pathname.replace(/\/+$/, "") ||
             "/") === currentPath
-            ? [index]
+            ? [i]
             : [],
         );
         const currentIndex =
@@ -506,8 +493,8 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     const { elements, currentIndex } = list;
 
     return {
-      items: elements.map((element, index) => {
-        const text = (element.innerText || element.textContent || "")
+      items: elements.map((el, i) => {
+        const text = (el.innerText || el.textContent || "")
           .replace(/\s+/g, " ")
           .trim();
         const duration = normalizeDuration(
@@ -515,8 +502,8 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
         );
         const title = removeDurationSuffix(text, duration);
         return {
-          index,
-          title: title || t("playlistEpisode", String(index + 1)),
+          index: i,
+          title: title || t("playlistEpisode", String(i + 1)),
           ...(duration ? { duration } : {}),
         };
       }),
@@ -560,29 +547,29 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
   }
 
   function selectYouTubePlaylistItem(
-    index: number,
+    i: number,
     item: PlaylistItem,
     preparePlaybackState: () => void,
   ) {
     preparePlaybackState();
     window.postMessage(
-      { type: "PIP_SELECT_YT_PLAYLIST", index, videoId: item.videoId },
+      { type: "PIP_SELECT_YT_PLAYLIST", i, videoId: item.videoId },
       "*",
     );
   }
 
-  function selectPlaylistItem(index: number, preparePlaybackState: () => void) {
+  function selectPlaylistItem(i: number, preparePlaybackState: () => void) {
     const playlist = getPlaylist();
-    const item = playlist?.items[index];
-    if (!playlist || !Number.isInteger(index) || !item) return;
+    const item = playlist?.items[i];
+    if (!playlist || !Number.isInteger(i) || !item) return;
 
     const site = globalThis.PipCompanion.site;
     if (site.isYouTubeHost(location.hostname)) {
-      selectYouTubePlaylistItem(index, item, preparePlaybackState);
+      selectYouTubePlaylistItem(i, item, preparePlaybackState);
       return;
     }
     if (isBahamutVideoPage()) {
-      const episodeLink = getBahamutPlaylistElements()[index];
+      const episodeLink = getBahamutPlaylistElements()[i];
       if (episodeLink) {
         preparePlaybackState();
         episodeLink.click();
@@ -599,7 +586,7 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
         );
         return;
       }
-      const element = getBilibiliPlaylistElements()[index];
+      const element = getBilibiliPlaylistElements()[i];
       if (!element) return;
       const target =
         element.querySelector<HTMLElement>(
@@ -609,7 +596,7 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
       return;
     }
 
-    const episodeLink = getGenericEpisodeList()?.elements[index];
+    const episodeLink = getGenericEpisodeList()?.elements[i];
     if (episodeLink) {
       preparePlaybackState();
       episodeLink.click();

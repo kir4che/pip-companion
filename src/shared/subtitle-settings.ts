@@ -221,49 +221,43 @@ globalThis.PipCompanion.subtitleSettings = (() => {
     };
   }
 
-  function applyLayout(element: HTMLElement, settings: SubtitleLayoutSettings) {
-    element.style.setProperty(
+  function applyLayout(el: HTMLElement, settings: SubtitleLayoutSettings) {
+    el.style.setProperty(
       "--subtitle-background",
       rgba(
         colorChannels(settings.backgroundColor),
         settings.backgroundOpacity / 100,
       ),
     );
-    element.style.setProperty(
+    el.style.setProperty(
       "--subtitle-bottom-offset",
       `${settings.bottomOffset}%`,
     );
-    element.style.setProperty(
-      "--subtitle-pair-gap",
-      `${settings.pairGap / 100}em`,
-    );
-    element.style.setProperty(
+    el.style.setProperty("--subtitle-pair-gap", `${settings.pairGap / 100}em`);
+    el.style.setProperty(
       "--subtitle-letter-spacing",
       `${settings.letterSpacing / 100}em`,
     );
   }
 
-  function apply(element: HTMLElement, settings: SubtitleStyleSettings) {
+  function apply(el: HTMLElement, settings: SubtitleStyleSettings) {
     const hasOutline = settings.edgeStyle === "outline";
     const intensity = settings.edgeIntensity;
-    element.style.setProperty(
+    el.style.setProperty(
       "--subtitle-font-family",
       FONT_FAMILIES[settings.fontFamily],
     );
-    element.style.setProperty(
+    el.style.setProperty(
       "--subtitle-font-size",
       `${(4.8 * settings.fontSizeScale) / 100}cqh`,
     );
-    element.style.setProperty(
-      "--subtitle-font-weight",
-      String(settings.fontWeight),
-    );
-    element.style.setProperty(
+    el.style.setProperty("--subtitle-font-weight", String(settings.fontWeight));
+    el.style.setProperty(
       "--subtitle-line-height",
       String(settings.lineHeightScale / 100),
     );
-    element.style.setProperty("--subtitle-text-color", settings.textColor);
-    element.style.setProperty(
+    el.style.setProperty("--subtitle-text-color", settings.textColor);
+    el.style.setProperty(
       "--subtitle-background",
       rgba(
         colorChannels(settings.backgroundColor),
@@ -309,13 +303,13 @@ globalThis.PipCompanion.subtitleSettings = (() => {
         textShadow = `0 ${intensity}px ${intensity * 2}px ${rgba(edgeRgb, 0.95)}, 0 ${intensity * 2}px ${intensity * 5}px ${rgba(edgeRgb, 0.7)}`;
         break;
     }
-    element.style.setProperty("--subtitle-text-shadow", textShadow);
-    element.style.setProperty(
+    el.style.setProperty("--subtitle-text-shadow", textShadow);
+    el.style.setProperty(
       "--subtitle-outline-width",
       hasOutline ? `${intensity}px` : "0px",
     );
-    element.style.setProperty("--subtitle-outline-color", settings.edgeColor);
-    element.style.setProperty(
+    el.style.setProperty("--subtitle-outline-color", settings.edgeColor);
+    el.style.setProperty(
       "--subtitle-bottom-offset",
       `${settings.bottomOffset}%`,
     );

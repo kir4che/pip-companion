@@ -31,21 +31,21 @@ const bilibiliSubtitles = (() => {
     let secondaryCueRequestId = 0;
     let secondaryCuePendingTrack = "";
     let secondaryCueLoadedTrack = "";
-    window.addEventListener("message", (event: MessageEvent<unknown>) => {
+    window.addEventListener("message", (e: MessageEvent<unknown>) => {
       if (
-        event.source !== window ||
-        event.origin !== location.origin ||
-        !globalThis.PipCompanion.util.isRecord(event.data) ||
-        event.data.type !== "PIP_BILI_SUBTITLE_TRACKS" ||
-        typeof event.data.requestId !== "number" ||
-        event.data.requestId !== trackRequestId ||
-        typeof event.data.ok !== "boolean"
+        e.source !== window ||
+        e.origin !== location.origin ||
+        !globalThis.PipCompanion.util.isRecord(e.data) ||
+        e.data.type !== "PIP_BILI_SUBTITLE_TRACKS" ||
+        typeof e.data.requestId !== "number" ||
+        e.data.requestId !== trackRequestId ||
+        typeof e.data.ok !== "boolean"
       )
         return;
 
       trackRequestPending = false;
-      if (!event.data.ok || !Array.isArray(event.data.tracks)) return;
-      tracks = event.data.tracks.flatMap((track) => {
+      if (!e.data.ok || !Array.isArray(e.data.tracks)) return;
+      tracks = e.data.tracks.flatMap((track) => {
         if (
           !globalThis.PipCompanion.util.isRecord(track) ||
           typeof track.key !== "string" ||
@@ -143,7 +143,7 @@ const bilibiliSubtitles = (() => {
           type: "GET_BILIBILI_SUBTITLE_CUES",
           url: track.subtitleUrl,
         } satisfies ExtensionMessage)
-        .then((response: unknown) => {
+        .then((res: unknown) => {
           const currentRequestId = secondary
             ? secondaryCueRequestId
             : cueRequestId;
@@ -155,9 +155,9 @@ const bilibiliSubtitles = (() => {
           )
             return;
           if (
-            !globalThis.PipCompanion.util.isRecord(response) ||
-            response.ok !== true ||
-            !Array.isArray(response.cues)
+            !globalThis.PipCompanion.util.isRecord(res) ||
+            res.ok !== true ||
+            !Array.isArray(res.cues)
           ) {
             if (secondary) secondaryCueLoadedTrack = track.key;
             else cueLoadedTrack = track.key;
@@ -165,7 +165,7 @@ const bilibiliSubtitles = (() => {
             return;
           }
 
-          const cues = response.cues.filter(
+          const cues = res.cues.filter(
             (cue): cue is TimedSubtitleCue =>
               globalThis.PipCompanion.util.isRecord(cue) &&
               typeof cue.from === "number" &&

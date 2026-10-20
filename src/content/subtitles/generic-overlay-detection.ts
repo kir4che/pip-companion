@@ -4,7 +4,7 @@ globalThis.PipCompanion = globalThis.PipCompanion || ({} as PipCompanionGlobal);
 globalThis.PipCompanion.genericSubtitleOverlayDetection = {
   findNode(
     doc: Document,
-    getStyle: (element: Element) => CSSStyleDeclaration,
+    getStyle: (el: Element) => CSSStyleDeclaration,
     viewportHeight: number,
   ): HTMLElement | null {
     const selector =
@@ -46,8 +46,7 @@ globalThis.PipCompanion.genericSubtitleOverlayDetection = {
       .map((entry) => entry.element);
     return (
       top.find(
-        (element) =>
-          !top.some((other) => other !== element && other.contains(element)),
+        (el) => !top.some((other) => other !== el && other.contains(el)),
       ) ??
       top[0] ??
       null

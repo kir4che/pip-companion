@@ -339,24 +339,24 @@ globalThis.PipCompanion.runtimeMessages.addListener(
     "CLOSE_PIP_IF_PAUSED",
     "OPEN_PIP",
   ],
-  (message: unknown, _sender, sendResponse) => {
-    if (!globalThis.PipCompanion.util.isExtensionMessage(message)) return;
-    if (message.type === "PIP_GLOBAL_STATE") {
-      state.globalPipOpen = message.pipOpen === true;
-      state.globalPipSourcePlaying = message.pipOpen
-        ? message.sourcePlaying !== false
+  (msg: unknown, _sender, sendResponse) => {
+    if (!globalThis.PipCompanion.util.isExtensionMessage(msg)) return;
+    if (msg.type === "PIP_GLOBAL_STATE") {
+      state.globalPipOpen = msg.pipOpen === true;
+      state.globalPipSourcePlaying = msg.pipOpen
+        ? msg.sourcePlaying !== false
         : true;
-      if (message.pipOpen && !state.globalPipSourcePlaying)
+      if (msg.pipOpen && !state.globalPipSourcePlaying)
         void requestPipHandoff();
       return;
     }
-    if (message.type === "PIP_SOURCE_PLAYBACK_CHANGED") {
-      state.globalPipSourcePlaying = message.playing;
+    if (msg.type === "PIP_SOURCE_PLAYBACK_CHANGED") {
+      state.globalPipSourcePlaying = msg.playing;
       pipHandoffRetryAfter = 0;
-      if (!message.playing) void requestPipHandoff();
+      if (!msg.playing) void requestPipHandoff();
       return;
     }
-    if (message?.type === "PING") {
+    if (msg?.type === "PING") {
       sendResponse({
         ok: true,
         pipOpen: globalThis.PipCompanion.ContentPipLifecycle.isPipOpen(),
@@ -364,14 +364,14 @@ globalThis.PipCompanion.runtimeMessages.addListener(
       });
       return;
     }
-    if (message?.type === "CLOSE_PIP") {
+    if (msg?.type === "CLOSE_PIP") {
       void globalThis.PipCompanion.ContentPipLifecycle.closePiP(true).then(
         () => sendResponse({ ok: true }),
         () => sendResponse({ ok: false }),
       );
       return true;
     }
-    if (message?.type === "CLOSE_PIP_PRESERVE_PLAYBACK") {
+    if (msg?.type === "CLOSE_PIP_PRESERVE_PLAYBACK") {
       void globalThis.PipCompanion.ContentPipLifecycle.closePiP(
         true,
         false,
@@ -382,9 +382,9 @@ globalThis.PipCompanion.runtimeMessages.addListener(
       );
       return true;
     }
-    if (message?.type === "CLOSE_PIP_IF_PAUSED") {
+    if (msg?.type === "CLOSE_PIP_IF_PAUSED") {
       const preservePlayback =
-        "preservePlayback" in message && message.preservePlayback === true;
+        "preservePlayback" in msg && msg.preservePlayback === true;
       void globalThis.PipCompanion.ContentPipLifecycle.closePiPIfPaused(
         preservePlayback,
       ).then(
@@ -398,7 +398,7 @@ globalThis.PipCompanion.runtimeMessages.addListener(
       );
       return true;
     }
-    if (message?.type !== "OPEN_PIP") return;
+    if (msg?.type !== "OPEN_PIP") return;
     void globalThis.PipCompanion.ContentPipLifecycle.openPiP().then(
       sendResponse,
     );
@@ -702,9 +702,9 @@ async function requestPipHandoff(playedVideo?: HTMLVideoElement) {
 window.addEventListener("keydown", onPageKeyDown, true);
 void chrome.runtime
   .sendMessage({ type: "GET_PIP_STATE" } satisfies ExtensionMessage)
-  .then((response) => {
-    state.globalPipOpen = response?.pipOpen === true;
-    state.globalPipSourcePlaying = response?.sourcePlaying !== false;
+  .then((res) => {
+    state.globalPipOpen = res?.pipOpen === true;
+    state.globalPipSourcePlaying = res?.sourcePlaying !== false;
   })
   .catch(() => {});
 window.addEventListener("yt-navigate-finish", () => {
@@ -732,14 +732,14 @@ window.addEventListener("popstate", nudgeScan, { passive: true });
 window.addEventListener("hashchange", nudgeScan, { passive: true });
 document.addEventListener(
   "play",
-  (event) => {
+  (e) => {
     pipHandoffRetryAfter = 0;
     nudgeScan();
     if (
-      event.target instanceof HTMLVideoElement &&
-      !globalThis.PipCompanion.ContentVideo.isPreviewVideo(event.target)
+      e.target instanceof HTMLVideoElement &&
+      !globalThis.PipCompanion.ContentVideo.isPreviewVideo(e.target)
     )
-      void requestPipHandoff(event.target);
+      void requestPipHandoff(e.target);
   },
   true,
 );

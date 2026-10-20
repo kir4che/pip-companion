@@ -20,7 +20,7 @@ function createPlayback() {
     PipCompanion: {
       util: { getMessage: (key) => key },
       ContentPlaylist: { getPlaylist() {}, selectPlaylistItem() {} },
-      ContentFeedback: { showFeedback: (message) => feedback.push(message) },
+      ContentFeedback: { showFeedback: (msg) => feedback.push(msg) },
     },
     isDanmakuEnabled: () => enabled,
     toggleDanmaku: () => {

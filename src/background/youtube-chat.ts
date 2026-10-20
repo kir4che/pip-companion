@@ -34,8 +34,8 @@ function sourceVideoId(value: string | undefined): string | null {
   }
 }
 
-function send(tabId: number, message: ExtensionMessage): Promise<unknown> {
-  return chrome.tabs.sendMessage(tabId, message, { frameId: 0 });
+function send(tabId: number, msg: ExtensionMessage): Promise<unknown> {
+  return chrome.tabs.sendMessage(tabId, msg, { frameId: 0 });
 }
 
 async function readSourceProbe(
@@ -161,7 +161,7 @@ function openSourceTab(videoId: string): Promise<number> {
   return open;
 }
 
-function stop(connection: RelayConnection, error?: string): void {
+function stop(connection: RelayConnection, err?: string): void {
   if (connections.get(connection.targetTabId) !== connection) return;
   connections.delete(connection.targetTabId);
   if (connection.sourceTabId !== null)
@@ -169,13 +169,13 @@ function stop(connection: RelayConnection, error?: string): void {
       type: "YOUTUBE_CHAT_STOP",
       connectionId: connection.connectionId,
     }).catch(() => {});
-  if (error)
+  if (err)
     void send(connection.targetTabId, {
       type: "EXTRA_YOUTUBE_CHAT_STATUS",
       connectionId: connection.connectionId,
       videoId: connection.videoId,
       status: "error",
-      error,
+      error: err,
     }).catch(() => {});
 }
 
@@ -188,21 +188,21 @@ export function registerYouTubeChatListener(): void {
       "YOUTUBE_CHAT_MESSAGE",
       "YOUTUBE_CHAT_ENDED",
     ],
-    async (message, sender, respond) => {
+    async (msg, sender, respond) => {
       if (
-        !isRecord(message) ||
+        !isRecord(msg) ||
         sender.frameId !== 0 ||
         sender.tab?.id === undefined ||
         !sender.url
       )
         return;
       const tabId = sender.tab.id;
-      if (message.type === "START_EXTRA_YOUTUBE_CHAT") {
+      if (msg.type === "START_EXTRA_YOUTUBE_CHAT") {
         const previous = connections.get(tabId);
         if (previous) stop(previous);
         const connection: RelayConnection = {
-          connectionId: message.connectionId as string,
-          videoId: message.videoId as string,
+          connectionId: msg.connectionId as string,
+          videoId: msg.videoId as string,
           targetTabId: tabId,
           targetUrl: sender.url,
           sourceTabId: null,
@@ -272,23 +272,22 @@ export function registerYouTubeChatListener(): void {
             );
           respond({ ok: true, mode: response.mode });
           return;
-        } catch (error) {
+        } catch (err) {
           stop(connection);
           respond({
             ok: false,
             error:
-              error instanceof Error ? error.message : "YouTube 聊天連線失敗。",
+              err instanceof Error ? err.message : "YouTube 聊天連線失敗。",
           });
         }
         return;
       }
       if (
-        message.type === "YOUTUBE_CHAT_MESSAGE" ||
-        message.type === "YOUTUBE_CHAT_ENDED"
+        msg.type === "YOUTUBE_CHAT_MESSAGE" ||
+        msg.type === "YOUTUBE_CHAT_ENDED"
       ) {
         const connection = [...connections.values()].find(
-          (c) =>
-            c.sourceTabId === tabId && c.connectionId === message.connectionId,
+          (c) => c.sourceTabId === tabId && c.connectionId === msg.connectionId,
         );
         if (
           !connection ||
@@ -296,24 +295,24 @@ export function registerYouTubeChatListener(): void {
           sender.url !== connection.sourceUrl
         )
           return;
-        if (message.type === "YOUTUBE_CHAT_ENDED") {
+        if (msg.type === "YOUTUBE_CHAT_ENDED") {
           stop(connection, "YouTube 聊天來源已中斷或換片。");
           return;
         }
-        if (message.seekRevision !== connection.seekRevision) return;
+        if (msg.seekRevision !== connection.seekRevision) return;
         await send(connection.targetTabId, {
           type: "EXTRA_YOUTUBE_CHAT_MESSAGE",
           connectionId: connection.connectionId,
           videoId: connection.videoId,
           seekRevision: connection.seekRevision,
-          data: message.data as DanmakuData,
+          data: msg.data as DanmakuData,
         }).catch(() => stop(connection));
         return;
       }
       const connection = connections.get(tabId);
       if (
         !connection ||
-        connection.connectionId !== message.connectionId ||
+        connection.connectionId !== msg.connectionId ||
         connection.targetUrl !== sender.url
       ) {
         respond({
@@ -322,22 +321,22 @@ export function registerYouTubeChatListener(): void {
         });
         return;
       }
-      if (message.type === "STOP_EXTRA_YOUTUBE_CHAT") {
+      if (msg.type === "STOP_EXTRA_YOUTUBE_CHAT") {
         stop(connection);
         return;
       }
       if (
-        message.type === "EXTRA_YOUTUBE_CHAT_CLOCK" &&
+        msg.type === "EXTRA_YOUTUBE_CHAT_CLOCK" &&
         connection.sourceTabId !== null
       ) {
-        if ((message.seekRevision as number) < connection.seekRevision) return;
-        connection.seekRevision = message.seekRevision as number;
+        if ((msg.seekRevision as number) < connection.seekRevision) return;
+        connection.seekRevision = msg.seekRevision as number;
         await send(connection.sourceTabId, {
           type: "YOUTUBE_CHAT_CLOCK",
           connectionId: connection.connectionId,
-          time: message.time as number,
-          paused: message.paused as boolean,
-          ended: message.ended as boolean,
+          time: msg.time as number,
+          paused: msg.paused as boolean,
+          ended: msg.ended as boolean,
           seekRevision: connection.seekRevision,
         }).catch(() =>
           stop(connection, "YouTube 聊天來源已中斷，請重新套用來源。"),

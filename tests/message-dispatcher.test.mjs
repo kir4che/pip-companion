@@ -94,10 +94,10 @@ function createDispatcher(environment = "background") {
         : utilsContext.PipCompanion.runtimeMessages,
     errors,
     registrations: () => registrations,
-    dispatch: (message, sender = {}) => {
+    dispatch: (msg, sender = {}) => {
       const responses = [];
-      const keepChannelOpen = runtimeListener(message, sender, (response) =>
-        responses.push(response),
+      const keepChannelOpen = runtimeListener(msg, sender, (res) =>
+        responses.push(res),
       );
       return { keepChannelOpen, responses };
     },
@@ -109,8 +109,8 @@ for (const environment of ["background", "content/popup"]) {
     const { dispatcher, dispatch, registrations } =
       createDispatcher(environment);
     const received = [];
-    const handler = (message) => {
-      received.push(message.type);
+    const handler = (msg) => {
+      received.push(msg.type);
     };
     dispatcher.addListener(["GET_PIP_STATE", "PING"], handler);
     dispatcher.addListener("GET_PIP_STATE", handler);
@@ -193,8 +193,8 @@ for (const environment of ["background", "content/popup"]) {
 test("routes only schema-valid messages to handlers registered for their type", () => {
   const { dispatcher, dispatch } = createDispatcher();
   const received = [];
-  dispatcher.addListener("GET_BILIBILI_DANMAKU", (message, sender) => {
-    received.push({ message, sender });
+  dispatcher.addListener("GET_BILIBILI_DANMAKU", (msg, sender) => {
+    received.push({ message: msg, sender });
   });
   dispatcher.addListener("GET_PIP_STATE", () => {
     received.push("pip-state");
@@ -271,8 +271,8 @@ test("keeps async responses open and converts handler rejections to failure resp
 test("YouTube relay validates clocks and restricts requests to top-frame web senders", () => {
   const { dispatcher, dispatch } = createDispatcher();
   const received = [];
-  dispatcher.addListener("EXTRA_YOUTUBE_CHAT_CLOCK", (message) =>
-    received.push(message),
+  dispatcher.addListener("EXTRA_YOUTUBE_CHAT_CLOCK", (msg) =>
+    received.push(msg),
   );
   const sender = {
     frameId: 0,
@@ -311,8 +311,8 @@ test("YouTube relay validates clocks and restricts requests to top-frame web sen
 test("YouTube relay accepts same-origin SPA URLs but rejects other origins", () => {
   const { dispatcher, dispatch } = createDispatcher();
   const received = [];
-  dispatcher.addListener("EXTRA_YOUTUBE_CHAT_CLOCK", (message) =>
-    received.push(message),
+  dispatcher.addListener("EXTRA_YOUTUBE_CHAT_CLOCK", (msg) =>
+    received.push(msg),
   );
   const clock = {
     type: "EXTRA_YOUTUBE_CHAT_CLOCK",
@@ -353,8 +353,8 @@ test("YouTube relay accepts same-origin SPA URLs but rejects other origins", () 
 test("extra danmaku source status accepts an optional loading flag", () => {
   const { dispatcher, dispatch } = createDispatcher();
   const received = [];
-  dispatcher.addListener("EXTRA_DANMAKU_SOURCE_STATUS", (message) =>
-    received.push(message),
+  dispatcher.addListener("EXTRA_DANMAKU_SOURCE_STATUS", (msg) =>
+    received.push(msg),
   );
   const sender = {
     frameId: 0,

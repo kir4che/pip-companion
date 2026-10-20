@@ -330,13 +330,13 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       const end = resetBilibiliPlaybackCursor(currentTime);
       const recentMessages = bilibiliMessages
         .slice(start, end)
-        .filter((message) => {
-          const elapsed = currentTime - message.replayTime;
-          const lifetime = message.advanced
-            ? message.advanced.durationMs /
+        .filter((msg) => {
+          const elapsed = currentTime - msg.replayTime;
+          const lifetime = msg.advanced
+            ? msg.advanced.durationMs /
               1000 /
               (dependencies.getSpeedScale() / 100)
-            : message.type === "top" || message.type === "bottom"
+            : msg.type === "top" || msg.type === "bottom"
               ? dependencies.maxFixedRestoreSeconds
               : Math.min(
                   renderer.duration,
@@ -405,8 +405,8 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
           const response: unknown = await chrome.runtime.sendMessage(payload);
           if (isBilibiliDanmakuResponse(response)) return response;
           throw new Error("Invalid Bilibili danmaku response");
-        } catch (error) {
-          lastError = error;
+        } catch (err) {
+          lastError = err;
           if (attempt < 2) await waitForBilibiliRetry(attempt ? 900 : 300);
         }
       }
@@ -418,7 +418,7 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
     function mergeBilibiliMessages(messages: BilibiliDanmakuMessage[]): void {
       const knownIds = new Set(
         bilibiliMessages
-          .map((message) => message.id)
+          .map((msg) => msg.id)
           .filter((id): id is string => Boolean(id && id !== "0")),
       );
       let addedMessages = false;
@@ -442,28 +442,28 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
     }
 
     function updateBilibiliSegmentAvailability(
-      response: BilibiliDanmakuResponseSuccess,
+      res: BilibiliDanmakuResponseSuccess,
     ): void {
-      if (response.legacyFallback) {
+      if (res.legacyFallback) {
         bilibiliLegacyFallback = true;
         bilibiliLoadedSegments.clear();
         bilibiliUnavailableSegments.clear();
         return;
       }
       const unavailable = new Map(
-        (Array.isArray(response.unavailableSegments)
-          ? response.unavailableSegments
+        (Array.isArray(res.unavailableSegments)
+          ? res.unavailableSegments
           : []
         ).map(({ segment, status }) => [segment, status]),
       );
       const retryAt = Date.now() + 5000;
       for (
-        let segment = response.segmentStart;
-        segment <= response.segmentEnd;
+        let segment = res.segmentStart;
+        segment <= res.segmentEnd;
         segment++
       ) {
         const status = unavailable.get(segment);
-        if (status === 404 && !response.fallbackError) {
+        if (status === 404 && !res.fallbackError) {
           bilibiliLoadedSegments.delete(segment);
           bilibiliUnavailableSegments.add(segment);
           bilibiliSegmentRetryAt.delete(segment);
@@ -541,7 +541,7 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
         startSegment: requestStart,
         endSegment: requestEnd,
       })
-        .then((response) => {
+        .then((res) => {
           if (
             requestGeneration !== bilibiliRequestGeneration ||
             identity.key !== bilibiliPageKey ||
@@ -551,14 +551,12 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
           )
             return;
 
-          if (!response.ok)
-            throw new Error(
-              response.error || "Bilibili danmaku request failed",
-            );
+          if (!res.ok)
+            throw new Error(res.error || "Bilibili danmaku request failed");
 
-          bilibiliSegmentCount = response.segmentCount || bilibiliSegmentCount;
-          updateBilibiliSegmentAvailability(response);
-          mergeBilibiliMessages(response.messages);
+          bilibiliSegmentCount = res.segmentCount || bilibiliSegmentCount;
+          updateBilibiliSegmentAvailability(res);
+          mergeBilibiliMessages(res.messages);
           bilibiliMessagesLoaded = true;
 
           const playbackVideo = bilibiliPipVideo;

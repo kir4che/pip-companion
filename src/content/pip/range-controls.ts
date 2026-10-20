@@ -17,9 +17,9 @@ globalThis.PipCompanion.pipRangeControls = {
       options.update();
       options.showSpeedFeedback();
     });
-    const releaseRangeFocus = (event: PointerEvent) => {
-      if (event.pointerType !== "mouse") return;
-      (event.currentTarget as HTMLInputElement).blur();
+    const releaseRangeFocus = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
+      (e.currentTarget as HTMLInputElement).blur();
     };
     for (const slider of [options.volumeSlider, options.speedSlider]) {
       options.eventScope.listen(slider, "pointerup", releaseRangeFocus);

@@ -19,8 +19,8 @@ globalThis.PipCompanion.ContentVideo = (() => {
     return window.documentPictureInPicture ?? null;
   }
 
-  function isPreviewVideo(element: Element) {
-    let node: Node | null = element;
+  function isPreviewVideo(el: Element) {
+    let node: Node | null = el;
     while (node) {
       if (node.nodeType === 1) {
         const element = node as Element;

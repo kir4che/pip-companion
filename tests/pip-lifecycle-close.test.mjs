@@ -37,9 +37,9 @@ function createLifecycle(video = null, pauseOnPipClose = true) {
     chrome: {
       runtime: {
         id: "test-extension",
-        sendMessage(message) {
-          messages.push(message);
-          if (message.type === "SAVE_PIP_BOUNDS")
+        sendMessage(msg) {
+          messages.push(msg);
+          if (msg.type === "SAVE_PIP_BOUNDS")
             return new Promise((resolve) => boundsResolvers.push(resolve));
           return Promise.resolve({ ok: false });
         },
@@ -78,8 +78,7 @@ test("PiP closure notifies cancellation and closes before bounds storage complet
   assert.equal(state.pipSession.phase, "closed");
   assert.equal(
     messages.some(
-      (message) =>
-        message.type === "PIP_STATE_CHANGED" && message.pipOpen === false,
+      (msg) => msg.type === "PIP_STATE_CHANGED" && msg.pipOpen === false,
     ),
     true,
   );
@@ -132,9 +131,7 @@ test("PiP closure sends final bounds while an earlier save is still pending", as
   win.screenX = 80;
   const closing = context.PipCompanion.ContentPipLifecycle.closePiP(true);
   assert.equal(win.closed, true);
-  const saves = messages.filter(
-    (message) => message.type === "SAVE_PIP_BOUNDS",
-  );
+  const saves = messages.filter((msg) => msg.type === "SAVE_PIP_BOUNDS");
   assert.equal(saves.length, 2);
   assert.equal(saves[0].width, 640);
   assert.equal(saves[1].width, 960);

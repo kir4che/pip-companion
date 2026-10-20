@@ -12,9 +12,9 @@ const standardTextTrackProvider: StandardTextTrackProvider = (() => {
     video: HTMLVideoElement,
     track: TextTrack,
   ): boolean {
-    return Array.from(video.querySelectorAll("track")).some((element) => {
-      if (element.track !== track) return false;
-      const source = element.getAttribute("src") || element.src;
+    return Array.from(video.querySelectorAll("track")).some((el) => {
+      if (el.track !== track) return false;
+      const source = el.getAttribute("src") || el.src;
       if (!source) return false;
       try {
         const path = new URL(source, video.ownerDocument.baseURI).pathname;

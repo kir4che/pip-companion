@@ -123,25 +123,25 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
             subtitleLanguagesMatch(track.language ?? "", targetLanguage),
         ),
       getPreferNativeSecondaryLines,
-      showFeedback: (message) =>
-        globalThis.PipCompanion.ContentFeedback.showFeedback(message),
+      showFeedback: (msg) =>
+        globalThis.PipCompanion.ContentFeedback.showFeedback(msg),
       render: renderSubtitle,
     });
 
-  window.addEventListener("message", (event: MessageEvent<unknown>) => {
+  window.addEventListener("message", (e: MessageEvent<unknown>) => {
     if (
-      event.source !== window ||
-      event.origin !== location.origin ||
-      !globalThis.PipCompanion.util.isRecord(event.data) ||
-      event.data.type !== "PIP_YT_SUBTITLE_TRACKS" ||
-      typeof event.data.videoId !== "string" ||
-      event.data.videoId !== getCurrentYouTubeVideoId() ||
-      !Array.isArray(event.data.tracks)
+      e.source !== window ||
+      e.origin !== location.origin ||
+      !globalThis.PipCompanion.util.isRecord(e.data) ||
+      e.data.type !== "PIP_YT_SUBTITLE_TRACKS" ||
+      typeof e.data.videoId !== "string" ||
+      e.data.videoId !== getCurrentYouTubeVideoId() ||
+      !Array.isArray(e.data.tracks)
     )
       return;
     const previousPrimaryTrackKey = youtubePrimary.trackKey;
     const previousSecondaryTrackKey = youtubeSecondary.trackKey;
-    remoteSubtitleRequestState.youtubeTracks = event.data.tracks.filter(
+    remoteSubtitleRequestState.youtubeTracks = e.data.tracks.filter(
       globalThis.PipCompanion.subtitleTrackValidation.isYouTubeTrack,
     );
     updateYouTubePrimarySubtitleTrackKey();
@@ -164,50 +164,50 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       refreshSubtitle(true);
   });
 
-  window.addEventListener("message", (event: MessageEvent<unknown>) => {
+  window.addEventListener("message", (e: MessageEvent<unknown>) => {
     if (
-      event.source !== window ||
-      event.origin !== location.origin ||
-      !globalThis.PipCompanion.util.isRecord(event.data) ||
-      event.data.type !== "PIP_YT_SUBTITLE_CUES" ||
-      typeof event.data.videoId !== "string" ||
-      event.data.videoId !== getCurrentYouTubeVideoId() ||
-      !youtubePrimary.matches(event.data.requestId, event.data.key) ||
-      typeof event.data.ok !== "boolean" ||
-      !Array.isArray(event.data.cues)
+      e.source !== window ||
+      e.origin !== location.origin ||
+      !globalThis.PipCompanion.util.isRecord(e.data) ||
+      e.data.type !== "PIP_YT_SUBTITLE_CUES" ||
+      typeof e.data.videoId !== "string" ||
+      e.data.videoId !== getCurrentYouTubeVideoId() ||
+      !youtubePrimary.matches(e.data.requestId, e.data.key) ||
+      typeof e.data.ok !== "boolean" ||
+      !Array.isArray(e.data.cues)
     )
       return;
-    if (!event.data.ok) {
+    if (!e.data.ok) {
       youtubePrimary.complete(null);
       refreshSubtitle(true);
       return;
     }
     youtubePrimary.complete(
-      globalThis.PipCompanion.subtitleCueData.parseYouTubeCues(event.data.cues),
+      globalThis.PipCompanion.subtitleCueData.parseYouTubeCues(e.data.cues),
     );
     refreshSubtitle(true);
   });
 
-  window.addEventListener("message", (event: MessageEvent<unknown>) => {
+  window.addEventListener("message", (e: MessageEvent<unknown>) => {
     if (
-      event.source !== window ||
-      event.origin !== location.origin ||
-      !globalThis.PipCompanion.util.isRecord(event.data) ||
-      event.data.type !== "PIP_YT_SUBTITLE_CUES" ||
-      typeof event.data.videoId !== "string" ||
-      event.data.videoId !== getCurrentYouTubeVideoId() ||
-      !youtubeSecondary.matches(event.data.requestId, event.data.key) ||
-      typeof event.data.ok !== "boolean" ||
-      !Array.isArray(event.data.cues)
+      e.source !== window ||
+      e.origin !== location.origin ||
+      !globalThis.PipCompanion.util.isRecord(e.data) ||
+      e.data.type !== "PIP_YT_SUBTITLE_CUES" ||
+      typeof e.data.videoId !== "string" ||
+      e.data.videoId !== getCurrentYouTubeVideoId() ||
+      !youtubeSecondary.matches(e.data.requestId, e.data.key) ||
+      typeof e.data.ok !== "boolean" ||
+      !Array.isArray(e.data.cues)
     )
       return;
-    if (!event.data.ok) {
+    if (!e.data.ok) {
       youtubeSecondary.complete(null);
       showSecondarySubtitleFailure();
       return;
     }
     youtubeSecondary.complete(
-      globalThis.PipCompanion.subtitleCueData.parseYouTubeCues(event.data.cues),
+      globalThis.PipCompanion.subtitleCueData.parseYouTubeCues(e.data.cues),
     );
     if (!youtubeSecondary.cues?.length) return;
     refreshSubtitle(true);
@@ -246,19 +246,18 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     remoteSubtitleRequests.requestYouTubeSecondaryCues();
   }
 
-  window.addEventListener("message", (event: MessageEvent<unknown>) => {
+  window.addEventListener("message", (e: MessageEvent<unknown>) => {
     if (
-      event.source !== window ||
-      event.origin !== location.origin ||
-      !globalThis.PipCompanion.util.isRecord(event.data) ||
-      event.data.type !== "PIP_NETFLIX_SUBTITLE_TRACKS" ||
-      typeof event.data.requestId !== "number" ||
-      event.data.requestId !==
-        remoteSubtitleRequestState.netflixTrackRequestId ||
-      !Array.isArray(event.data.tracks)
+      e.source !== window ||
+      e.origin !== location.origin ||
+      !globalThis.PipCompanion.util.isRecord(e.data) ||
+      e.data.type !== "PIP_NETFLIX_SUBTITLE_TRACKS" ||
+      typeof e.data.requestId !== "number" ||
+      e.data.requestId !== remoteSubtitleRequestState.netflixTrackRequestId ||
+      !Array.isArray(e.data.tracks)
     )
       return;
-    const nextNetflixSubtitleTracks = event.data.tracks.filter(
+    const nextNetflixSubtitleTracks = e.data.tracks.filter(
       globalThis.PipCompanion.subtitleTrackValidation.isNetflixTrack,
     );
     if (nextNetflixSubtitleTracks.length > 0)
@@ -286,10 +285,10 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     ) {
       netflixSecondary.reset("");
     }
-    if (typeof event.data.subtitlesEnabled === "boolean") {
+    if (typeof e.data.subtitlesEnabled === "boolean") {
       if (subtitleInitializationPending) {
         subtitleInitializationPending = false;
-        setSubtitlesEnabled(event.data.subtitlesEnabled);
+        setSubtitlesEnabled(e.data.subtitlesEnabled);
         applySubtitleEnabledOverride();
         if (state.subtitlessOn) prepareNativeSubtitles();
         refreshSubtitle(true);
@@ -310,23 +309,23 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     return remoteSubtitleRequests.isNetflixSecondaryActive();
   }
 
-  window.addEventListener("message", (event: MessageEvent<unknown>) => {
+  window.addEventListener("message", (e: MessageEvent<unknown>) => {
     if (
-      event.source !== window ||
-      event.origin !== location.origin ||
-      !globalThis.PipCompanion.util.isRecord(event.data) ||
-      event.data.type !== "PIP_NETFLIX_SUBTITLE_CUES" ||
-      !netflixSecondary.matches(event.data.requestId, event.data.key) ||
-      !Array.isArray(event.data.cues)
+      e.source !== window ||
+      e.origin !== location.origin ||
+      !globalThis.PipCompanion.util.isRecord(e.data) ||
+      e.data.type !== "PIP_NETFLIX_SUBTITLE_CUES" ||
+      !netflixSecondary.matches(e.data.requestId, e.data.key) ||
+      !Array.isArray(e.data.cues)
     )
       return;
-    const cues = event.data.cues.flatMap((cue) => {
+    const cues = e.data.cues.flatMap((cue) => {
       const parsed = globalThis.PipCompanion.subtitleCueData.parseTimedCue(cue);
       return parsed ? [parsed] : [];
     });
     const loadSucceeded =
-      event.data.loaded === true ||
-      (event.data.loaded === undefined && event.data.restored === true);
+      e.data.loaded === true ||
+      (e.data.loaded === undefined && e.data.restored === true);
     if (!loadSucceeded) {
       netflixSecondary.retry();
       requestNetflixSubtitleTracks(true);
@@ -440,13 +439,13 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       return globalThis.PipCompanion.subtitleTrackOptions.netflixPrimary(
         remoteSubtitleRequestState.netflixTracks,
         remoteSubtitleRequestState.netflixPrimaryTrackKey,
-        (index) => t("pipSubtitleTrackNumber", String(index + 1)),
+        (i) => t("pipSubtitleTrackNumber", String(i + 1)),
       );
 
     if (IS_YOUTUBE && remoteSubtitleRequestState.youtubeTracks.length)
       return globalThis.PipCompanion.subtitleTrackOptions.youtubePrimary(
         remoteSubtitleRequestState.youtubeTracks,
-        (index) => t("pipSubtitleTrackNumber", String(index + 1)),
+        (i) => t("pipSubtitleTrackNumber", String(i + 1)),
       );
 
     const tracks = getSubtitleTracks();
@@ -464,7 +463,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
         tracks,
         selectedTrack,
         getNativeTrackId,
-        (index) => t("pipSubtitleTrackNumber", String(index + 1)),
+        (i) => t("pipSubtitleTrackNumber", String(i + 1)),
       );
     if (IS_BILIBILI && bilibiliSubtitles.tracks.length) {
       const platformTracks = tracks.length
@@ -472,10 +471,10 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
         : bilibiliSubtitles.tracks;
       return [
         ...nativeOptions,
-        ...platformTracks.map((track, index) => ({
+        ...platformTracks.map((track, i) => ({
           id: `bilibili:${track.key}`,
-          index: tracks.length + index,
-          label: track.label || t("pipSubtitleTrackNumber", String(index + 1)),
+          index: tracks.length + i,
+          label: track.label || t("pipSubtitleTrackNumber", String(i + 1)),
           language: track.language,
           selected: track.key === bilibiliSubtitles.primaryKey,
         })),
@@ -489,14 +488,14 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       return globalThis.PipCompanion.subtitleTrackOptions.youtubeSecondary(
         remoteSubtitleRequestState.youtubeTracks,
         youtubeSecondary.trackKey,
-        (index) => t("pipSubtitleTrackNumber", String(index + 1)),
+        (i) => t("pipSubtitleTrackNumber", String(i + 1)),
       );
     if (IS_NETFLIX)
       return globalThis.PipCompanion.subtitleTrackOptions.netflixSecondary(
         remoteSubtitleRequestState.netflixTracks,
         remoteSubtitleRequestState.netflixPrimaryTrackKey,
         netflixSecondary.trackKey,
-        (index) => t("pipSubtitleTrackNumber", String(index + 1)),
+        (i) => t("pipSubtitleTrackNumber", String(i + 1)),
       );
 
     const tracks = getSubtitleTracks();
@@ -514,16 +513,16 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
         primaryTrack,
         nativeSecondaryTrack.getTrack(),
         getNativeTrackId,
-        (index) => t("pipSubtitleTrackNumber", String(index + 1)),
+        (i) => t("pipSubtitleTrackNumber", String(i + 1)),
       );
     if (!IS_BILIBILI) return nativeTracks;
-    const biliTracks = bilibiliSubtitles.tracks.flatMap((track, index) =>
+    const biliTracks = bilibiliSubtitles.tracks.flatMap((track, i) =>
       track.key === bilibiliSubtitles.primaryKey
         ? []
         : [
             {
               id: `bilibili:${track.key}`,
-              index: tracks.length + index,
+              index: tracks.length + i,
               label: track.label,
               language: track.language,
               selected: track.key === bilibiliSubtitles.secondaryKey,
@@ -932,9 +931,9 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
 
   document.addEventListener(
     "click",
-    (event) => {
-      if (!IS_YOUTUBE || !state.pipUi || !event.isTrusted) return;
-      const target = event.target;
+    (e) => {
+      if (!IS_YOUTUBE || !state.pipUi || !e.isTrusted) return;
+      const target = e.target;
       if (!(target instanceof Element)) return;
       if (!target.closest("#movie_player .ytp-subtitles-button")) return;
       window.setTimeout(() => {

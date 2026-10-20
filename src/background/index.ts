@@ -48,8 +48,8 @@ async function migrateLegacySubtitleSettings() {
 }
 
 chrome.runtime.onInstalled.addListener(() => {
-  void migrateLegacySubtitleSettings().catch((error: unknown) => {
-    console.warn("[PiP Companion] Could not migrate subtitle settings:", error);
+  void migrateLegacySubtitleSettings().catch((err: unknown) => {
+    console.warn("[PiP Companion] Could not migrate subtitle settings:", err);
   });
 });
 
@@ -216,11 +216,11 @@ runtimeMessageDispatcher.addListener(
     "REQUEST_PIP_HANDOFF",
     "CLOSE_ALL_PIP",
   ],
-  (message: unknown, sender, sendResponse) => {
-    if (!isRecord(message)) return false;
-    if (message.type === "EXTRA_DANMAKU_SOURCE_CHANGED") {
+  (msg: unknown, sender, sendResponse) => {
+    if (!isRecord(msg)) return false;
+    if (msg.type === "EXTRA_DANMAKU_SOURCE_CHANGED") {
       const tabId = sender.tab?.id;
-      const source = message.source;
+      const source = msg.source;
       if (
         tabId === undefined ||
         !isRecord(source) ||
@@ -245,9 +245,9 @@ runtimeMessageDispatcher.addListener(
         .catch(() => {});
       return false;
     }
-    if (message.type === "PIP_SOURCE_PLAYBACK_CHANGED") {
-      if (typeof message.playing !== "boolean") return false;
-      const playing = message.playing;
+    if (msg.type === "PIP_SOURCE_PLAYBACK_CHANGED") {
+      if (typeof msg.playing !== "boolean") return false;
+      const playing = msg.playing;
       void (async () => {
         const { pipTabId } = await chrome.storage.session.get("pipTabId");
         if (pipTabId !== sender.tab?.id) return;
@@ -271,21 +271,21 @@ runtimeMessageDispatcher.addListener(
       })();
       return false;
     }
-    if (message.type === "PIP_SUBTITLES_ENABLED_CHANGED") {
-      if (typeof message.enabled !== "boolean") return false;
+    if (msg.type === "PIP_SUBTITLES_ENABLED_CHANGED") {
+      if (typeof msg.enabled !== "boolean") return false;
       void (async () => {
         const { pipTabId } = await chrome.storage.session.get("pipTabId");
         if (pipTabId !== sender.tab?.id) return;
         await chrome.storage.session.set({
           [pipSubtitlesEnabledStorageKey(sender.tab!.id as number)]:
-            message.enabled,
+            msg.enabled,
         });
       })();
       return false;
     }
-    if (message.type === "PIP_STATE_CHANGED") {
-      if (typeof message.pipOpen !== "boolean") return false;
-      const pipOpen = message.pipOpen;
+    if (msg.type === "PIP_STATE_CHANGED") {
+      if (typeof msg.pipOpen !== "boolean") return false;
+      const pipOpen = msg.pipOpen;
       pipStateUpdate = pipStateUpdate
         .then(async () => {
           const senderTabId = sender.tab?.id;
@@ -309,9 +309,9 @@ runtimeMessageDispatcher.addListener(
           if (pipOpen && sender.tab?.id !== undefined)
             await chrome.storage.session.set({
               pipTabId: sender.tab.id,
-              pipSourcePlaying: message.playing !== false,
+              pipSourcePlaying: msg.playing !== false,
               [pipSubtitlesEnabledStorageKey(sender.tab.id)]:
-                message.subtitlesEnabled === true,
+                msg.subtitlesEnabled === true,
             });
           else if (
             !pipOpen &&
@@ -335,7 +335,7 @@ runtimeMessageDispatcher.addListener(
         .catch(() => {});
       return false;
     }
-    if (message.type === "GET_PIP_BOUNDS") {
+    if (msg.type === "GET_PIP_BOUNDS") {
       void chrome.storage.session.get("pipBounds").then(({ pipBounds }) => {
         if (
           !isRecord(pipBounds) ||
@@ -357,7 +357,7 @@ runtimeMessageDispatcher.addListener(
       });
       return true;
     }
-    if (message.type === "GET_PIP_STATE") {
+    if (msg.type === "GET_PIP_STATE") {
       void getOpenPipTabId().then(
         async (pipTabId) => {
           const { pipSourcePlaying } =
@@ -372,7 +372,7 @@ runtimeMessageDispatcher.addListener(
       );
       return true;
     }
-    if (message.type === "REQUEST_PIP_HANDOFF") {
+    if (msg.type === "REQUEST_PIP_HANDOFF") {
       const targetTabId = sender.tab?.id;
       if (targetTabId === undefined) {
         sendResponse({ ok: false, pipOpen: true });
@@ -464,7 +464,7 @@ runtimeMessageDispatcher.addListener(
       });
       return true;
     }
-    if (message.type === "CLOSE_ALL_PIP") {
+    if (msg.type === "CLOSE_ALL_PIP") {
       void getOpenPipTabId().then(async (pipTabId) => {
         if (pipTabId === null) {
           await chrome.storage.session.remove(PIP_WINDOW_ID_STORAGE_KEY);
@@ -513,15 +513,15 @@ runtimeMessageDispatcher.addListener(
     "CENTER_PIP_BOUNDS",
     "RESIZE_PIP_WINDOW",
   ],
-  (message: unknown, sender, sendResponse) => {
-    if (!isRecord(message)) return false;
+  (msg: unknown, sender, sendResponse) => {
+    if (!isRecord(msg)) return false;
     if (
-      message.type === "SAVE_PIP_BOUNDS" ||
-      message.type === "RESTORE_PIP_BOUNDS" ||
-      message.type === "CENTER_PIP_BOUNDS"
+      msg.type === "SAVE_PIP_BOUNDS" ||
+      msg.type === "RESTORE_PIP_BOUNDS" ||
+      msg.type === "CENTER_PIP_BOUNDS"
     ) {
       const sourceWindowId = sender.tab?.windowId;
-      const innerWidth = message.innerWidth;
+      const innerWidth = msg.innerWidth;
       if (
         sourceWindowId === undefined ||
         typeof innerWidth !== "number" ||
@@ -534,7 +534,7 @@ runtimeMessageDispatcher.addListener(
       const updateBounds = async () => {
         try {
           let pipBounds: unknown;
-          if (message.type === "RESTORE_PIP_BOUNDS") {
+          if (msg.type === "RESTORE_PIP_BOUNDS") {
             ({ pipBounds } = await chrome.storage.session.get("pipBounds"));
             if (pipBounds === undefined) {
               sendResponse({ ok: false, missing: true });
@@ -543,23 +543,20 @@ runtimeMessageDispatcher.addListener(
           }
 
           const pipWindow =
-            message.type === "SAVE_PIP_BOUNDS"
+            msg.type === "SAVE_PIP_BOUNDS"
               ? null
               : await findPipWindow(innerWidth, sourceWindowId);
-          if (
-            message.type !== "SAVE_PIP_BOUNDS" &&
-            pipWindow?.id === undefined
-          ) {
+          if (msg.type !== "SAVE_PIP_BOUNDS" && pipWindow?.id === undefined) {
             sendResponse({ ok: false });
             return;
           }
 
           if (
-            message.type === "SAVE_PIP_BOUNDS" ||
-            message.type === "CENTER_PIP_BOUNDS"
+            msg.type === "SAVE_PIP_BOUNDS" ||
+            msg.type === "CENTER_PIP_BOUNDS"
           ) {
             const { pipTabId } = await chrome.storage.session.get("pipTabId");
-            const { left, top, width, height } = message;
+            const { left, top, width, height } = msg;
             if (
               pipTabId !== sender.tab?.id ||
               typeof left !== "number" ||
@@ -576,7 +573,7 @@ runtimeMessageDispatcher.addListener(
             await chrome.storage.session.set({
               pipBounds: { left, top, width, height },
             });
-            if (message.type === "SAVE_PIP_BOUNDS") {
+            if (msg.type === "SAVE_PIP_BOUNDS") {
               sendResponse({ ok: true });
               return;
             }
@@ -613,19 +610,15 @@ runtimeMessageDispatcher.addListener(
           sendResponse({ ok: false });
         }
       };
-      if (message.type === "SAVE_PIP_BOUNDS")
+      if (msg.type === "SAVE_PIP_BOUNDS")
         pipStateUpdate = pipStateUpdate.then(updateBounds).catch(() => {});
       else void updateBounds();
       return true;
     }
-    if (message.type !== "RESIZE_PIP_WINDOW") return false;
+    if (msg.type !== "RESIZE_PIP_WINDOW") return false;
 
     const sourceWindowId = sender.tab?.windowId;
-    const {
-      innerWidth,
-      width: requestedWidth,
-      height: requestedHeight,
-    } = message;
+    const { innerWidth, width: requestedWidth, height: requestedHeight } = msg;
     if (
       typeof innerWidth !== "number" ||
       typeof requestedWidth !== "number" ||

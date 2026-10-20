@@ -233,9 +233,9 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         };
         notifyPipState(true, !video.paused);
       }
-    } catch (error) {
+    } catch (err) {
       clearNativePip(video, false);
-      throw error;
+      throw err;
     } finally {
       if (nativePipRequest === request) nativePipRequest = null;
     }
@@ -254,11 +254,11 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         await oldVideo.ownerDocument.exitPictureInPicture();
       if (generation !== pipOperationGeneration) return;
       await openNativePip(video);
-    } catch (error) {
+    } catch (err) {
       if (generation !== pipOperationGeneration) return;
       state.pipSession = { phase: "closed" };
       notifyPipState(false);
-      console.warn("[Subtitle PiP] Could not hand off native PiP:", error);
+      console.warn("[Subtitle PiP] Could not hand off native PiP:", err);
     }
   }
 
@@ -673,10 +673,10 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       const next = stash.next?.parentNode === stash.parent ? stash.next : null;
       try {
         stash.parent.insertBefore(video, next);
-      } catch (error) {
+      } catch (err) {
         const fallback = document.body ?? document.documentElement;
         if (!fallback) {
-          console.warn("[Subtitle PiP] Could not restore source video:", error);
+          console.warn("[Subtitle PiP] Could not restore source video:", err);
           return false;
         }
         try {
@@ -792,19 +792,19 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
   function releasePipVideo() {
     try {
       globalThis.PipCompanion.PipAudio.stop();
-    } catch (error) {
-      console.warn("[Subtitle PiP] Could not stop PiP audio:", error);
+    } catch (err) {
+      console.warn("[Subtitle PiP] Could not stop PiP audio:", err);
     }
     let videoRestored = false;
     try {
       videoRestored = restoreSourceVideo();
-    } catch (error) {
-      console.warn("[Subtitle PiP] Could not restore source video:", error);
+    } catch (err) {
+      console.warn("[Subtitle PiP] Could not restore source video:", err);
     }
     try {
       globalThis.PipCompanion.ContentSubtitles.restoreNativeSubtitleModes();
-    } catch (error) {
-      console.warn("[Subtitle PiP] Could not restore native subtitles:", error);
+    } catch (err) {
+      console.warn("[Subtitle PiP] Could not restore native subtitles:", err);
     }
     const pipVideo = state.pipUi?.video;
     if (pipVideo && pipVideo !== state.sourceVideo) pipVideo.srcObject = null;
@@ -1046,8 +1046,8 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     state.nextClickPending = false;
     try {
       destroyDanmakuInPip();
-    } catch (error) {
-      console.warn("[Subtitle PiP] Could not destroy PiP danmaku:", error);
+    } catch (err) {
+      console.warn("[Subtitle PiP] Could not destroy PiP danmaku:", err);
     }
     window.clearInterval(boundsTimer);
     boundsTimer = 0;
@@ -1071,15 +1071,15 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
     state.subtitleLines = [];
     try {
       globalThis.PipCompanion.ContentStoryboard.reset();
-    } catch (error) {
-      console.warn("[Subtitle PiP] Could not reset storyboard:", error);
+    } catch (err) {
+      console.warn("[Subtitle PiP] Could not reset storyboard:", err);
     }
     if (oldWindow && !oldWindow.closed) {
       if (closeWindow) {
         try {
           oldWindow.close();
-        } catch (error) {
-          console.warn("[Subtitle PiP] Could not close PiP window:", error);
+        } catch (err) {
+          console.warn("[Subtitle PiP] Could not close PiP window:", err);
         }
       }
     }
@@ -1178,20 +1178,20 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
       notifySourcePlayback(!state.sourceVideo?.paused);
       void restorePipBounds(nextWindow).catch(() => {});
       return { ok: true };
-    } catch (error) {
+    } catch (err) {
       if (operationGeneration === pipOperationGeneration) {
         if (state.pipWindow) void closePiP(true);
         else state.pipSession = { phase: "closed" };
       }
       const gestureRequired =
-        error instanceof DOMException && error.name === "NotAllowedError";
+        err instanceof DOMException && err.name === "NotAllowedError";
       const extensionContextInvalidated = /extension context invalidated/i.test(
-        String(error),
+        String(err),
       );
       const sourceChanged =
-        error instanceof Error && error.message === "source changed";
+        err instanceof Error && err.message === "source changed";
       if (!gestureRequired && !sourceChanged)
-        console.warn("[Subtitle PiP] Could not open PiP:", error);
+        console.warn("[Subtitle PiP] Could not open PiP:", err);
       return {
         ok: false,
         message: gestureRequired

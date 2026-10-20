@@ -195,7 +195,7 @@ globalThis.PipCompanion.util = (() => {
         : [substitutions];
     return message.replace(
       /\$(\d+)/g,
-      (placeholder, index: string) => values[Number(index) - 1] ?? placeholder,
+      (placeholder, i: string) => values[Number(i) - 1] ?? placeholder,
     );
   }
 
@@ -553,28 +553,28 @@ globalThis.PipCompanion.util = (() => {
     };
   }
 
-  function hasMetaModifier(event: KeyboardEvent) {
-    return event.metaKey || event.getModifierState("Meta");
+  function hasMetaModifier(e: KeyboardEvent) {
+    return e.metaKey || e.getModifierState("Meta");
   }
 
-  function matchesShortcut(event: KeyboardEvent, shortcut: Shortcut) {
+  function matchesShortcut(e: KeyboardEvent, shortcut: Shortcut) {
     return (
       shortcut.code !== "" &&
-      event.code === shortcut.code &&
-      event.ctrlKey === shortcut.ctrl &&
-      event.altKey === shortcut.alt &&
-      event.shiftKey === shortcut.shift &&
-      hasMetaModifier(event) === shortcut.meta
+      e.code === shortcut.code &&
+      e.ctrlKey === shortcut.ctrl &&
+      e.altKey === shortcut.alt &&
+      e.shiftKey === shortcut.shift &&
+      hasMetaModifier(e) === shortcut.meta
     );
   }
 
-  function matchesWheelShortcut(event: WheelEvent, shortcut: Shortcut) {
+  function matchesWheelShortcut(e: WheelEvent, shortcut: Shortcut) {
     return (
       shortcut.code === "Wheel" &&
-      event.ctrlKey === shortcut.ctrl &&
-      event.altKey === shortcut.alt &&
-      event.shiftKey === shortcut.shift &&
-      (event.metaKey || event.getModifierState("Meta")) === shortcut.meta
+      e.ctrlKey === shortcut.ctrl &&
+      e.altKey === shortcut.alt &&
+      e.shiftKey === shortcut.shift &&
+      (e.metaKey || e.getModifierState("Meta")) === shortcut.meta
     );
   }
 
@@ -680,18 +680,18 @@ globalThis.PipCompanion.util = (() => {
 })();
 
 type RuntimeMessageHandler = (
-  message: unknown,
+  msg: unknown,
   sender: chrome.runtime.MessageSender,
-  sendResponse: (response?: unknown) => void,
+  sendResponse: (res?: unknown) => void,
 ) => boolean | void | Promise<boolean | void>;
 type RuntimeMessageListener = (
-  message: unknown,
+  msg: unknown,
   sender: chrome.runtime.MessageSender,
-  sendResponse: (response?: unknown) => void,
+  sendResponse: (res?: unknown) => void,
 ) => boolean | void;
 type RuntimeMessageRegistrar = (listener: RuntimeMessageListener) => void;
 type RuntimeMessageAuthorizer = (
-  message: Record<string, unknown>,
+  msg: Record<string, unknown>,
   sender: chrome.runtime.MessageSender,
 ) => boolean;
 
@@ -700,41 +700,41 @@ function createRuntimeMessageDispatcher(
   authorize?: RuntimeMessageAuthorizer,
 ): RuntimeMessageDispatcher {
   const handlers = new Map<string, Set<RuntimeMessageHandler>>();
-  register((message, sender, sendResponse) => {
-    if (!globalThis.PipCompanion.util.isExtensionMessage(message)) {
+  register((msg, sender, sendResponse) => {
+    if (!globalThis.PipCompanion.util.isExtensionMessage(msg)) {
       if (
-        globalThis.PipCompanion.util.isRecord(message) &&
-        typeof message.type === "string" &&
-        globalThis.PipCompanion.util.isKnownExtensionMessageType(message.type)
+        globalThis.PipCompanion.util.isRecord(msg) &&
+        typeof msg.type === "string" &&
+        globalThis.PipCompanion.util.isKnownExtensionMessageType(msg.type)
       )
         sendResponse({ ok: false, error: "Invalid message" });
       return false;
     }
-    if (authorize && !authorize(message as Record<string, unknown>, sender)) {
+    if (authorize && !authorize(msg as Record<string, unknown>, sender)) {
       sendResponse({ ok: false, error: "Unsupported request sender" });
       return false;
     }
 
     let responseSent = false;
-    const respondOnce = (response?: unknown) => {
+    const respondOnce = (res?: unknown) => {
       if (responseSent) return;
       responseSent = true;
-      sendResponse(response);
+      sendResponse(res);
     };
     let keepChannelOpen = false;
-    for (const registeredHandler of handlers.get(message.type) ?? []) {
+    for (const registeredHandler of handlers.get(msg.type) ?? []) {
       try {
-        const result = registeredHandler(message, sender, respondOnce);
+        const result = registeredHandler(msg, sender, respondOnce);
         if (result === true) keepChannelOpen = true;
         else if (result && typeof result === "object" && "then" in result) {
           keepChannelOpen = true;
-          void Promise.resolve(result).catch((error: unknown) => {
-            console.error("[PiP Companion] Message handler failed:", error);
+          void Promise.resolve(result).catch((err: unknown) => {
+            console.error("[PiP Companion] Message handler failed:", err);
             respondOnce({ ok: false });
           });
         }
-      } catch (error) {
-        console.error("[PiP Companion] Message handler failed:", error);
+      } catch (err) {
+        console.error("[PiP Companion] Message handler failed:", err);
         respondOnce({ ok: false });
       }
     }

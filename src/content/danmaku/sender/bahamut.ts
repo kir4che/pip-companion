@@ -34,15 +34,15 @@ globalThis.PipCompanion.ContentBahamutDanmakuSender = (() => {
     };
   }
 
-  function isVisible(element: HTMLElement): boolean {
-    const style = window.getComputedStyle(element);
+  function isVisible(el: HTMLElement): boolean {
+    const style = window.getComputedStyle(el);
     return (
-      element.isConnected &&
-      !element.hidden &&
-      !element.classList.contains("vjs-hidden") &&
+      el.isConnected &&
+      !el.hidden &&
+      !el.classList.contains("vjs-hidden") &&
       style.display !== "none" &&
       style.visibility !== "hidden" &&
-      element.getClientRects().length > 0
+      el.getClientRects().length > 0
     );
   }
 

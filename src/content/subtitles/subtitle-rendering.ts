@@ -25,9 +25,9 @@ globalThis.PipCompanion.subtitleRendering = {
     const groups =
       globalThis.PipCompanion.subtitleCueData.groupByPairIndex(displayLines);
     const pairElements = Array.from(subtitle.children).filter(
-      (element): element is HTMLDivElement =>
-        element instanceof doc.defaultView!.HTMLElement &&
-        element.classList.contains("subtitle-pair"),
+      (el): el is HTMLDivElement =>
+        el instanceof doc.defaultView!.HTMLElement &&
+        el.classList.contains("subtitle-pair"),
     );
     while (pairElements.length < groups.length) {
       const pairEl = doc.createElement("div");
@@ -40,9 +40,9 @@ globalThis.PipCompanion.subtitleRendering = {
     for (const [groupIndex, group] of groups.entries()) {
       const pairEl = pairElements[groupIndex]!;
       const lineElements = Array.from(pairEl.children).filter(
-        (element): element is HTMLDivElement =>
-          element instanceof doc.defaultView!.HTMLElement &&
-          element.classList.contains("subtitle-line"),
+        (el): el is HTMLDivElement =>
+          el instanceof doc.defaultView!.HTMLElement &&
+          el.classList.contains("subtitle-line"),
       );
       while (lineElements.length < group.lines.length) {
         const lineEl = doc.createElement("div");

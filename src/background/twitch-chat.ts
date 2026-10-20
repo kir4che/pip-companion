@@ -42,14 +42,14 @@ class TwitchChatConnection {
     socket?.close();
   }
 
-  private sendStatus(status: "connected" | "error", error?: string): void {
+  private sendStatus(status: "connected" | "error", err?: string): void {
     void chrome.tabs
       .sendMessage(this.tabId, {
         type: "EXTRA_TWITCH_CHAT_STATUS",
         channel: this.channel,
         connectionId: this.connectionId,
         status,
-        ...(error ? { error } : {}),
+        ...(err ? { err } : {}),
       } satisfies ExtensionMessage)
       .catch(() => {});
   }
@@ -74,14 +74,10 @@ class TwitchChatConnection {
         socket.send("PING :pip-companion");
       }, 15000);
     });
-    socket.addEventListener("message", (event) => {
-      if (
-        this.stopped ||
-        this.socket !== socket ||
-        typeof event.data !== "string"
-      )
+    socket.addEventListener("message", (e) => {
+      if (this.stopped || this.socket !== socket || typeof e.data !== "string")
         return;
-      this.receiveBuffer += event.data;
+      this.receiveBuffer += e.data;
       const lines = this.receiveBuffer.split("\r\n");
       this.receiveBuffer = lines.pop() ?? "";
       for (const line of lines) this.handleLine(line);
@@ -233,8 +229,8 @@ function createMessageParts(
 export function registerTwitchChatListener(): void {
   runtimeMessageDispatcher.addListener(
     ["START_EXTRA_TWITCH_CHAT", "STOP_EXTRA_TWITCH_CHAT"],
-    (message, sender) => {
-      if (!isRecord(message)) return false;
+    (msg, sender) => {
+      if (!isRecord(msg)) return false;
       const tabId = sender.tab?.id;
       const pageUrl = sender.url;
       if (
@@ -245,23 +241,20 @@ export function registerTwitchChatListener(): void {
         return false;
 
       const connection = connections.get(tabId);
-      if (message.type === "STOP_EXTRA_TWITCH_CHAT") {
+      if (msg.type === "STOP_EXTRA_TWITCH_CHAT") {
         if (connection?.pageUrl !== pageUrl) return false;
         connection.stop();
         connections.delete(tabId);
         return false;
       }
-      if (
-        message.type !== "START_EXTRA_TWITCH_CHAT" ||
-        !isChannel(message.channel)
-      )
+      if (msg.type !== "START_EXTRA_TWITCH_CHAT" || !isChannel(msg.channel))
         return false;
 
       connection?.stop();
       const nextConnection = new TwitchChatConnection(
         tabId,
         pageUrl,
-        message.channel,
+        msg.channel,
         `${Date.now().toString(36)}-${(++nextConnectionId).toString(36)}`,
       );
       connections.set(tabId, nextConnection);

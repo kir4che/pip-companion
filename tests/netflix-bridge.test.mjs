@@ -68,7 +68,7 @@ function setup(fetchImpl) {
     addEventListener: (type, listener) => {
       if (type === "message") listeners.push(listener);
     },
-    postMessage: (message) => posted.push(message),
+    postMessage: (msg) => posted.push(msg),
     setTimeout,
     clearTimeout,
   };
@@ -85,9 +85,8 @@ function setup(fetchImpl) {
         if (!documentListeners.has(type)) documentListeners.set(type, []);
         documentListeners.get(type).push(listener);
       },
-      dispatchEvent: (event) => {
-        for (const listener of documentListeners.get(event.type) ?? [])
-          listener(event);
+      dispatchEvent: (e) => {
+        for (const listener of documentListeners.get(e.type) ?? []) listener(e);
         return true;
       },
       createElement: () => ({

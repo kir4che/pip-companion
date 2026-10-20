@@ -31,11 +31,11 @@ globalThis.PipCompanion.customSelect.enhanceAll();
 const statusEl = document.querySelector("#status") as HTMLElement;
 let statusClearTimer: ReturnType<typeof setTimeout> | undefined;
 
-function showStatus(message: string, error = false) {
-  statusEl.textContent = message;
-  statusEl.dataset.error = String(error);
+function showStatus(msg: string, err = false) {
+  statusEl.textContent = msg;
+  statusEl.dataset.error = String(err);
   if (statusClearTimer) clearTimeout(statusClearTimer);
-  if (message) {
+  if (msg) {
     statusClearTimer = setTimeout(() => {
       statusEl.textContent = "";
       statusClearTimer = undefined;

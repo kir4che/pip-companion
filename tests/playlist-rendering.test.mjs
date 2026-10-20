@@ -60,7 +60,7 @@ test("renders playlist entries and identifies the known current item", () => {
     ],
     3,
     true,
-    (index) => selected.push(index),
+    (i) => selected.push(i),
   );
   assert.equal(panel.children.length, 2);
   assert.equal(

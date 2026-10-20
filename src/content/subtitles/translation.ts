@@ -13,7 +13,7 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
     getPreferNativeSecondaryLines(
       targetLanguage: string,
     ): SubtitleLine[] | null;
-    showFeedback(message: string): void;
+    showFeedback(msg: string): void;
     render(): void;
   }
 
@@ -156,36 +156,34 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
             targetLanguage,
             texts: batch,
           } satisfies ExtensionMessage)
-          .then((response: unknown) => {
+          .then((res: unknown) => {
             if (requestGeneration !== generation) return;
             if (
-              !globalThis.PipCompanion.util.isRecord(response) ||
-              response.ok !== true ||
-              !Array.isArray(response.translations) ||
-              response.translations.length !== batch.length ||
-              !response.translations.every((text) => typeof text === "string")
+              !globalThis.PipCompanion.util.isRecord(res) ||
+              res.ok !== true ||
+              !Array.isArray(res.translations) ||
+              res.translations.length !== batch.length ||
+              !res.translations.every((text) => typeof text === "string")
             ) {
               // Busy 代表沒有實際送出上游請求；僅重試最新字幕。
               if (
-                globalThis.PipCompanion.util.isRecord(response) &&
-                ["busy", "disabled", "unavailable"].includes(
-                  String(response.error),
-                )
+                globalThis.PipCompanion.util.isRecord(res) &&
+                ["busy", "disabled", "unavailable"].includes(String(res.error))
               )
                 return;
               showFailure();
               return;
             }
             if (
-              response.provider === "microsoft" ||
-              response.provider === "google" ||
-              response.provider === "deepl"
+              res.provider === "microsoft" ||
+              res.provider === "google" ||
+              res.provider === "deepl"
             )
-              provider = response.provider;
+              provider = res.provider;
             for (let index = 0; index < batch.length; index++)
               cache.set(
                 keyFor(targetLanguage, batch[index]!),
-                response.translations[index] as string,
+                res.translations[index] as string,
               );
             trimMap(cache, 1000);
           })

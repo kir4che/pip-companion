@@ -316,7 +316,7 @@ interface DanmakuRendererOptions {
         if (prev.length === finalCount) continue;
         this.laneAvailableTime[type] = Array.from(
           { length: finalCount },
-          (_, index) => prev[index] ?? now,
+          (_, i) => prev[i] ?? now,
         );
       }
     }
@@ -552,10 +552,10 @@ interface DanmakuRendererOptions {
         : null;
       if (jumpSeconds !== null) {
         item.classList.add("is-jump");
-        item.addEventListener("click", (event) => {
+        item.addEventListener("click", (e) => {
           // 阻止事件冒泡到站內播放器（避免點彈幕變成暫停影片）
-          event.preventDefault();
-          event.stopPropagation();
+          e.preventDefault();
+          e.stopPropagation();
           globalThis.PipCompanion.ContentDanmakuJump.seek(jumpSeconds);
         });
       }

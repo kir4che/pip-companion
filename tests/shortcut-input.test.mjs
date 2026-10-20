@@ -30,7 +30,7 @@ const keyEvent = (overrides = {}) => ({
 
 test("normalizes keyboard shortcut outcomes and special-key rules", () => {
   const api = createApi();
-  const hasMeta = (event) => event.metaKey;
+  const hasMeta = (e) => e.metaKey;
   assert.deepEqual(
     JSON.parse(
       JSON.stringify(

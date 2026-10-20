@@ -692,7 +692,7 @@
   let relayVideoId = "";
   let relayRevision = 0;
   let relayTimer: ReturnType<typeof setInterval> | null = null;
-  let finishStart: ((response: unknown) => void) | null = null;
+  let finishStart: ((res: unknown) => void) | null = null;
 
   function stopRelay(): void {
     if (relayTimer) clearInterval(relayTimer);
@@ -712,46 +712,43 @@
         "YOUTUBE_CHAT_STOP",
         "YOUTUBE_CHAT_CLOCK",
       ],
-      (message, sender, respond) => {
+      (msg, sender, respond) => {
         if (
           sender.id !== chrome.runtime.id ||
           sender.tab ||
-          !globalThis.PipCompanion.util.isExtensionMessage(message)
+          !globalThis.PipCompanion.util.isExtensionMessage(msg)
         )
           return;
         const videoId = globalThis.PipCompanion.site.parseYouTubeVideoId(
           location.href,
         );
-        if (message.type === "YOUTUBE_CHAT_PROBE") {
+        if (msg.type === "YOUTUBE_CHAT_PROBE") {
           respond(videoId ? { videoId, url: location.href } : null);
           return;
         }
-        if (message.type === "YOUTUBE_CHAT_STOP") {
-          if (message.connectionId === relayId) stopRelay();
+        if (msg.type === "YOUTUBE_CHAT_STOP") {
+          if (msg.connectionId === relayId) stopRelay();
           respond({ ok: true });
           return;
         }
-        if (message.type === "YOUTUBE_CHAT_CLOCK") {
+        if (msg.type === "YOUTUBE_CHAT_CLOCK") {
           if (
-            message.connectionId === relayId &&
-            message.seekRevision >= relayRevision &&
+            msg.connectionId === relayId &&
+            msg.seekRevision >= relayRevision &&
             relay
           ) {
-            relayRevision = message.seekRevision;
-            relay.setRelayClock(message);
+            relayRevision = msg.seekRevision;
+            relay.setRelayClock(msg);
           }
           respond({ ok: true });
           return;
         }
-        if (
-          message.type !== "YOUTUBE_CHAT_START" ||
-          message.videoId !== videoId
-        ) {
+        if (msg.type !== "YOUTUBE_CHAT_START" || msg.videoId !== videoId) {
           respond({ ok: false });
           return;
         }
         stopRelay();
-        relayId = message.connectionId;
+        relayId = msg.connectionId;
         relayVideoId = videoId;
         relayRevision = 0;
         finishStart = respond;

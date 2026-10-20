@@ -134,18 +134,18 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
   };
   writeFileSync(manifestPath, `${JSON.stringify(testManifest, null, 2)}\n`);
 
-  const server = createServer((request, response) => {
+  const server = createServer((request, res) => {
     if (request.url === "/pip-smoke.webm") {
-      response.writeHead(200, {
+      res.writeHead(200, {
         "content-type": "video/webm",
         "content-length": smokeVideo.byteLength,
         "cache-control": "no-store",
       });
-      response.end(smokeVideo);
+      res.end(smokeVideo);
       return;
     }
-    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    response.end(fixtureHtml());
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    res.end(fixtureHtml());
   });
   await new Promise((resolveListen) =>
     server.listen(0, "127.0.0.1", resolveListen),
@@ -178,9 +178,7 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
   const extensionId = new URL(serviceWorker.url()).host;
   const fixturePage = await context.newPage();
   const contentScriptErrors = [];
-  fixturePage.on("pageerror", (error) =>
-    contentScriptErrors.push(error.message),
-  );
+  fixturePage.on("pageerror", (err) => contentScriptErrors.push(err.message));
   await fixturePage.goto(fixtureUrl);
   await fixturePage.waitForFunction(() => {
     const video = document.querySelector("video");
@@ -295,12 +293,12 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
       undefined,
       { timeout: 15000 },
     )
-    .catch(async (error) => {
+    .catch(async (err) => {
       const status = await popupPage
         .locator("#status")
         .textContent()
         .catch(() => "popup closed");
-      throw new Error(`popup did not open PiP (${status}): ${error.message}`);
+      throw new Error(`popup did not open PiP (${status}): ${err.message}`);
     });
   await fixturePage
     .waitForFunction(
@@ -316,7 +314,7 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
         timeout: 5000,
       },
     )
-    .catch(async (error) => {
+    .catch(async (err) => {
       const pageState = await fixturePage.evaluate(() => ({
         available: Boolean(window.documentPictureInPicture),
         pipOpen: Boolean(window.documentPictureInPicture?.window),
@@ -326,7 +324,7 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
       }));
       const status = await popupPage.locator("#status").textContent();
       throw new Error(
-        `PiP window missing; fixture=${JSON.stringify(pageState)}, popup=${status}: ${error.message}`,
+        `PiP window missing; fixture=${JSON.stringify(pageState)}, popup=${status}: ${err.message}`,
       );
     });
 
@@ -530,7 +528,7 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
       const context = canvas.getContext("2d");
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
       const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-      return data.some((channel, index) => index % 4 !== 3 && channel > 50);
+      return data.some((channel, i) => i % 4 !== 3 && channel > 50);
     });
     assert.equal(
       hasVisiblePixels,
@@ -593,7 +591,7 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
       undefined,
       { timeout: 5000 },
     )
-    .catch(async (error) => {
+    .catch(async (err) => {
       const state = await fixturePage.evaluate(() => {
         const video = document.querySelector("#source-video");
         return {
@@ -604,7 +602,7 @@ test("built extension smoke: manifest, popup messaging, PiP lifecycle and SPA st
         };
       });
       throw new Error(
-        `replacement restore failed: ${JSON.stringify(state)}: ${error.message}`,
+        `replacement restore failed: ${JSON.stringify(state)}: ${err.message}`,
       );
     });
   assert.equal(

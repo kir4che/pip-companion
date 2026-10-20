@@ -620,9 +620,9 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     { passive: true },
   );
 
-  document.addEventListener("pip-companion-yt-storyboard", (event) => {
-    if (!(event instanceof CustomEvent)) return;
-    const detail: unknown = event.detail;
+  document.addEventListener("pip-companion-yt-storyboard", (e) => {
+    if (!(e instanceof CustomEvent)) return;
+    const detail: unknown = e.detail;
     if (!globalThis.PipCompanion.util.isRecord(detail)) return;
     const spec = typeof detail.spec === "string" ? detail.spec : "";
     const parsed = parseYouTubeSpec(spec);
@@ -640,9 +640,9 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     cachedYtStoryboard = null;
   });
 
-  document.addEventListener("pip-companion-baha-storyboard", (event) => {
-    if (!(event instanceof CustomEvent)) return;
-    const bahaData = parseBahaStoryboardData(event.detail);
+  document.addEventListener("pip-companion-baha-storyboard", (e) => {
+    if (!(e instanceof CustomEvent)) return;
+    const bahaData = parseBahaStoryboardData(e.detail);
     const currentSn = getBahaSn();
     if (bahaData && (!currentSn || !bahaData.sn || bahaData.sn === currentSn))
       cachedBahaData = bahaData;

@@ -17,8 +17,8 @@ globalThis.PipCompanion.pipPlaylistPanel = {
         playlist.items,
         playlist.currentIndex,
         playlist.currentIndexKnown,
-        (index) => {
-          options.selectItem(index);
+        (i) => {
+          options.selectItem(i);
           options.close();
           options.button.focus();
         },

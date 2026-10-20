@@ -65,7 +65,7 @@ interface PlaylistRenderingApi {
     items: PlaylistItem[],
     currentIndex: number,
     currentIndexKnown: boolean,
-    onSelect: (index: number) => void,
+    onSelect: (i: number) => void,
   ): HTMLButtonElement | null;
 }
 
@@ -74,7 +74,7 @@ type PlaylistNextItemState = "available" | "unavailable" | "unknown";
 interface ContentPlaylistApi {
   getPlaylist(): PlaylistInfo | null;
   hasPlaylist(): boolean;
-  selectPlaylistItem(index: number, preparePlaybackState: () => void): void;
+  selectPlaylistItem(i: number, preparePlaybackState: () => void): void;
   getNextItemState(): PlaylistNextItemState;
 }
 
@@ -102,7 +102,7 @@ interface PipUiActions {
   toggleMute(): void;
   playNext(): void;
   getPlaylist(): PlaylistInfo | null;
-  selectPlaylistItem(index: number): void;
+  selectPlaylistItem(i: number): void;
   setVolume(percent: number, unmute: boolean): void;
   getMaxVolume(): number;
   showFeedback(text: string): void;
@@ -281,7 +281,7 @@ interface PipEventScope {
   listen(
     target: EventTarget,
     type: string,
-    listener: (event: any) => unknown,
+    listener: (e: any) => unknown,
     options?: boolean | AddEventListenerOptions,
   ): void;
   setTimeout(handler: () => void, timeout: number): number;
@@ -315,7 +315,7 @@ interface PipPlaylistPanelApi {
     button: HTMLButtonElement;
     panel: HTMLElement;
     getPlaylist(): PlaylistInfo | null;
-    selectItem(index: number): void;
+    selectItem(i: number): void;
     close(): void;
   }): {
     render(): void;
@@ -388,8 +388,8 @@ interface SubtitleSettingsApi {
     stored: unknown,
     normalized: SubtitleStyleSettings,
   ): { style: SubtitleStyleSettings; changed: boolean };
-  applyLayout(element: HTMLElement, settings: SubtitleLayoutSettings): void;
-  apply(element: HTMLElement, settings: SubtitleStyleSettings): void;
+  applyLayout(el: HTMLElement, settings: SubtitleLayoutSettings): void;
+  apply(el: HTMLElement, settings: SubtitleStyleSettings): void;
 }
 
 type SubtitleTranslationProvider = "microsoft" | "google" | "deepl";
@@ -528,7 +528,7 @@ interface ContentVideoApi {
     includeDeep?: boolean,
     forceDeep?: boolean,
   ): HTMLVideoElement | null;
-  isPreviewVideo(element: Element): boolean;
+  isPreviewVideo(el: Element): boolean;
 }
 
 interface SubtitleTranslationRuntime {
@@ -553,7 +553,7 @@ interface SubtitleTranslationApi {
     getPreferNativeSecondaryLines(
       targetLanguage: string,
     ): SubtitleLine[] | null;
-    showFeedback(message: string): void;
+    showFeedback(msg: string): void;
     render(): void;
   }): SubtitleTranslationRuntime;
 }
@@ -616,7 +616,7 @@ interface ContentPlaybackApi {
   setSourceVolumePercent(percent: number, unmute: boolean): void;
   playNextVideo(): void;
   getPlaylist(): PlaylistInfo | null;
-  selectPlaylistItem(index: number): void;
+  selectPlaylistItem(i: number): void;
   applyPendingNextPlaybackState(video: HTMLVideoElement): void;
   cancelNextVideoRequest(): void;
   cancelNextPlaybackRestore(): void;
@@ -738,12 +738,12 @@ type ShortcutInputResult =
 
 interface ShortcutInputApi {
   fromKeyboard(
-    event: KeyboardEvent,
+    e: KeyboardEvent,
     key: ShortcutKey,
     platform: string,
-    hasMetaModifier: (event: KeyboardEvent) => boolean,
+    hasMetaModifier: (e: KeyboardEvent) => boolean,
   ): ShortcutInputResult;
-  fromWheel(event: WheelEvent, platform: string): ShortcutInputResult;
+  fromWheel(e: WheelEvent, platform: string): ShortcutInputResult;
 }
 
 interface LocalizedMarkupApi {
@@ -755,7 +755,7 @@ interface DanmakuStyleOptionsApi {
     storage: StorageAreaAdapter;
     settings: DanmakuSettingsApi;
     t: (key: string, substitutions?: string | string[]) => string;
-    showStatus: (message: string, error?: boolean) => void;
+    showStatus: (msg: string, err?: boolean) => void;
   }): {
     render(): void;
     setControlsDisabled(disabled: boolean): void;
@@ -787,7 +787,7 @@ interface OptionsShortcutSettingsApi {
     util: PipCompanionUtil;
     shortcutInput: ShortcutInputApi;
     t: (key: string, substitutions?: string | string[]) => string;
-    showStatus: (message: string, error?: boolean) => void;
+    showStatus: (msg: string, err?: boolean) => void;
   }): {
     render(): void;
     load(): Promise<void>;
@@ -802,7 +802,7 @@ interface SubtitleStyleStoreApi {
     storage: StorageAreaAdapter;
     settings: SubtitleSettingsApi;
     t: (key: string) => string;
-    showStatus: (message: string, error?: boolean) => void;
+    showStatus: (msg: string, err?: boolean) => void;
     onChange: () => void;
   }): {
     readonly styles: Record<SubtitleStyleTarget, SubtitleStyleSettings>;
@@ -824,7 +824,7 @@ interface OptionsSubtitleStyleOptionsApi {
     storage: StorageAreaAdapter;
     settings: SubtitleSettingsApi;
     t: (key: string) => string;
-    showStatus: (message: string, error?: boolean) => void;
+    showStatus: (msg: string, err?: boolean) => void;
   }): {
     render(): void;
     setControlsDisabled(): void;
@@ -840,7 +840,7 @@ interface PopupSubtitleStyleOptionsApi {
     storage: StorageAreaAdapter;
     settings: SubtitleSettingsApi;
     t: (key: string) => string;
-    showStatus: (message: string, error?: boolean) => void;
+    showStatus: (msg: string, err?: boolean) => void;
   }): {
     render(): void;
     setControlsDisabled(disabled: boolean): void;
@@ -863,7 +863,7 @@ interface SubtitleTranslationOptionsApi {
     settings: SubtitleTranslationSettingsApi;
     configApi: SubtitleTranslationConfigApi;
     t: (key: string) => string;
-    showStatus: (message: string, error?: boolean) => void;
+    showStatus: (msg: string, err?: boolean) => void;
   }): {
     render(): void;
     update(value: unknown): void;
@@ -875,9 +875,9 @@ interface RuntimeMessageDispatcher {
   addListener(
     types: ExtensionMessageType | readonly ExtensionMessageType[],
     handler: (
-      message: unknown,
+      msg: unknown,
       sender: chrome.runtime.MessageSender,
-      sendResponse: (response?: unknown) => void,
+      sendResponse: (res?: unknown) => void,
     ) => boolean | void | Promise<boolean | void>,
   ): void;
 }
@@ -886,13 +886,13 @@ interface RuntimeMessageDispatcherFactory {
   (
     register: (
       listener: (
-        message: unknown,
+        msg: unknown,
         sender: chrome.runtime.MessageSender,
-        sendResponse: (response?: unknown) => void,
+        sendResponse: (res?: unknown) => void,
       ) => boolean | void,
     ) => void,
     authorize?: (
-      message: Record<string, unknown>,
+      msg: Record<string, unknown>,
       sender: chrome.runtime.MessageSender,
     ) => boolean,
   ): RuntimeMessageDispatcher;

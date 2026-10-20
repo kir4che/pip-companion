@@ -215,10 +215,10 @@ globalThis.PipCompanion.PipUI = (() => {
           actions.getShortcut(key),
           true,
         );
-      const setAriaShortcuts = (element: HTMLElement, keys: ShortcutKey[]) => {
+      const setAriaShortcuts = (el: HTMLElement, keys: ShortcutKey[]) => {
         const value = keys.map(format).filter(Boolean).join(" ");
-        if (value) element.setAttribute("aria-keyshortcuts", value);
-        else element.removeAttribute("aria-keyshortcuts");
+        if (value) el.setAttribute("aria-keyshortcuts", value);
+        else el.removeAttribute("aria-keyshortcuts");
       };
       setAriaShortcuts(playButton, ["pipPlayPauseShortcut"]);
       setAriaShortcuts(speedButton, [
@@ -794,22 +794,21 @@ globalThis.PipCompanion.PipUI = (() => {
     const update = () => actions.updatePlaybackUi();
     const togglePlayback = () => actions.togglePlayback();
     let danmakuSendStatusTimer: number | undefined;
-    const setDanmakuSendStatus = (message: string | null) => {
+    const setDanmakuSendStatus = (msg: string | null) => {
       if (danmakuSendStatusTimer !== undefined) {
         eventScope.clearTimeout(danmakuSendStatusTimer);
         danmakuSendStatusTimer = undefined;
       }
-      if (message === null || danmakuSendPanel.hidden) {
+      if (msg === null || danmakuSendPanel.hidden) {
         danmakuSendStatus.textContent = "";
         danmakuSendStatus.hidden = true;
         return;
       }
-      danmakuSendStatus.textContent = message;
+      danmakuSendStatus.textContent = msg;
       danmakuSendStatus.hidden = false;
       danmakuSendStatusTimer = eventScope.setTimeout(() => {
         danmakuSendStatusTimer = undefined;
-        if (danmakuSendStatus.textContent === message)
-          setDanmakuSendStatus(null);
+        if (danmakuSendStatus.textContent === msg) setDanmakuSendStatus(null);
       }, 3000);
     };
     const setDanmakuSendPanelOpen = (open: boolean) => {
@@ -1027,12 +1026,12 @@ globalThis.PipCompanion.PipUI = (() => {
     eventScope.listen(screen, "pointerenter", () => {
       eventScope.clearTimeout(playlistCloseTimer);
     });
-    eventScope.listen(screen, "pointerleave", (event) => {
+    eventScope.listen(screen, "pointerleave", (e) => {
       if (
         pipSelects.some((select) =>
           globalThis.PipCompanion.customSelect.containsTarget(
             select,
-            event.relatedTarget,
+            e.relatedTarget,
           ),
         )
       )

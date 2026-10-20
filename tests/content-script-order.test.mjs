@@ -93,14 +93,14 @@ const parsed = scripts.map((file) => {
 });
 
 const declaredAt = new Map();
-parsed.forEach(({ declared }, index) => {
+parsed.forEach(({ declared }, i) => {
   for (const name of declared)
-    if (!declaredAt.has(name)) declaredAt.set(name, index);
+    if (!declaredAt.has(name)) declaredAt.set(name, i);
 });
 
 test("content scripts only read globals declared by earlier content scripts", () => {
   const violations = [];
-  parsed.forEach(({ file, bound, source }, index) => {
+  parsed.forEach(({ file, bound, source }, i) => {
     const visit = (node) => {
       if (
         ts.isIdentifier(node) &&
@@ -108,7 +108,7 @@ test("content scripts only read globals declared by earlier content scripts", ()
         !bound.has(node.text)
       ) {
         const declaredIndex = declaredAt.get(node.text);
-        if (declaredIndex !== undefined && declaredIndex > index) {
+        if (declaredIndex !== undefined && declaredIndex > i) {
           const line =
             source.getLineAndCharacterOfPosition(node.getStart(source)).line +
             1;

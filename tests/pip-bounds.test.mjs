@@ -82,13 +82,13 @@ function createBackground() {
   return {
     stored,
     releaseSave: () => releaseSave(),
-    dispatch(message, tabId = 7) {
+    dispatch(msg, tabId = 7) {
       const registration = handlers.find(({ types }) =>
-        types.includes(message.type),
+        types.includes(msg.type),
       );
       return new Promise((resolve) => {
         const asynchronous = registration.handler(
-          message,
+          msg,
           { tab: { id: tabId, windowId: 2 } },
           resolve,
         );

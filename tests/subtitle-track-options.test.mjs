@@ -18,7 +18,7 @@ function createApi() {
   return context.PipCompanion.subtitleTrackOptions;
 }
 
-const label = (index) => `Track ${index + 1}`;
+const label = (i) => `Track ${i + 1}`;
 
 const validationSource = ts.transpileModule(
   readFileSync(

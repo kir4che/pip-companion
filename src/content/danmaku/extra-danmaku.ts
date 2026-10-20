@@ -261,18 +261,18 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
           ended: video.ended,
           seekRevision: youtubeSeekRevision,
         } satisfies ExtensionMessage)
-        .then((response: unknown) => {
+        .then((res: unknown) => {
           if (
             requestGeneration === generation &&
-            globalThis.PipCompanion.util.isRecord(response) &&
-            response.ok === false
+            globalThis.PipCompanion.util.isRecord(res) &&
+            res.ok === false
           )
             handleLoadError(
               new Error("YouTube 聊天連線已失效，請重新套用來源。"),
               requestGeneration,
             );
         })
-        .catch((error: unknown) => handleLoadError(error, requestGeneration));
+        .catch((err: unknown) => handleLoadError(err, requestGeneration));
     }
 
     function startYouTube(
@@ -298,21 +298,21 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
           videoId: target.videoId,
           connectionId: youtubeConnectionId,
         } satisfies ExtensionMessage)
-        .then((response: unknown) => {
+        .then((res: unknown) => {
           if (generation !== requestGeneration || identity?.key !== target.key)
             return;
           if (
-            !globalThis.PipCompanion.util.isRecord(response) ||
-            response.ok !== true ||
-            (response.mode !== "live" && response.mode !== "replay")
+            !globalThis.PipCompanion.util.isRecord(res) ||
+            res.ok !== true ||
+            (res.mode !== "live" && res.mode !== "replay")
           )
             throw new Error(
-              globalThis.PipCompanion.util.isRecord(response) &&
-                typeof response.error === "string"
-                ? response.error
+              globalThis.PipCompanion.util.isRecord(res) &&
+                typeof res.error === "string"
+                ? res.error
                 : "YouTube 聊天連線失敗。",
             );
-          youtubeMode = response.mode;
+          youtubeMode = res.mode;
           setSourceError(null);
           setSourceLoading(false);
           sendYouTubeClock();
@@ -321,7 +321,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
             if (video) process(video);
           }, 250);
         })
-        .catch((error: unknown) => handleLoadError(error, requestGeneration))
+        .catch((err: unknown) => handleLoadError(err, requestGeneration))
         .finally(() => {
           if (youtubeStartTimer === startTimer) {
             clearTimeout(startTimer);
@@ -437,9 +437,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
     }
 
     function mergeMessages(incoming: ExtraBilibiliMessage[]): void {
-      const ids = new Set(
-        messages.map((message) => message.messageId || message.id),
-      );
+      const ids = new Set(messages.map((msg) => msg.messageId || msg.id));
       for (const message of incoming) {
         const id = message.messageId || message.id;
         if (id && ids.has(id)) continue;
@@ -469,11 +467,11 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
       }
     }
 
-    function handleLoadError(error: unknown, requestGeneration: number): void {
+    function handleLoadError(err: unknown, requestGeneration: number): void {
       if (requestGeneration !== generation) return;
       setSource({ ...source, enabled: false }, true);
       const detail =
-        error instanceof Error ? error.message.trim().slice(0, 160) : "";
+        err instanceof Error ? err.message.trim().slice(0, 160) : "";
       setSourceError(
         detail ? `額外彈幕載入失敗：${detail}` : "額外彈幕載入失敗。",
       );
@@ -490,36 +488,31 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
           type: "GET_BAHAMUT_DANMAKU",
           videoSn: targetIdentity.videoSn,
         } satisfies ExtensionMessage)
-        .then((response: unknown) => {
+        .then((res: unknown) => {
           if (
             requestGeneration !== generation ||
             identity?.key !== targetIdentity.key
           )
             return;
-          if (
-            globalThis.PipCompanion.util.isRecord(response) &&
-            response.ok === false
-          )
+          if (globalThis.PipCompanion.util.isRecord(res) && res.ok === false)
             throw new Error(
-              typeof response.error === "string"
-                ? response.error
+              typeof res.error === "string"
+                ? res.error
                 : "Bahamut danmaku request was rejected",
             );
           if (
-            !globalThis.PipCompanion.util.isRecord(response) ||
-            response.ok !== true ||
-            !Array.isArray(response.messages)
+            !globalThis.PipCompanion.util.isRecord(res) ||
+            res.ok !== true ||
+            !Array.isArray(res.messages)
           )
             throw new Error("Invalid Bahamut danmaku response");
           setSourceError(null);
-          const validMessages = response.messages.filter(
-            isExtraBilibiliMessage,
-          );
+          const validMessages = res.messages.filter(isExtraBilibiliMessage);
           mergeMessages(validMessages);
           loadedSegments.add(1);
           if (video) process(video);
         })
-        .catch((error: unknown) => handleLoadError(error, requestGeneration))
+        .catch((err: unknown) => handleLoadError(err, requestGeneration))
         .finally(() => {
           if (requestGeneration === generation) loadingSegments.delete(1);
         });
@@ -561,40 +554,35 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
       };
       void chrome.runtime
         .sendMessage(payload)
-        .then((response: unknown) => {
+        .then((res: unknown) => {
           if (
             requestGeneration !== generation ||
             identity?.key !== targetIdentity.key
           )
             return;
-          if (
-            globalThis.PipCompanion.util.isRecord(response) &&
-            response.ok === false
-          )
+          if (globalThis.PipCompanion.util.isRecord(res) && res.ok === false)
             throw new Error(
-              typeof response.error === "string"
-                ? response.error
+              typeof res.error === "string"
+                ? res.error
                 : "Bilibili danmaku request was rejected",
             );
           if (
-            !globalThis.PipCompanion.util.isRecord(response) ||
-            response.ok !== true ||
-            !Array.isArray(response.messages)
+            !globalThis.PipCompanion.util.isRecord(res) ||
+            res.ok !== true ||
+            !Array.isArray(res.messages)
           )
             throw new Error("Invalid Bilibili danmaku response");
           setSourceError(null);
-          const validMessages = response.messages.filter(
-            isExtraBilibiliMessage,
-          );
-          if (response.legacyFallback === true) legacyFallbackLoaded = true;
+          const validMessages = res.messages.filter(isExtraBilibiliMessage);
+          if (res.legacyFallback === true) legacyFallbackLoaded = true;
           mergeMessages(validMessages);
-          if (response.legacyFallback !== true) {
+          if (res.legacyFallback !== true) {
             for (let segment = requestStart; segment <= requestEnd; segment++)
               loadedSegments.add(segment);
           }
           if (video) process(video);
         })
-        .catch((error: unknown) => handleLoadError(error, requestGeneration))
+        .catch((err: unknown) => handleLoadError(err, requestGeneration))
         .finally(() => {
           if (requestGeneration !== generation) return;
           for (let segment = requestStart; segment <= requestEnd; segment++)
@@ -684,7 +672,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
             type: "START_EXTRA_TWITCH_CHAT",
             channel: nextIdentity.channel,
           } satisfies ExtensionMessage)
-          .catch((error: unknown) => handleLoadError(error, generation));
+          .catch((err: unknown) => handleLoadError(err, generation));
       } else {
         void chrome.runtime
           .sendMessage({
@@ -719,9 +707,9 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         .catch(() => {});
     }
 
-    function setSourceError(error: string | null): void {
-      if (sourceError === error) return;
-      sourceError = error;
+    function setSourceError(err: string | null): void {
+      if (sourceError === err) return;
+      sourceError = err;
       publishSourceStatus();
     }
 
@@ -847,44 +835,44 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         "GET_EXTRA_DANMAKU_SOURCE",
         "SET_EXTRA_DANMAKU_SOURCE",
       ],
-      (message, _sender, sendResponse) => {
-        if (!globalThis.PipCompanion.util.isRecord(message)) return;
+      (msg, _sender, sendResponse) => {
+        if (!globalThis.PipCompanion.util.isRecord(msg)) return;
         if (
-          message.type === "EXTRA_YOUTUBE_CHAT_STATUS" ||
-          message.type === "EXTRA_YOUTUBE_CHAT_MESSAGE"
+          msg.type === "EXTRA_YOUTUBE_CHAT_STATUS" ||
+          msg.type === "EXTRA_YOUTUBE_CHAT_MESSAGE"
         ) {
           if (
             _sender.id !== chrome.runtime.id ||
             _sender.tab ||
             identity?.kind !== "youtube" ||
-            message.videoId !== identity.videoId ||
-            message.connectionId !== youtubeConnectionId
+            msg.videoId !== identity.videoId ||
+            msg.connectionId !== youtubeConnectionId
           )
             return;
-          if (message.type === "EXTRA_YOUTUBE_CHAT_STATUS") {
+          if (msg.type === "EXTRA_YOUTUBE_CHAT_STATUS") {
             handleLoadError(
               new Error(
-                typeof message.error === "string"
-                  ? message.error
+                typeof msg.error === "string"
+                  ? msg.error
                   : "YouTube 聊天來源已中斷。",
               ),
               generation,
             );
           } else if (
-            message.seekRevision === youtubeSeekRevision &&
-            isValidDanmakuData(message.data, youtubeMode === "replay")
+            msg.seekRevision === youtubeSeekRevision &&
+            isValidDanmakuData(msg.data, youtubeMode === "replay")
           ) {
             if (youtubeMode === "live")
-              scheduleLiveMessage(message.data, "youtube");
+              scheduleLiveMessage(msg.data, "youtube");
             else if (
               youtubeMode === "replay" &&
               video &&
-              isExtraBilibiliMessage(message.data)
+              isExtraBilibiliMessage(msg.data)
             ) {
               const time = video.currentTime - source.offsetSeconds;
               if (
-                message.data.replayTime < time - 10 ||
-                message.data.replayTime > time + 30
+                msg.data.replayTime < time - 10 ||
+                msg.data.replayTime > time + 30
               )
                 return;
               messages = messages
@@ -892,51 +880,50 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
                   (m) => m.replayTime >= time - 10 && m.replayTime <= time + 30,
                 )
                 .slice(-1999);
-              mergeMessages([message.data]);
+              mergeMessages([msg.data]);
               process(video);
             }
           }
           return;
         }
         if (
-          message.type === "EXTRA_TWITCH_CHAT_STATUS" &&
+          msg.type === "EXTRA_TWITCH_CHAT_STATUS" &&
           identity?.kind === "twitch" &&
-          message.channel === identity.channel &&
-          typeof message.connectionId === "string"
+          msg.channel === identity.channel &&
+          typeof msg.connectionId === "string"
         ) {
-          if (message.status === "connected")
-            twitchConnectionId = message.connectionId;
+          if (msg.status === "connected") twitchConnectionId = msg.connectionId;
           if (
-            message.status !== "connected" &&
-            message.connectionId !== twitchConnectionId
+            msg.status !== "connected" &&
+            msg.connectionId !== twitchConnectionId
           )
             return;
           setSourceError(
-            message.status === "error"
-              ? typeof message.error === "string"
-                ? message.error
+            msg.status === "error"
+              ? typeof msg.error === "string"
+                ? msg.error
                 : "Twitch 聊天連線失敗。"
               : null,
           );
           return;
         }
         if (
-          message.type === "EXTRA_TWITCH_CHAT_MESSAGE" &&
+          msg.type === "EXTRA_TWITCH_CHAT_MESSAGE" &&
           identity?.kind === "twitch" &&
-          message.channel === identity.channel &&
-          message.connectionId === twitchConnectionId &&
-          globalThis.PipCompanion.util.isRecord(message.data)
+          msg.channel === identity.channel &&
+          msg.connectionId === twitchConnectionId &&
+          globalThis.PipCompanion.util.isRecord(msg.data)
         ) {
-          if (isValidDanmakuData(message.data))
-            scheduleLiveMessage(message.data, "twitch");
+          if (isValidDanmakuData(msg.data))
+            scheduleLiveMessage(msg.data, "twitch");
           return;
         }
-        if (message.type === "GET_EXTRA_DANMAKU_SOURCE") {
+        if (msg.type === "GET_EXTRA_DANMAKU_SOURCE") {
           sendResponse(getSource());
           return;
         }
-        if (message.type === "SET_EXTRA_DANMAKU_SOURCE") {
-          setSource(message.source);
+        if (msg.type === "SET_EXTRA_DANMAKU_SOURCE") {
+          setSource(msg.source);
           sendResponse(getSource());
           return;
         }

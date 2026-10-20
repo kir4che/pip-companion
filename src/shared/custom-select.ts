@@ -99,14 +99,14 @@ globalThis.PipCompanion.customSelect = (() => {
         menu.querySelectorAll<HTMLButtonElement>("[role='option']"),
       ).filter((option) => !option.disabled);
 
-    const setActiveOption = (index: number) => {
+    const setActiveOption = (i: number) => {
       const options = enabledOptionButtons();
       if (!options.length) {
         activeIndex = -1;
         trigger.removeAttribute("aria-activedescendant");
         return;
       }
-      activeIndex = (index + options.length) % options.length;
+      activeIndex = (i + options.length) % options.length;
       for (const [optionIndex, option] of options.entries())
         option.classList.toggle("is-active", optionIndex === activeIndex);
       const active = options[activeIndex];
@@ -283,35 +283,34 @@ globalThis.PipCompanion.customSelect = (() => {
     );
     trigger.addEventListener(
       "keydown",
-      (event) => {
+      (e) => {
         const options = enabledOptionButtons();
-        if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-          event.preventDefault();
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
           if (menu.hidden) open();
           else
             setActiveOption(
-              activeIndex +
-                (event.key === "ArrowDown" ? 1 : options.length - 1),
+              activeIndex + (e.key === "ArrowDown" ? 1 : options.length - 1),
             );
-        } else if (event.key === "Home") {
-          event.preventDefault();
+        } else if (e.key === "Home") {
+          e.preventDefault();
           if (menu.hidden) open();
           setActiveOption(0);
-        } else if (event.key === "End") {
-          event.preventDefault();
+        } else if (e.key === "End") {
+          e.preventDefault();
           if (menu.hidden) open();
           setActiveOption(options.length - 1);
-        } else if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
+        } else if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
           if (menu.hidden) open();
           else options[activeIndex]?.click();
-        } else if (event.key === "Escape" && !menu.hidden) {
-          event.preventDefault();
-          event.stopPropagation();
+        } else if (e.key === "Escape" && !menu.hidden) {
+          e.preventDefault();
+          e.stopPropagation();
           close();
-        } else if (event.key === "Tab" && !menu.hidden) close();
-        else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
-          typeahead += event.key.toLocaleLowerCase();
+        } else if (e.key === "Tab" && !menu.hidden) close();
+        else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+          typeahead += e.key.toLocaleLowerCase();
           win.clearTimeout(typeaheadTimer);
           typeaheadTimer = win.setTimeout(() => (typeahead = ""), 700);
           const match = options.findIndex((option) =>
@@ -329,8 +328,8 @@ globalThis.PipCompanion.customSelect = (() => {
       { signal: listenerController.signal },
     );
 
-    const outsidePointerDown = (event: PointerEvent) => {
-      const target = event.target;
+    const outsidePointerDown = (e: PointerEvent) => {
+      const target = e.target;
       if (
         target instanceof win.Node &&
         !wrapper.contains(target) &&

@@ -82,13 +82,13 @@ globalThis.PipCompanion.extraBilibiliSettings = {
     }
 
     // URL 錯誤只在下方狀態列顯示，避免與輸入框 hover 提示重複。
-    function setExtraSourceLoadError(error: string | null): void {
-      extraSourceLoadError = error;
+    function setExtraSourceLoadError(err: string | null): void {
+      extraSourceLoadError = err;
       renderExtraSourceStatus();
     }
 
-    function setExtraSourceValidationError(error: string | null): void {
-      extraSourceValidationError = error;
+    function setExtraSourceValidationError(err: string | null): void {
+      extraSourceValidationError = err;
       renderExtraSourceStatus();
     }
 
@@ -99,16 +99,16 @@ globalThis.PipCompanion.extraBilibiliSettings = {
     }
 
     function updateExtraSourceError(
-      error: string | null,
+      err: string | null,
       revision: number,
     ): void {
       if (revision < extraSourceErrorRevision) return;
       extraSourceErrorRevision = revision;
-      setExtraSourceLoadError(error);
+      setExtraSourceLoadError(err);
     }
 
     async function sendExtraDanmakuMessage(
-      message: ExtensionMessage,
+      msg: ExtensionMessage,
     ): Promise<unknown> {
       let tabId = extraBilibiliTabId;
       if (tabId === undefined) {
@@ -133,13 +133,13 @@ globalThis.PipCompanion.extraBilibiliSettings = {
         tabId = activeTab.id;
         extraBilibiliTabId = tabId;
       }
-      return chrome.tabs.sendMessage(tabId, message);
+      return chrome.tabs.sendMessage(tabId, msg);
     }
 
-    function setOffsetInputError(message: string | null): void {
-      offset.classList.toggle("is-error", message !== null);
-      if (message) {
-        offsetError.textContent = message;
+    function setOffsetInputError(msg: string | null): void {
+      offset.classList.toggle("is-error", msg !== null);
+      if (msg) {
+        offsetError.textContent = msg;
         offset.setAttribute("aria-describedby", offsetError.id);
       } else {
         offsetError.textContent = "";
@@ -395,21 +395,21 @@ globalThis.PipCompanion.extraBilibiliSettings = {
     });
     globalThis.PipCompanion.runtimeMessages.addListener(
       ["EXTRA_DANMAKU_SOURCE_STATUS", "EXTRA_DANMAKU_SOURCE_CHANGED"],
-      (message, sender) => {
+      (msg, sender) => {
         if (
-          !util.isExtensionMessage(message) ||
+          !util.isExtensionMessage(msg) ||
           sender.tab?.id !== extraBilibiliTabId
         )
           return;
-        if (message.type === "EXTRA_DANMAKU_SOURCE_STATUS") {
-          updateExtraSourceError(message.error, message.revision);
-          setExtraSourceLoading(message.loading === true);
+        if (msg.type === "EXTRA_DANMAKU_SOURCE_STATUS") {
+          updateExtraSourceError(msg.error, msg.revision);
+          setExtraSourceLoading(msg.loading === true);
           return;
         }
-        if (message.type === "EXTRA_DANMAKU_SOURCE_CHANGED") {
-          extraSourceApplied = parseExtraBilibiliSource(message.source);
-          enabled.checked = message.source.enabled;
-          setExtraBilibiliAvailability(message.available);
+        if (msg.type === "EXTRA_DANMAKU_SOURCE_CHANGED") {
+          extraSourceApplied = parseExtraBilibiliSource(msg.source);
+          enabled.checked = msg.source.enabled;
+          setExtraBilibiliAvailability(msg.available);
           renderExtraSourceHint();
           renderExtraSourceStatus();
         }

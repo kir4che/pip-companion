@@ -285,41 +285,41 @@ interface SubtitleTrackOptionsApi {
     tracks: TextTrack[],
     selectedTrack: TextTrack | null,
     getId: (track: TextTrack) => string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[];
   nativeSecondary(
     tracks: TextTrack[],
     primaryTrack: TextTrack | null,
     secondaryTrack: TextTrack | null,
     getId: (track: TextTrack) => string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[];
   youtubePrimary(
     tracks: YouTubeSubtitleTrack[],
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[];
   netflixPrimary(
     tracks: NetflixSubtitleTrack[],
     selectedKey: string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[];
   youtubeSecondary(
     tracks: YouTubeSubtitleTrack[],
     secondaryKey: string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[];
   netflixSecondary(
     tracks: NetflixSubtitleTrack[],
     primaryKey: string,
     secondaryKey: string,
-    getLabel: (index: number) => string,
+    getLabel: (i: number) => string,
   ): SubtitleTrackOption[];
 }
 
 interface GenericSubtitleOverlayDetectionApi {
   findNode(
     doc: Document,
-    getStyle: (element: Element) => CSSStyleDeclaration,
+    getStyle: (el: Element) => CSSStyleDeclaration,
     viewportHeight: number,
   ): HTMLElement | null;
 }

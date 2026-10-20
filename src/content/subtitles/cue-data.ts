@@ -29,7 +29,7 @@ globalThis.PipCompanion.subtitleCueData = {
   },
   deduplicateLines(lines) {
     const seen = new Set<string>();
-    return lines.filter((line, index) => {
+    return lines.filter((line, i) => {
       const text = line.segments
         .map((segment) => segment.text)
         .join("")
@@ -40,7 +40,7 @@ globalThis.PipCompanion.subtitleCueData = {
       const timing =
         line.from !== undefined || line.to !== undefined
           ? `${line.from ?? ""}\u0000${line.to ?? ""}`
-          : `untimed\u0000${index}`;
+          : `untimed\u0000${i}`;
       const key = `${timing}\u0000${text}`;
       if (!text || seen.has(key)) return false;
       seen.add(key);

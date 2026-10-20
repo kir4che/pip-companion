@@ -195,9 +195,9 @@ async function getTranslationLanguages(
     languages = await fetchWithTimeout(
       url,
       {},
-      async (response) => {
-        if (!response.ok) throw new Error("Language list request failed");
-        return parseMicrosoftLanguages(await response.json());
+      async (res) => {
+        if (!res.ok) throw new Error("Language list request failed");
+        return parseMicrosoftLanguages(await res.json());
       },
       signal,
     );
@@ -212,9 +212,9 @@ async function getTranslationLanguages(
     languages = await fetchWithTimeout(
       url,
       {},
-      async (response) => {
-        if (!response.ok) throw new Error("Language list request failed");
-        return parseGoogleLanguages(await response.json());
+      async (res) => {
+        if (!res.ok) throw new Error("Language list request failed");
+        return parseGoogleLanguages(await res.json());
       },
       signal,
     );
@@ -228,9 +228,9 @@ async function getTranslationLanguages(
       {
         headers: { Authorization: `DeepL-Auth-Key ${config.deeplKey.trim()}` },
       },
-      async (response) => {
-        if (!response.ok) throw new Error("Language list request failed");
-        return parseDeepLLanguages(await response.json());
+      async (res) => {
+        if (!res.ok) throw new Error("Language list request failed");
+        return parseDeepLLanguages(await res.json());
       },
       signal,
     );
@@ -260,11 +260,11 @@ function deeplLanguage(language: string) {
 }
 
 async function parseMicrosoftResponse(
-  response: Response,
+  res: Response,
   expectedCount: number,
 ): Promise<string[]> {
-  if (!response.ok) throw new Error("Translation request failed");
-  const value: unknown = await response.json();
+  if (!res.ok) throw new Error("Translation request failed");
+  const value: unknown = await res.json();
   if (!Array.isArray(value) || value.length !== expectedCount)
     throw new Error("Invalid translation response");
   return value.map((entry) => {
@@ -317,11 +317,11 @@ function decodeGoogleText(value: string): string {
 }
 
 async function parseDeepLResponse(
-  response: Response,
+  res: Response,
   expectedCount: number,
 ): Promise<string[]> {
-  if (!response.ok) throw new Error("Translation request failed");
-  const value: unknown = await response.json();
+  if (!res.ok) throw new Error("Translation request failed");
+  const value: unknown = await res.json();
   if (
     !isRecord(value) ||
     !Array.isArray(value.translations) ||
@@ -336,11 +336,11 @@ async function parseDeepLResponse(
 }
 
 async function parseGoogleResponse(
-  response: Response,
+  res: Response,
   expectedCount: number,
 ): Promise<string[]> {
-  if (!response.ok) throw new Error("Translation request failed");
-  const value: unknown = await response.json();
+  if (!res.ok) throw new Error("Translation request failed");
+  const value: unknown = await res.json();
   if (
     !isRecord(value) ||
     !isRecord(value.data) ||
@@ -384,7 +384,7 @@ async function translateTexts(
         },
         body: JSON.stringify(texts.map((text) => ({ Text: text }))),
       },
-      (response) => parseMicrosoftResponse(response, texts.length),
+      (res) => parseMicrosoftResponse(res, texts.length),
       signal,
     );
   }
@@ -407,7 +407,7 @@ async function translateTexts(
           format: "text",
         }),
       },
-      (response) => parseGoogleResponse(response, texts.length),
+      (res) => parseGoogleResponse(res, texts.length),
       signal,
     );
   }
@@ -429,7 +429,7 @@ async function translateTexts(
         target_lang: deeplLanguage(targetLanguage),
       }),
     },
-    (response) => parseDeepLResponse(response, texts.length),
+    (res) => parseDeepLResponse(res, texts.length),
     signal,
   );
 }
@@ -437,7 +437,7 @@ async function translateTexts(
 async function fetchWithTimeout<T>(
   url: URL,
   init: RequestInit,
-  parse: (response: Response) => Promise<T>,
+  parse: (res: Response) => Promise<T>,
   externalSignal?: AbortSignal,
 ): Promise<T> {
   const controller = new AbortController();
@@ -543,12 +543,12 @@ async function translate(
           translationCache.delete(translationCache.keys().next().value!);
       }
       return translations;
-    } catch (error) {
+    } catch (err) {
       // timeout 可能是網路不穩定或翻譯服務拒絕，其他錯誤可能是設定錯誤或 API 金鑰失效。
       if (!test && !signal?.aborted)
         translationFailure =
-          error instanceof Error ? error.message : "request-failed";
-      throw error;
+          err instanceof Error ? err.message : "request-failed";
+      throw err;
     } finally {
       translationInFlight = false;
       if (!test) pendingTranslationRequests.delete(pendingKey);
@@ -623,15 +623,15 @@ export function registerSubtitleTranslationListener() {
       "TRANSLATE_SUBTITLE_CUES",
       "TEST_SUBTITLE_TRANSLATION",
     ],
-    (message, sender, sendResponse) => {
+    (msg, sender, sendResponse) => {
       if (
-        isRecord(message) &&
-        message.type === "PIP_STATE_CHANGED" &&
+        isRecord(msg) &&
+        msg.type === "PIP_STATE_CHANGED" &&
         sender.tab?.id !== undefined
       ) {
         const tabId = sender.tab.id;
-        if (message.pipOpen === true) {
-          const enabled = message.subtitlesEnabled === true;
+        if (msg.pipOpen === true) {
+          const enabled = msg.subtitlesEnabled === true;
           if (pipSubtitleStates.get(tabId) !== enabled) translationGeneration++;
           pipSubtitleStates.set(tabId, enabled);
           if (!enabled) abortTabTranslations(tabId);
@@ -644,47 +644,45 @@ export function registerSubtitleTranslationListener() {
         return false;
       }
       if (
-        isRecord(message) &&
-        message.type === "PIP_SUBTITLES_ENABLED_CHANGED" &&
-        typeof message.enabled === "boolean" &&
+        isRecord(msg) &&
+        msg.type === "PIP_SUBTITLES_ENABLED_CHANGED" &&
+        typeof msg.enabled === "boolean" &&
         sender.tab?.id !== undefined
       ) {
         const tabId = sender.tab.id;
-        if (pipSubtitleStates.get(tabId) !== message.enabled)
+        if (pipSubtitleStates.get(tabId) !== msg.enabled)
           translationGeneration++;
-        pipSubtitleStates.set(tabId, message.enabled);
-        if (!message.enabled) abortTabTranslations(tabId);
+        pipSubtitleStates.set(tabId, msg.enabled);
+        if (!msg.enabled) abortTabTranslations(tabId);
         void chrome.storage.session
           .get("pipTabId")
           .then(async ({ pipTabId }) => {
             if (pipTabId !== tabId) return;
             await chrome.storage.session.set({
-              [pipSubtitlesEnabledStorageKey(tabId)]: message.enabled,
+              [pipSubtitlesEnabledStorageKey(tabId)]: msg.enabled,
             });
           })
           .catch(() => {});
         return false;
       }
       const languageRequest =
-        isRecord(message) &&
-        message.type === "GET_SUBTITLE_TRANSLATION_LANGUAGES";
+        isRecord(msg) && msg.type === "GET_SUBTITLE_TRANSLATION_LANGUAGES";
       const servicesRequest =
-        isRecord(message) &&
-        message.type === "GET_SUBTITLE_TRANSLATION_SERVICES";
+        isRecord(msg) && msg.type === "GET_SUBTITLE_TRANSLATION_SERVICES";
       const requestedProvider =
-        isRecord(message) &&
-        message.type === "SET_SUBTITLE_TRANSLATION_PROVIDER" &&
-        isTranslationProvider(message.provider)
-          ? message.provider
+        isRecord(msg) &&
+        msg.type === "SET_SUBTITLE_TRANSLATION_PROVIDER" &&
+        isTranslationProvider(msg.provider)
+          ? msg.provider
           : null;
       const providerRequest = requestedProvider !== null;
       const testRequest =
-        isRecord(message) &&
-        message.type === "TEST_SUBTITLE_TRANSLATION" &&
-        isTranslationProvider(message.provider)
-          ? { provider: message.provider, config: readConfig(message.config) }
+        isRecord(msg) &&
+        msg.type === "TEST_SUBTITLE_TRANSLATION" &&
+        isTranslationProvider(msg.provider)
+          ? { provider: msg.provider, config: readConfig(msg.config) }
           : null;
-      const translationRequest = isTranslationRequest(message) ? message : null;
+      const translationRequest = isTranslationRequest(msg) ? msg : null;
       if (
         !languageRequest &&
         !servicesRequest &&
@@ -864,16 +862,16 @@ export function registerSubtitleTranslationListener() {
             )
               activeTranslationControllers.delete(tabId);
           }
-        } catch (error) {
+        } catch (err) {
           const code =
-            error instanceof Error &&
+            err instanceof Error &&
             [
               "busy",
               "not-configured",
               "rate-limited",
               "quota-exceeded",
-            ].includes(error.message)
-              ? error.message
+            ].includes(err.message)
+              ? err.message
               : "request-failed";
           sendResponse({
             ok: false,
