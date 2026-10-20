@@ -145,16 +145,14 @@ function ensureFloatingCommentsButton(shortcut: Shortcut) {
   if (ariaShortcut) button.setAttribute("aria-keyshortcuts", ariaShortcut);
   button.setAttribute("data-shortcut", shortcutText);
 
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("viewBox", "0 0 24 24");
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("fill", "currentColor");
-  path.setAttribute(
-    "d",
-    "M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z",
-  );
-  svg.appendChild(path);
-  button.appendChild(svg);
+  const icons = globalThis.PipCompanion?.icons;
+  if (icons)
+    button.appendChild(
+      icons.createSvg(document, {
+        path: icons.FLOATING_COMMENTS_PATH,
+        fill: "currentColor",
+      }),
+    );
   button.addEventListener("click", () => toggleFloatingComments());
 
   const tooltip = document.createElement("div");

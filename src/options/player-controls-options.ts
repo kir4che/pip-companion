@@ -133,17 +133,22 @@ globalThis.PipCompanion.optionsPlayerControlsOptions = {
       return cfg.map((item) => ({ ...item }));
     }
 
+    const icons = globalThis.PipCompanion?.icons;
+    const getIconSvg = (
+      pathOrHtml?: string,
+      opts?: { width?: number; height?: number },
+    ) => (icons ? icons.getSvgHtml(pathOrHtml || "", opts) : "");
     const CONTROL_BODIES: Record<PlayerControlId, string> = {
       play: `<div class="mock-pip-btn" aria-hidden="true"><span>▶</span></div>`,
-      "danmaku-send": `<div class="mock-pip-btn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm0 14H5.17L4 17.17V4h16z" fill-rule="evenodd" fill="currentColor"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/></svg></div>`,
-      next: `<div class="mock-pip-btn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 18 14.5 12 6 6v12zm10-12v12h2V6h-2z" fill="currentColor"/></svg></div>`,
+      "danmaku-send": `<div class="mock-pip-btn" aria-hidden="true">${getIconSvg(icons?.DANMAKU_SEND_INNER_HTML)}</div>`,
+      next: `<div class="mock-pip-btn" aria-hidden="true">${getIconSvg(icons?.NEXT_PATH)}</div>`,
       time: `<span class="mock-pip-time" aria-hidden="true"><input type="text" class="time-current" value="0:00" size="4" readonly tabindex="-1" /><span class="time-duration">/ 0:00</span></span>`,
       progress: `<div class="mock-pip-progress-static" aria-hidden="true"><div class="mock-pip-progress-track"><div class="mock-pip-progress-fill"></div><div class="mock-pip-progress-thumb"></div></div></div>`,
-      volume: `<div class="mock-pip-btn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" fill="currentColor"/></svg></div>`,
+      volume: `<div class="mock-pip-btn" aria-hidden="true">${getIconSvg(icons?.VOLUME_PATH)}</div>`,
       speed: `<div class="mock-pip-btn mock-pip-btn-speed" aria-hidden="true"><span>1×</span></div>`,
-      translation: `<div class="mock-pip-btn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-11 7H8.5v-1H7v4h1.5v-1H10v1c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V9c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v2zm9 0h-1.5v-1H16v4h1.5v-1H19v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1V9c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v2z" fill="currentColor"/></svg></div>`,
-      playlist: `<div class="mock-pip-btn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h13v2H3v-2zm16.5-1.5L24 18l-4.5 3.5V14.5z" fill="currentColor"/></svg></div>`,
-      "danmaku-search": `<div class="mock-pip-btn" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/></svg></div>`,
+      translation: `<div class="mock-pip-btn" aria-hidden="true">${getIconSvg(icons?.TRANSLATION_PATH)}</div>`,
+      playlist: `<div class="mock-pip-btn" aria-hidden="true">${getIconSvg(icons?.PLAYLIST_PATH)}</div>`,
+      "danmaku-search": `<div class="mock-pip-btn" aria-hidden="true">${getIconSvg(icons?.SEARCH_PATH)}</div>`,
     };
 
     function getPipControlBodyHtml(id: PlayerControlId): string {
@@ -201,7 +206,10 @@ globalThis.PipCompanion.optionsPlayerControlsOptions = {
       addBtn.className = "hidden-item-add-btn";
       addBtn.title = t("optionsPlayerControlsShowItem");
       addBtn.setAttribute("aria-label", t("optionsPlayerControlsShowItem"));
-      addBtn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg>`;
+      addBtn.innerHTML = getIconSvg(icons?.PLUS_PATH, {
+        width: 14,
+        height: 14,
+      });
       addBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         moveItemToVisibility(item.id, true);

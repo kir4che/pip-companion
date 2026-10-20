@@ -92,6 +92,11 @@ test("getItemName returns localized message key or fallback to id", () => {
   assert.equal(settings.getItemName("volume", t), "音量控制");
 });
 
+const iconsSource = ts.transpileModule(
+  readFileSync(new URL("../src/shared/icons.ts", import.meta.url), "utf8"),
+  { compilerOptions: { target: ts.ScriptTarget.ES2022 } },
+).outputText;
+
 const optionsSource = ts.transpileModule(
   readFileSync(
     new URL("../src/options/player-controls-options.ts", import.meta.url),
@@ -206,6 +211,7 @@ test("player-controls-options requires clicking save to commit changes to storag
     clearTimeout,
   };
   context.globalThis = context;
+  vm.runInNewContext(iconsSource, context);
   vm.runInNewContext(optionsSource, context);
 
   let statusMessage = "";
@@ -306,6 +312,7 @@ test("player-controls-options adds hidden item back at its default relative posi
     clearTimeout,
   };
   context.globalThis = context;
+  vm.runInNewContext(iconsSource, context);
   vm.runInNewContext(optionsSource, context);
 
   const controller = context.PipCompanion.optionsPlayerControlsOptions.create({

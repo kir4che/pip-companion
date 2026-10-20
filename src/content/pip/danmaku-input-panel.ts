@@ -20,24 +20,11 @@ globalThis.PipCompanion.danmakuInputPanel = {
       t("pipDanmakuInputOpen"),
     );
     toggle.title = t("pipDanmakuInputOpen");
-    const icon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
-    icon.setAttribute("viewBox", "0 0 24 24");
-    icon.setAttribute("aria-hidden", "true");
-    const bubble = doc.createElementNS("http://www.w3.org/2000/svg", "path");
-    bubble.setAttribute(
-      "d",
-      "M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm0 14H5.17L4 17.17V4h16z",
-    );
-    bubble.setAttribute("fill-rule", "evenodd");
-    icon.append(bubble);
-    for (const x of [8, 12, 16]) {
-      const dot = doc.createElementNS("http://www.w3.org/2000/svg", "circle");
-      dot.setAttribute("cx", String(x));
-      dot.setAttribute("cy", "10");
-      dot.setAttribute("r", "1");
-      icon.append(dot);
-    }
-    toggle.append(icon);
+    const icons = globalThis.PipCompanion?.icons;
+    if (icons)
+      toggle.append(
+        icons.createSvg(doc, { innerHTML: icons.DANMAKU_SEND_INNER_HTML }),
+      );
     toggle.hidden = !options.canSend;
     toggle.setAttribute("aria-expanded", "false");
 

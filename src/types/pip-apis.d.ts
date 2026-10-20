@@ -960,7 +960,44 @@ interface PlayerControlsOptionsApi {
   }): PlayerControlsOptionsController;
 }
 
+interface PipIconsApi {
+  NEXT_PATH: string;
+  VOLUME_PATH: string;
+  VOLUME_MUTED_PATH: string;
+  TRANSLATION_PATH: string;
+  PLAYLIST_PATH: string;
+  SEARCH_PATH: string;
+  DANMAKU_SEND_INNER_HTML: string;
+  PLUS_PATH: string;
+  PLAY_PATH: string;
+  PAUSE_PATH: string;
+  FRAME_PREV_PATH: string;
+  FRAME_NEXT_PATH: string;
+  SCREENSHOT_PATH: string;
+  FLOATING_COMMENTS_PATH: string;
+  createSvg(
+    doc: Document,
+    options: {
+      viewBox?: string;
+      className?: string;
+      innerHTML?: string;
+      path?: string;
+      fill?: string;
+      fillRule?: CanvasFillRule;
+    },
+  ): SVGSVGElement;
+  getSvgHtml(
+    contentOrPath: string,
+    options?: {
+      viewBox?: string;
+      width?: number;
+      height?: number;
+    },
+  ): string;
+}
+
 interface PipCompanionGlobal {
+  icons: PipIconsApi;
   playerControlsSettings: PlayerControlsSettingsApi;
   optionsPlayerControlsOptions: PlayerControlsOptionsApi;
   runtimeMessages: RuntimeMessageDispatcher;

@@ -9,22 +9,11 @@ globalThis.PipCompanion.subtitleTranslationPanel = {
     translationButton.hidden = true;
     translationButton.setAttribute("aria-expanded", "false");
     translationButton.setAttribute("aria-haspopup", "true");
-    const translationIcon = doc.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "svg",
-    );
-    translationIcon.setAttribute("viewBox", "0 0 24 24");
-    translationIcon.setAttribute("aria-hidden", "true");
-    const translationPath = doc.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
-    translationPath.setAttribute(
-      "d",
-      "M21 4H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-11 7H8.5v-1H7v4h1.5v-1H10v1c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1V9c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v2zm9 0h-1.5v-1H16v4h1.5v-1H19v1c0 .55-.45 1-1 1h-3c-.55 0-1-.45-1-1V9c0-.55.45-1 1-1h3c.55 0 1 .45 1 1v2z",
-    );
-    translationIcon.append(translationPath);
-    translationButton.append(translationIcon);
+    const icons = globalThis.PipCompanion?.icons;
+    if (icons)
+      translationButton.append(
+        icons.createSvg(doc, { path: icons.TRANSLATION_PATH }),
+      );
 
     const translationPanel = doc.createElement("section");
     translationPanel.id = "pip-subtitle-translation-panel";

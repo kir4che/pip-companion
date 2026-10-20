@@ -42,19 +42,8 @@ globalThis.PipCompanion.danmakuSearchPanel = {
     toggle.className = "danmaku-search-toggle";
     toggle.setAttribute("aria-expanded", "false");
 
-    const searchSvg = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
-    searchSvg.setAttribute("viewBox", "0 0 24 24");
-    searchSvg.setAttribute("aria-hidden", "true");
-    const searchPath = doc.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
-    searchPath.setAttribute(
-      "d",
-      "M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
-    );
-    searchSvg.append(searchPath);
-    toggle.append(searchSvg);
+    const icons = globalThis.PipCompanion?.icons;
+    if (icons) toggle.append(icons.createSvg(doc, { path: icons.SEARCH_PATH }));
 
     const panel = doc.createElement("section");
     panel.id = "danmaku-search-panel";
@@ -69,19 +58,12 @@ globalThis.PipCompanion.danmakuSearchPanel = {
     const inputWrap = doc.createElement("div");
     inputWrap.className = "danmaku-search-input-wrap";
 
-    const inputIcon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
-    inputIcon.setAttribute("viewBox", "0 0 24 24");
-    inputIcon.setAttribute("class", "danmaku-search-input-icon");
-    inputIcon.setAttribute("aria-hidden", "true");
-    const inputIconPath = doc.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "path",
-    );
-    inputIconPath.setAttribute(
-      "d",
-      "M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
-    );
-    inputIcon.append(inputIconPath);
+    const inputIcon = icons
+      ? icons.createSvg(doc, {
+          path: icons.SEARCH_PATH,
+          className: "danmaku-search-input-icon",
+        })
+      : doc.createElementNS("http://www.w3.org/2000/svg", "svg");
 
     const input = doc.createElement("input");
     input.type = "text";

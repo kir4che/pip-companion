@@ -2,9 +2,12 @@
 
 globalThis.PipCompanion.ContentPlayback = (() => {
   const t = globalThis.PipCompanion.util.getMessage;
+  const icons = globalThis.PipCompanion?.icons;
   const VOLUME_ICON_PATH =
+    icons?.VOLUME_PATH ||
     "M3 9v6h4l5 5V4L7 9H3zm13.5 3a4.5 4.5 0 0 0-3-4.24v8.47a4.5 4.5 0 0 0 3-4.23z";
   const MUTED_VOLUME_ICON_PATH =
+    icons?.VOLUME_MUTED_PATH ||
     "M3 9v6h4l5 5V4L7 9H3z M15.5 9.4 16.9 8l2.6 2.6L22.1 8l1.4 1.4-2.6 2.6 2.6 2.6-1.4 1.4-2.6-2.6-2.6 2.6-1.4-1.4 2.6-2.6z";
   const PLAYBACK_RATES = [
     0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75,

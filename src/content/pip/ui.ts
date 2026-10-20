@@ -117,14 +117,11 @@ globalThis.PipCompanion.PipUI = (() => {
     playlistButton.className = "playlist-button";
     playlistButton.hidden = true;
     playlistButton.setAttribute("aria-expanded", "false");
-    const playlistIcon = doc.createElement("img");
-    const playlistIconUrl = globalThis.chrome?.runtime?.getURL?.(
-      "assets/playlist-icon.svg",
-    );
-    if (playlistIconUrl) playlistIcon.src = playlistIconUrl;
-    playlistIcon.alt = "";
-    playlistIcon.setAttribute("aria-hidden", "true");
-    playlistButton.append(playlistIcon);
+    const icons = globalThis.PipCompanion?.icons;
+    if (icons)
+      playlistButton.append(
+        icons.createSvg(doc, { path: icons.PLAYLIST_PATH }),
+      );
     const {
       translationButton,
       translationPanel,
@@ -168,13 +165,8 @@ globalThis.PipCompanion.PipUI = (() => {
     playlistButton.setAttribute("aria-controls", playlistPanel.id);
     playlistPanel.hidden = true;
     playlistPanel.setAttribute("aria-label", t("pipPlaylist"));
-    const nextIcon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
-    nextIcon.setAttribute("viewBox", "0 0 24 24");
-    nextIcon.setAttribute("aria-hidden", "true");
-    const nextPath = doc.createElementNS("http://www.w3.org/2000/svg", "path");
-    nextPath.setAttribute("d", "M6 18 14.5 12 6 6v12zm10-12v12h2V6h-2z");
-    nextIcon.append(nextPath);
-    nextButton.append(nextIcon);
+    if (icons)
+      nextButton.append(icons.createSvg(doc, { path: icons.NEXT_PATH }));
 
     const playbackControls = globalThis.PipCompanion.playbackControls.create(
       doc,
