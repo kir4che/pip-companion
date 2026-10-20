@@ -6,6 +6,40 @@ globalThis.PipCompanion.PipStyles = {
   get(): string[] {
     return [
       `
+      :root,
+      .screen {
+        --pip-accent: #ff3333;
+        --pip-progress-fill: var(--pip-accent, #ff3333);
+        --pip-slider-accent: var(--pip-accent, #ff3333);
+        --pip-focus-ring: var(--pip-accent, #3ea6ff);
+        --pip-toggle-active: var(--pip-accent, #3ea6ff);
+        --pip-send-btn: var(--pip-accent, #ff3333);
+        --pip-send-btn-hover: color-mix(
+          in srgb,
+          var(--pip-send-btn) 85%,
+          #fff
+        );
+        --pip-accent-soft: color-mix(
+          in srgb,
+          var(--pip-accent, #ff3333) 18%,
+          transparent
+        );
+        --pip-accent-contrast: color-mix(
+          in srgb,
+          var(--pip-accent, #ff3333) 60%,
+          #fff
+        );
+        --pip-accent-light: color-mix(
+          in srgb,
+          var(--pip-accent, #ff3333) 70%,
+          #fff
+        );
+        --pip-panel-bg: #121214fa;
+        --pip-btn-bg: #111b;
+        --pip-btn-bg-hover: #444d;
+        --pip-border-subtle: rgba(255, 255, 255, 0.14);
+        --pip-border-default: rgba(255, 255, 255, 0.22);
+      }
       * {
         box-sizing: border-box;
         -webkit-user-select: none;
@@ -188,7 +222,7 @@ globalThis.PipCompanion.PipStyles = {
         display: block;
         width: 0;
         height: 100%;
-        background: #f33;
+        background: var(--pip-progress-fill);
       }
       .screen.controls-visible .mini-progress,
       .screen:has(:focus-visible) .mini-progress {
@@ -207,7 +241,8 @@ globalThis.PipCompanion.PipStyles = {
         padding: 4px 7px;
         border-radius: 6px;
         color: #fff;
-        background: #111e;
+        background: var(--pip-panel-bg);
+        border: 1px solid var(--pip-border-subtle);
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
         pointer-events: none;
       }
@@ -220,7 +255,7 @@ globalThis.PipCompanion.PipStyles = {
         overflow: hidden;
         background-color: #000;
         background-repeat: no-repeat;
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        border: 1px solid var(--pip-border-subtle);
       }
       .time-tooltip-text {
         font-size: 12px;
@@ -237,7 +272,7 @@ globalThis.PipCompanion.PipStyles = {
         align-items: center;
         gap: 4px;
         padding: 3px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
+        border: 1px solid var(--pip-border-subtle);
         border-radius: 16px;
         background: rgba(12, 12, 12, 0.84);
       }
@@ -262,9 +297,9 @@ globalThis.PipCompanion.PipStyles = {
         display: flex;
         flex-direction: column;
         padding: 8px;
-        border: 1px solid #ffffff22;
+        border: 1px solid var(--pip-border-default);
         border-radius: 12px;
-        background: #121214fa;
+        background: var(--pip-panel-bg);
         backdrop-filter: blur(12px);
         box-shadow: 0 8px 32px #000c;
         font-size: 12px;
@@ -283,7 +318,7 @@ globalThis.PipCompanion.PipStyles = {
         align-items: center;
         gap: 6px;
         padding: 0 10px;
-        border: 1px solid rgba(255, 255, 255, 0.14);
+        border: 1px solid var(--pip-border-subtle);
         border-radius: 14px;
         background: rgba(12, 12, 12, 0.84);
       }
@@ -349,7 +384,7 @@ globalThis.PipCompanion.PipStyles = {
       .danmaku-heat-title {
         font-size: 11px;
         font-weight: 600;
-        color: #ff9800;
+        color: var(--pip-accent, #ff3333);
         margin-bottom: 4px;
         display: flex;
         align-items: center;
@@ -394,7 +429,7 @@ globalThis.PipCompanion.PipStyles = {
       }
       .danmaku-heat-time {
         font-family: monospace;
-        color: #3ea6ff;
+        color: var(--pip-accent-light);
         font-weight: 600;
       }
       .danmaku-heat-text {
@@ -439,7 +474,7 @@ globalThis.PipCompanion.PipStyles = {
       .danmaku-result-time {
         font-family: monospace;
         font-size: 11px;
-        color: #3ea6ff;
+        color: var(--pip-accent-light);
         font-weight: 600;
         flex-shrink: 0;
       }
@@ -511,11 +546,11 @@ globalThis.PipCompanion.PipStyles = {
         height: 24px;
         padding: 0 10px;
         border-radius: 14px;
-        background: #00a1d6;
+        background: var(--pip-send-btn);
         font-size: 12px;
       }
       .danmaku-send-submit:hover {
-        background: #12b4e8;
+        background: var(--pip-send-btn-hover);
       }
       .danmaku-send-status {
         position: absolute;
@@ -539,14 +574,14 @@ globalThis.PipCompanion.PipStyles = {
         border: 0;
         border-radius: 50%;
         color: #fff;
-        background: #111b;
+        background: var(--pip-btn-bg);
         font:
           18px/1 system-ui,
           sans-serif;
         cursor: pointer;
       }
       button:hover {
-        background: #444d;
+        background: var(--pip-btn-bg-hover);
       }
       button:disabled {
         opacity: 0.42;
@@ -559,12 +594,12 @@ globalThis.PipCompanion.PipStyles = {
       }
       button:focus-visible {
         outline: none;
-        box-shadow: inset 0 0 0 2px #3ea6ff;
+        box-shadow: inset 0 0 0 2px var(--pip-focus-ring);
         background: #111f;
       }
       input:not([type="range"]):not(.danmaku-send-input):not(.danmaku-search-input):focus-visible {
         outline: none;
-        box-shadow: inset 0 -2px 0 #3ea6ff;
+        box-shadow: inset 0 -2px 0 var(--pip-focus-ring);
       }
       .time {
         flex: 0 0 auto;
@@ -601,7 +636,7 @@ globalThis.PipCompanion.PipStyles = {
       .progress {
         flex: 1 1 auto;
         min-width: 24px;
-        accent-color: #f33;
+        accent-color: var(--pip-progress-fill);
         touch-action: none;
         transform: scaleY(0.85);
       }
@@ -612,7 +647,7 @@ globalThis.PipCompanion.PipStyles = {
         border-radius: 50%;
       }
       input[type="range"]:focus-visible::-webkit-slider-thumb {
-        box-shadow: 0 0 0 2px #111, 0 0 0 4px #3ea6ff;
+        box-shadow: 0 0 0 2px #111, 0 0 0 4px var(--pip-focus-ring);
       }
       button svg {
         display: block;
@@ -659,7 +694,7 @@ globalThis.PipCompanion.PipStyles = {
         background: #ffffff17;
       }
       .custom-select-trigger:focus-visible {
-        outline: 2px solid #3ea6ff;
+        outline: 2px solid var(--pip-focus-ring);
         outline-offset: 2px;
       }
       .custom-select-trigger:disabled {
@@ -689,9 +724,9 @@ globalThis.PipCompanion.PipStyles = {
         z-index: 10000;
         overflow: auto;
         padding: 5px;
-        border: 1px solid #ffffff24;
+        border: 1px solid var(--pip-border-default);
         border-radius: 9px;
-        background: #171719;
+        background: var(--pip-panel-bg);
         box-shadow: 0 12px 32px #000b;
         color: #f4f4f5;
       }
@@ -716,8 +751,8 @@ globalThis.PipCompanion.PipStyles = {
         background: #ffffff13;
       }
       .custom-select-option[aria-selected="true"] {
-        background: #3ea6ff22;
-        color: #9bd2ff;
+        background: var(--pip-accent-soft);
+        color: var(--pip-accent-contrast);
       }
       .custom-select-option:disabled {
         color: #ffffff52;
@@ -750,9 +785,9 @@ globalThis.PipCompanion.PipStyles = {
         max-height: min(70%, 360px);
         overflow: auto;
         padding: 8px;
-        border: 1px solid #ffffff22;
+        border: 1px solid var(--pip-border-default);
         border-radius: 10px;
-        background: #111f;
+        background: var(--pip-panel-bg);
         box-shadow: 0 8px 28px #000b;
       }
       .subtitle-translation-panel {
@@ -767,9 +802,9 @@ globalThis.PipCompanion.PipStyles = {
         flex-direction: column;
         gap: 10px;
         padding: 12px;
-        border: 1px solid #ffffff22;
+        border: 1px solid var(--pip-border-default);
         border-radius: 10px;
-        background: #111f;
+        background: var(--pip-panel-bg);
         box-shadow: 0 8px 28px #000b;
         font-size: 12px;
       }
@@ -801,7 +836,7 @@ globalThis.PipCompanion.PipStyles = {
         font-size: 11px;
       }
       .subtitle-translation-panel input[type="checkbox"] {
-        accent-color: #3ea6ff;
+        accent-color: var(--pip-toggle-active);
       }
       .subtitle-translation-toggle {
         position: relative;
@@ -830,8 +865,8 @@ globalThis.PipCompanion.PipStyles = {
         transition: transform 120ms ease;
       }
       .subtitle-translation-toggle:checked {
-        border-color: #3ea6ff;
-        background: #3ea6ff;
+        border-color: var(--pip-toggle-active);
+        background: var(--pip-toggle-active);
       }
       .subtitle-translation-toggle:checked::before {
         transform: translateX(14px);
@@ -865,9 +900,9 @@ globalThis.PipCompanion.PipStyles = {
         width: max-content;
         max-width: min(280px, calc(100% - 16px));
         padding: 6px 8px;
-        border: 1px solid #ffffff24;
+        border: 1px solid var(--pip-border-default);
         border-radius: 6px;
-        background: #171719;
+        background: var(--pip-panel-bg);
         color: #f4f4f5;
         font-size: 11px;
         font-weight: 400;
@@ -880,7 +915,7 @@ globalThis.PipCompanion.PipStyles = {
         outline: none;
       }
       .subtitle-translation-hint-icon:focus-visible {
-        outline: 2px solid #3ea6ff;
+        outline: 2px solid var(--pip-focus-ring);
         outline-offset: 1px;
       }
       @media (prefers-reduced-motion: reduce) {
@@ -901,16 +936,17 @@ globalThis.PipCompanion.PipStyles = {
         font-size: 12px;
       }
       .playlist-item.current {
-        background: rgba(225, 29, 72, 0.15);
-        color: #fb7185;
+        background: var(--pip-accent-soft);
+        color: var(--pip-accent-contrast);
       }
       .playlist-item:hover,
       .playlist-item:focus-visible {
-        background: rgba(225, 29, 72, 0.15);
+        background: rgba(255, 255, 255, 0.15);
       }
       .playlist-item.current:hover,
       .playlist-item.current:focus-visible {
-        background: rgba(225, 29, 72, 0.2);
+        background: var(--pip-accent-soft);
+        filter: brightness(1.2);
       }
       .playlist-index { flex: 0 0 28px; color: #999; font-variant-numeric: tabular-nums; }
       .playlist-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -945,7 +981,8 @@ globalThis.PipCompanion.PipStyles = {
         gap: 4px;
         padding: 4px 5px;
         border-radius: 6px;
-        background: #111d;
+        background: var(--pip-panel-bg);
+        border: 1px solid var(--pip-border-subtle);
         opacity: 0;
         pointer-events: none;
         transform: translateX(-50%);
@@ -983,7 +1020,7 @@ globalThis.PipCompanion.PipStyles = {
       }
       .volume-value:focus {
         background: rgba(0, 0, 0, 0.65);
-        border-color: #3ea6ff;
+        border-color: var(--pip-focus-ring);
         cursor: text;
       }
       .volume-slider,
@@ -993,7 +1030,7 @@ globalThis.PipCompanion.PipStyles = {
         margin: 0;
         writing-mode: vertical-lr;
         direction: rtl;
-        accent-color: #f33;
+        accent-color: var(--pip-slider-accent);
       }
       .feedback {
         position: absolute;

@@ -235,21 +235,42 @@ globalThis.PipCompanion.PipUI = (() => {
       controls.replaceChildren(timeTooltip, ...elementsToAppend);
     };
 
-    if (playerControlsSettings && globalThis.chrome?.storage?.local) {
-      void globalThis.chrome.storage.local
-        .get(playerControlsSettings.STORAGE_KEY)
-        .then(
-          (stored) => {
-            const config = playerControlsSettings.normalize(
-              stored[playerControlsSettings.STORAGE_KEY],
-            );
-            applyControlsLayout(config);
-          },
-          () => {
-            applyControlsLayout();
-          },
-        );
-    } else applyControlsLayout();
+    const applyThemeColor = (customColor?: string) => {
+      const color =
+        customColor || playerControlsSettings?.DEFAULT_THEME_COLOR || "#ff3333";
+      screen.style?.setProperty?.("--pip-accent", color);
+      doc.documentElement?.style?.setProperty?.("--pip-accent", color);
+      progress.style?.setProperty?.("accent-color", color);
+      volumeSlider.style?.setProperty?.("accent-color", color);
+      speedSlider.style?.setProperty?.("accent-color", color);
+    };
+
+    if (globalThis.chrome?.storage?.local) {
+      const storageKeys = [
+        playerControlsSettings?.STORAGE_KEY,
+        playerControlsSettings?.THEME_STORAGE_KEY,
+      ].filter(Boolean) as string[];
+
+      void globalThis.chrome.storage.local.get(storageKeys).then(
+        (stored) => {
+          const config = playerControlsSettings?.normalize(
+            stored[playerControlsSettings.STORAGE_KEY],
+          );
+          applyControlsLayout(config);
+          const color = playerControlsSettings?.normalizeThemeColor(
+            stored[playerControlsSettings.THEME_STORAGE_KEY],
+          );
+          applyThemeColor(color);
+        },
+        () => {
+          applyControlsLayout();
+          applyThemeColor();
+        },
+      );
+    } else {
+      applyControlsLayout();
+      applyThemeColor();
+    }
     screen.append(
       subtitle,
       feedback,
@@ -839,15 +860,16 @@ globalThis.PipCompanion.PipUI = (() => {
       refreshSubtitleTranslationPreferences,
       refreshSubtitleTranslationServices,
       applyControlsLayout,
+      applyThemeColor,
       refreshSubtitleTranslationLanguages: () => {
         const preferences = actions.getSubtitleTranslationPreferences();
         if (
           !translationPanel.hidden &&
           preferences.enabled &&
           !preferences.useNativeSecondaryTrack
-        ) {
+        )
           refreshAvailableTranslationLanguages();
-        } else {
+        else {
           translationLanguageRequestId++;
           if (preferences.useNativeSecondaryTrack)
             refreshTranslationLanguageOptions();

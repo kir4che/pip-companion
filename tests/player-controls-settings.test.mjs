@@ -223,6 +223,11 @@ test("player-controls-options requires clicking save to commit changes to storag
   assert.equal(elements["#player-controls-active-list"].children.length, 10);
   assert.equal(elements["#player-controls-hidden-list"].children.length, 0);
   assert.equal(storageSets.length, 0, "載入時不會寫入 storage");
+  assert.equal(
+    elements["#player-controls-save"].hidden,
+    true,
+    "載入無變更時儲存按鈕隱藏",
+  );
 
   const firstActiveItem = elements["#player-controls-active-list"].children[0];
   firstActiveItem.trigger("dragstart");
@@ -235,6 +240,11 @@ test("player-controls-options requires clicking save to commit changes to storag
     false,
     "應顯示未儲存變更提示",
   );
+  assert.equal(
+    elements["#player-controls-save"].hidden,
+    false,
+    "有變更時出現儲存按鈕",
+  );
   assert.equal(storageSets.length, 0, "未按儲存前不可寫入 storage");
 
   elements["#player-controls-save"].trigger("click");
@@ -245,11 +255,21 @@ test("player-controls-options requires clicking save to commit changes to storag
     storageSets[0].playerControls.filter((i) => i.visible).length,
     9,
   );
-  assert.equal(statusMessage, "optionsPlayerControlsSaved");
+  assert.equal(storageSets[0].playerThemeColor, "#ff3333");
+  assert.equal(
+    statusMessage === "optionsAppearanceSaved" ||
+      statusMessage === "optionsPlayerControlsSaved",
+    true,
+  );
   assert.equal(
     elements["#player-controls-unsaved-badge"].hidden,
     true,
     "儲存成功後未儲存提示隱藏",
+  );
+  assert.equal(
+    elements["#player-controls-save"].hidden,
+    true,
+    "儲存成功後儲存按鈕隱藏",
   );
 });
 
@@ -344,4 +364,15 @@ test("player-controls-options adds hidden item back at its default relative posi
 
   assert.equal(timeIdx > nextIdx, true, "time 應在 next 之後");
   assert.equal(timeIdx < progressIdx2, true, "time 應在 progress 之前");
+});
+
+test("normalizeThemeColor handles invalid values and expands 3-digit hex", () => {
+  const settings = createSettingsModule();
+
+  assert.equal(settings.normalizeThemeColor(undefined), "#ff3333");
+  assert.equal(settings.normalizeThemeColor(null), "#ff3333");
+  assert.equal(settings.normalizeThemeColor("invalid"), "#ff3333");
+  assert.equal(settings.normalizeThemeColor("#f33"), "#ff3333");
+  assert.equal(settings.normalizeThemeColor("#00a1d6"), "#00a1d6");
+  assert.equal(settings.normalizeThemeColor("  #3EA6FF  "), "#3ea6ff");
 });

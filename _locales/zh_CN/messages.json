@@ -808,5 +808,35 @@
   },
   "optionsPlayerControlsShowItem": {
     "message": "显示"
+  },
+  "optionsAppearance": {
+    "message": "外观设置"
+  },
+  "optionsAppearanceUnsaved": {
+    "message": "尚未保存"
+  },
+  "optionsAppearanceSave": {
+    "message": "保存设置"
+  },
+  "optionsAppearanceReset": {
+    "message": "重置为默认值"
+  },
+  "optionsAppearanceRevert": {
+    "message": "还原更改"
+  },
+  "optionsAppearanceSaved": {
+    "message": "外观设置已成功保存！"
+  },
+  "optionsThemeColor": {
+    "message": "PiP 主题色"
+  },
+  "optionsThemeColorHelpLabel": {
+    "message": "关于 PiP 主题色"
+  },
+  "optionsThemeColorDesc": {
+    "message": "自定义主题强调色，联动应用至进度条、发送按钮与操作外框。"
+  },
+  "optionsThemeColorCustom": {
+    "message": "自定义颜色"
   }
 }

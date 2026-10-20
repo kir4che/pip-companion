@@ -808,5 +808,35 @@
   },
   "optionsPlayerControlsShowItem": {
     "message": "顯示"
+  },
+  "optionsAppearance": {
+    "message": "外觀設定"
+  },
+  "optionsAppearanceUnsaved": {
+    "message": "尚未儲存"
+  },
+  "optionsAppearanceSave": {
+    "message": "儲存設定"
+  },
+  "optionsAppearanceReset": {
+    "message": "重設為預設值"
+  },
+  "optionsAppearanceRevert": {
+    "message": "還原變更"
+  },
+  "optionsAppearanceSaved": {
+    "message": "外觀設定已成功儲存！"
+  },
+  "optionsThemeColor": {
+    "message": "PiP 主題色"
+  },
+  "optionsThemeColorHelpLabel": {
+    "message": "關於 PiP 主題色"
+  },
+  "optionsThemeColorDesc": {
+    "message": "自訂主題強調色，連動套用至進度條、發送按鈕與操作外框。"
+  },
+  "optionsThemeColorCustom": {
+    "message": "自訂顏色"
   }
 }

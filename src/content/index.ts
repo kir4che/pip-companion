@@ -101,6 +101,13 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
     );
     state.pipUi?.applyControlsLayout?.(config);
   }
+  if (changes.playerThemeColor) {
+    const color =
+      globalThis.PipCompanion?.playerControlsSettings?.normalizeThemeColor(
+        changes.playerThemeColor.newValue,
+      );
+    state.pipUi?.applyThemeColor?.(color);
+  }
   if (changes.seekSeconds)
     state.seekSeconds = normalizeSeekSeconds(changes.seekSeconds.newValue);
   const subtitleStyleChange = changes[subtitleSettings.STORAGE_KEY];

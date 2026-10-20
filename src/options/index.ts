@@ -316,6 +316,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (playerControlsChange)
     playerControlsOptions.handleStorageChange(playerControlsChange);
 
+  const themeColorChange = changes[playerControlsSettings.THEME_STORAGE_KEY];
+  if (themeColorChange)
+    playerControlsOptions.handleThemeStorageChange?.(themeColorChange);
+
   subtitleStyleOptions.handleStorageChange(changes);
 });
 

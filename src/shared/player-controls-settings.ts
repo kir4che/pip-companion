@@ -85,11 +85,37 @@ globalThis.PipCompanion.playerControlsSettings = (() => {
     return result;
   }
 
+  const THEME_STORAGE_KEY = "playerThemeColor";
+  const DEFAULT_THEME_COLOR = "#ff3333";
+
+  const PRESET_THEME_COLORS: readonly ThemeColorPreset[] = [
+    { id: "red", color: "#ff3333" },
+    { id: "sky-blue", color: "#3ea6ff" },
+    { id: "emerald", color: "#10b981" },
+    { id: "purple", color: "#8b5cf6" },
+    { id: "orange", color: "#f97316" },
+    { id: "pink", color: "#ec4899" },
+  ] as const;
+
+  function normalizeThemeColor(raw: unknown): string {
+    if (typeof raw === "string") {
+      const trimmed = raw.trim();
+      if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) return trimmed.toLowerCase();
+      if (/^#[0-9a-fA-F]{3}$/.test(trimmed))
+        return `#${trimmed[1]}${trimmed[1]}${trimmed[2]}${trimmed[2]}${trimmed[3]}${trimmed[3]}`.toLowerCase();
+    }
+    return DEFAULT_THEME_COLOR;
+  }
+
   return {
     STORAGE_KEY,
+    THEME_STORAGE_KEY,
+    DEFAULT_THEME_COLOR,
+    PRESET_THEME_COLORS,
     CONTROL_IDS,
     DEFAULT_CONTROLS_CONFIG,
     normalize,
+    normalizeThemeColor,
     getItemName,
   };
 })();

@@ -778,5 +778,35 @@
   },
   "optionsPlayerControlsShowItem": {
     "message": "Show"
+  },
+  "optionsAppearance": {
+    "message": "Appearance Settings"
+  },
+  "optionsAppearanceUnsaved": {
+    "message": "Unsaved"
+  },
+  "optionsAppearanceSave": {
+    "message": "Save Settings"
+  },
+  "optionsAppearanceReset": {
+    "message": "Reset to Default"
+  },
+  "optionsAppearanceRevert": {
+    "message": "Discard Changes"
+  },
+  "optionsAppearanceSaved": {
+    "message": "Appearance settings saved successfully!"
+  },
+  "optionsThemeColor": {
+    "message": "PiP Theme Color"
+  },
+  "optionsThemeColorHelpLabel": {
+    "message": "About PiP theme color"
+  },
+  "optionsThemeColorDesc": {
+    "message": "Customize theme accent color applied to progress bars, buttons, and highlights."
+  },
+  "optionsThemeColorCustom": {
+    "message": "Custom"
   }
 }

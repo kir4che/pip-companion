@@ -12,23 +12,37 @@ globalThis.PipCompanion.optionsPlayerControlsOptions = {
     const activeEmptyMsg = document.querySelector(
       "#player-controls-active-empty",
     ) as HTMLElement;
-    const saveBtn = document.querySelector(
-      "#player-controls-save",
-    ) as HTMLButtonElement;
-    const resetBtn = document.querySelector(
-      "#player-controls-reset",
-    ) as HTMLButtonElement;
-    const revertBtn = document.querySelector(
-      "#player-controls-revert",
-    ) as HTMLButtonElement;
-    const unsavedBadge = document.querySelector(
-      "#player-controls-unsaved-badge",
+    const saveBtn = (document.querySelector("#appearance-save") ||
+      document.querySelector("#player-controls-save")) as HTMLButtonElement;
+    const resetBtn = (document.querySelector("#appearance-reset") ||
+      document.querySelector("#player-controls-reset")) as HTMLButtonElement;
+    const revertBtn = (document.querySelector("#appearance-revert") ||
+      document.querySelector("#player-controls-revert")) as HTMLButtonElement;
+    const unsavedBadge = (document.querySelector("#appearance-unsaved-badge") ||
+      document.querySelector("#player-controls-unsaved-badge")) as HTMLElement;
+
+    const mockPipWindow = document.querySelector(
+      "#mock-pip-window, .mock-pip-window",
+    ) as HTMLElement;
+    const presetsContainer = document.querySelector(
+      "#theme-color-presets",
+    ) as HTMLElement;
+    const customColorInput = document.querySelector(
+      "#theme-color-custom-input",
+    ) as HTMLInputElement;
+    const customSwatch = document.querySelector(
+      "#theme-color-custom-swatch",
+    ) as HTMLElement;
+    const customPickerWrap = document.querySelector(
+      ".theme-custom-picker",
     ) as HTMLElement;
 
     // 狀態追蹤
     let savedConfig: PlayerControlItemConfig[] = settings.normalize(undefined);
     let currentConfig: PlayerControlItemConfig[] =
       settings.normalize(undefined);
+    let savedColor: string = settings.normalizeThemeColor(undefined);
+    let currentColor: string = settings.normalizeThemeColor(undefined);
     let draggedItemId: PlayerControlId | null = null;
 
     function areConfigsEqual(
@@ -51,10 +65,66 @@ globalThis.PipCompanion.optionsPlayerControlsOptions = {
     }
 
     function updateUnsavedState() {
-      const isDirty = !areConfigsEqual(currentConfig, savedConfig);
+      const isConfigDirty = !areConfigsEqual(currentConfig, savedConfig);
+      const isColorDirty =
+        currentColor.toLowerCase() !== savedColor.toLowerCase();
+      const isDirty = isConfigDirty || isColorDirty;
       if (unsavedBadge) unsavedBadge.hidden = !isDirty;
       if (revertBtn) revertBtn.disabled = !isDirty;
-      if (saveBtn) saveBtn.classList.toggle("btn-dirty", isDirty);
+      if (saveBtn) {
+        saveBtn.hidden = !isDirty;
+        saveBtn.classList.toggle("btn-dirty", isDirty);
+      }
+    }
+
+    function applyThemeColor(color: string) {
+      if (mockPipWindow?.style)
+        mockPipWindow.style.setProperty("--pip-accent", color);
+      if (customColorInput) customColorInput.value = color;
+      if (customSwatch?.style) customSwatch.style.backgroundColor = color;
+
+      if (presetsContainer) {
+        const presetButtons =
+          presetsContainer.querySelectorAll(".theme-preset-btn");
+        let matchedPreset = false;
+        presetButtons.forEach((btn) => {
+          const btnColor = (btn as HTMLElement).dataset.color || "";
+          const isActive = btnColor.toLowerCase() === color.toLowerCase();
+          btn.classList.toggle("is-active", isActive);
+          btn.setAttribute("aria-checked", String(isActive));
+          if (isActive) matchedPreset = true;
+        });
+        if (customPickerWrap)
+          customPickerWrap.classList.toggle("is-active", !matchedPreset);
+      }
+    }
+
+    function renderThemePresets() {
+      if (!presetsContainer || presetsContainer.children.length > 0) return;
+      for (const preset of settings.PRESET_THEME_COLORS) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "theme-preset-btn";
+        btn.dataset.color = preset.color;
+        btn.style.setProperty("--preset-color", preset.color);
+        btn.title = preset.color;
+        btn.setAttribute("aria-label", preset.color);
+        btn.setAttribute("role", "radio");
+        btn.addEventListener("click", () => {
+          currentColor = settings.normalizeThemeColor(preset.color);
+          applyThemeColor(currentColor);
+          updateUnsavedState();
+        });
+        presetsContainer.append(btn);
+      }
+
+      if (customColorInput) {
+        customColorInput.addEventListener("input", () => {
+          currentColor = settings.normalizeThemeColor(customColorInput.value);
+          applyThemeColor(currentColor);
+          updateUnsavedState();
+        });
+      }
     }
 
     function cloneConfig(
@@ -340,10 +410,16 @@ globalThis.PipCompanion.optionsPlayerControlsOptions = {
     saveBtn?.addEventListener("click", async () => {
       try {
         saveBtn.disabled = true;
-        await storage.set({ [settings.STORAGE_KEY]: currentConfig });
+        await storage.set({
+          [settings.STORAGE_KEY]: currentConfig,
+          [settings.THEME_STORAGE_KEY]: currentColor,
+        });
         savedConfig = cloneConfig(currentConfig);
+        savedColor = currentColor;
         updateUnsavedState();
-        showStatus(t("optionsPlayerControlsSaved"));
+        showStatus(
+          t("optionsAppearanceSaved") || t("optionsPlayerControlsSaved"),
+        );
       } catch {
         showStatus(t("popupCannotSaveToggle"), true);
       } finally {
@@ -353,13 +429,17 @@ globalThis.PipCompanion.optionsPlayerControlsOptions = {
 
     resetBtn?.addEventListener("click", () => {
       currentConfig = cloneConfig(settings.DEFAULT_CONTROLS_CONFIG);
+      currentColor = settings.DEFAULT_THEME_COLOR;
       render();
+      applyThemeColor(currentColor);
       updateUnsavedState();
     });
 
     revertBtn?.addEventListener("click", () => {
       currentConfig = cloneConfig(savedConfig);
+      currentColor = savedColor;
       render();
+      applyThemeColor(currentColor);
       updateUnsavedState();
     });
 
@@ -386,13 +466,22 @@ globalThis.PipCompanion.optionsPlayerControlsOptions = {
     async function load() {
       try {
         const stored = await storage.get(settings.STORAGE_KEY);
+        const storedTheme = await storage.get(settings.THEME_STORAGE_KEY);
         savedConfig = settings.normalize(stored[settings.STORAGE_KEY]);
         currentConfig = cloneConfig(savedConfig);
+        savedColor = settings.normalizeThemeColor(
+          storedTheme[settings.THEME_STORAGE_KEY],
+        );
+        currentColor = savedColor;
       } catch {
         savedConfig = settings.normalize(undefined);
         currentConfig = cloneConfig(savedConfig);
+        savedColor = settings.normalizeThemeColor(undefined);
+        currentColor = savedColor;
       }
+      renderThemePresets();
       render();
+      applyThemeColor(currentColor);
     }
 
     function handleStorageChange(
@@ -406,10 +495,22 @@ globalThis.PipCompanion.optionsPlayerControlsOptions = {
       } else updateUnsavedState();
     }
 
+    function handleThemeStorageChange(
+      change: chrome.storage.StorageChange | undefined,
+    ) {
+      if (!change) return;
+      savedColor = settings.normalizeThemeColor(change.newValue);
+      if (currentColor.toLowerCase() === savedColor.toLowerCase()) {
+        currentColor = savedColor;
+        applyThemeColor(currentColor);
+      } else updateUnsavedState();
+    }
+
     return {
       load,
       render,
       handleStorageChange,
+      handleThemeStorageChange,
     };
   },
 };

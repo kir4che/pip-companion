@@ -197,6 +197,7 @@ interface PipUiHandle {
   refreshSubtitleTranslationLanguages(): void;
   refreshSubtitleTranslationServices(): void;
   applyControlsLayout?(config?: PlayerControlItemConfig[]): void;
+  applyThemeColor?(color?: string): void;
 }
 
 interface SubtitleTranslationPanelElements {
@@ -924,11 +925,20 @@ interface PlayerControlItemConfig {
   visible: boolean;
 }
 
+interface ThemeColorPreset {
+  id: string;
+  color: string;
+}
+
 interface PlayerControlsSettingsApi {
   STORAGE_KEY: string;
+  THEME_STORAGE_KEY: string;
+  DEFAULT_THEME_COLOR: string;
+  PRESET_THEME_COLORS: readonly ThemeColorPreset[];
   CONTROL_IDS: readonly PlayerControlId[];
   DEFAULT_CONTROLS_CONFIG: readonly PlayerControlItemConfig[];
   normalize(raw: unknown): PlayerControlItemConfig[];
+  normalizeThemeColor(raw: unknown): string;
   getItemName(id: PlayerControlId, t: (key: string) => string): string;
 }
 
@@ -936,6 +946,9 @@ interface PlayerControlsOptionsController {
   load(): Promise<void>;
   render(): void;
   handleStorageChange(change: chrome.storage.StorageChange | undefined): void;
+  handleThemeStorageChange?(
+    change: chrome.storage.StorageChange | undefined,
+  ): void;
 }
 
 interface PlayerControlsOptionsApi {
