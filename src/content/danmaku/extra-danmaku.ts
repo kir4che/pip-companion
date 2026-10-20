@@ -220,6 +220,12 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
     let youtubeSeekRevision = 0;
     let youtubeClockTimer: ReturnType<typeof setInterval> | null = null;
     let youtubeStartTimer: ReturnType<typeof setTimeout> | null = null;
+    const pendingLoadWaiters: Array<() => void> = [];
+
+    function notifyLoadWaiters(): void {
+      if (loadingSegments.size === 0)
+        while (pendingLoadWaiters.length > 0) pendingLoadWaiters.shift()?.();
+    }
 
     function clearYouTubeStartTimer(): void {
       if (youtubeStartTimer) clearTimeout(youtubeStartTimer);
@@ -531,6 +537,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         .catch((err: unknown) => handleLoadError(err, requestGeneration))
         .finally(() => {
           if (requestGeneration === generation) loadingSegments.delete(1);
+          notifyLoadWaiters();
         });
     }
 
@@ -600,9 +607,11 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         })
         .catch((err: unknown) => handleLoadError(err, requestGeneration))
         .finally(() => {
-          if (requestGeneration !== generation) return;
-          for (let segment = requestStart; segment <= requestEnd; segment++)
-            loadingSegments.delete(segment);
+          if (requestGeneration === generation) {
+            for (let segment = requestStart; segment <= requestEnd; segment++)
+              loadingSegments.delete(segment);
+          }
+          notifyLoadWaiters();
         });
     }
 
@@ -948,11 +957,37 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
       },
     );
 
+    async function loadAllMessages(): Promise<ExtraBilibiliMessage[]> {
+      if (!source.enabled || !identity) return messages;
+      if (identity.kind === "bahamut") {
+        if (loadingSegments.size === 0 && messages.length === 0)
+          requestBahamutDanmaku(identity);
+        if (loadingSegments.size > 0)
+          await new Promise<void>((resolve) =>
+            pendingLoadWaiters.push(resolve),
+          );
+        return messages;
+      }
+      if (identity.kind === "bilibili") {
+        if (loadingSegments.size > 0)
+          await new Promise<void>((resolve) =>
+            pendingLoadWaiters.push(resolve),
+          );
+        return messages;
+      }
+      return messages;
+    }
+
     return {
       checkAndBind,
       getSource,
       setSource,
       getMessages: () => messages,
+      loadAllMessages,
+      supportsHeatPeaks: () =>
+        source.enabled &&
+        available &&
+        (identity?.kind === "bilibili" || identity?.kind === "bahamut"),
     };
   }
 

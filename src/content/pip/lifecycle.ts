@@ -588,6 +588,9 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         loadAllDanmakuMessages: () =>
           globalThis.PipCompanion.ContentDanmakuSearch?.loadAllMessages?.() ||
           Promise.resolve([]),
+        supportsDanmakuHeatPeaks: () =>
+          globalThis.PipCompanion.ContentDanmakuSearch?.supportsHeatPeaks?.() ??
+          false,
         seekDanmakuJump: (seconds: number) =>
           globalThis.PipCompanion.ContentDanmakuJump?.seek?.(seconds),
         matchesCommentsShortcut: (e) =>

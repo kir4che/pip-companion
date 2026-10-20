@@ -16,6 +16,7 @@ globalThis.PipCompanion.danmakuSearchPanel = {
       loadAllMessages?(): Promise<DanmakuData[]>;
       getDuration?(): number;
       shortcutHint?: string;
+      supportsHeatPeaks?: boolean | (() => boolean);
     },
   ): DanmakuSearchPanelElements {
     const formatTime =
@@ -32,6 +33,13 @@ globalThis.PipCompanion.danmakuSearchPanel = {
     let activeResultIndex = -1;
     let cachedPeaks: DanmakuHeatPeak[] | null = null;
     let cachedPeaksMessageCount = -1;
+    let loadStatus: "idle" | "loading" | "error" | "success" = "idle";
+    const isHeatPeaksSupported = (): boolean => {
+      if (typeof options.supportsHeatPeaks === "function") {
+        return options.supportsHeatPeaks();
+      }
+      return options.supportsHeatPeaks !== false;
+    };
 
     const toggle = options.makeButton(
       "danmaku-search-toggle",
@@ -99,7 +107,11 @@ globalThis.PipCompanion.danmakuSearchPanel = {
     const heatList = doc.createElement("div");
     heatList.className = "danmaku-heat-chips";
 
-    heatSection.append(heatTitle, heatList);
+    const heatStatus = doc.createElement("div");
+    heatStatus.className = "danmaku-heat-status";
+    heatStatus.hidden = true;
+
+    heatSection.append(heatTitle, heatList, heatStatus);
 
     const resultsSection = doc.createElement("div");
     resultsSection.className = "danmaku-results-section";
@@ -124,6 +136,10 @@ globalThis.PipCompanion.danmakuSearchPanel = {
     panel.append(header, heatSection, resultsSection);
 
     function renderHeatPeaks(): void {
+      if (!isHeatPeaksSupported()) {
+        heatSection.hidden = true;
+        return;
+      }
       heatList.replaceChildren();
       const messages = options.getMessages?.() || currentMessages;
       const duration = options.getDuration?.() ?? currentDuration;
@@ -141,12 +157,36 @@ globalThis.PipCompanion.danmakuSearchPanel = {
         cachedPeaksMessageCount = messages.length;
       }
 
-      if (peaks.length === 0) {
-        heatSection.hidden = true;
+      heatSection.hidden = false;
+
+      function showHeatStatus(key: string): void {
+        heatList.hidden = true;
+        heatStatus.hidden = false;
+        heatStatus.textContent = t(key);
+      }
+
+      if (loadStatus === "loading" && peaks.length === 0) {
+        showHeatStatus("pipDanmakuSearchLoading");
         return;
       }
 
-      heatSection.hidden = false;
+      if (loadStatus === "error" && peaks.length === 0) {
+        showHeatStatus("pipDanmakuSearchFailed");
+        return;
+      }
+
+      if (messages.length === 0) {
+        showHeatStatus("pipDanmakuSearchNoMessages");
+        return;
+      }
+
+      if (peaks.length === 0) {
+        showHeatStatus("pipDanmakuSearchNoPeaks");
+        return;
+      }
+
+      heatStatus.hidden = true;
+      heatList.hidden = false;
       peaks.forEach((peak, index) => {
         const chip = doc.createElement("button");
         chip.type = "button";
@@ -188,13 +228,23 @@ globalThis.PipCompanion.danmakuSearchPanel = {
       clearButton.hidden = trimmed.length === 0;
 
       if (!trimmed) {
-        const hasPeaks = (cachedPeaks?.length ?? 0) > 0;
-        heatSection.hidden = !hasPeaks;
-        resultsSection.hidden = true;
-        resultsCount.hidden = true;
-        resultsList.hidden = true;
-        emptyState.hidden = true;
-        currentResults = [];
+        if (isHeatPeaksSupported()) {
+          heatSection.hidden = false;
+          resultsSection.hidden = true;
+          resultsCount.hidden = true;
+          resultsList.hidden = true;
+          emptyState.hidden = true;
+          currentResults = [];
+          renderHeatPeaks();
+        } else {
+          heatSection.hidden = true;
+          resultsSection.hidden = false;
+          resultsCount.hidden = true;
+          resultsList.hidden = true;
+          emptyState.hidden = false;
+          emptyState.textContent = t("pipDanmakuSearchHint");
+          currentResults = [];
+        }
         return;
       }
 
@@ -211,7 +261,13 @@ globalThis.PipCompanion.danmakuSearchPanel = {
         resultsCount.hidden = true;
         resultsList.hidden = true;
         emptyState.hidden = false;
-        emptyState.textContent = t("pipDanmakuSearchEmpty");
+        if (loadStatus === "loading")
+          emptyState.textContent = t("pipDanmakuSearchLoading");
+        else if (loadStatus === "error" && messages.length === 0)
+          emptyState.textContent = t("pipDanmakuSearchFailed");
+        else if (messages.length === 0)
+          emptyState.textContent = t("pipDanmakuSearchNoMessages");
+        else emptyState.textContent = t("pipDanmakuSearchEmpty");
         return;
       }
 
@@ -255,9 +311,7 @@ globalThis.PipCompanion.danmakuSearchPanel = {
           mark.textContent = matched;
           textSpan.append(mark);
           if (after) textSpan.append(doc.createTextNode(after));
-        } else {
-          textSpan.textContent = originalText;
-        }
+        } else textSpan.textContent = originalText;
 
         row.append(timeBadge, textSpan);
 
@@ -336,21 +390,42 @@ globalThis.PipCompanion.danmakuSearchPanel = {
       }
     });
 
+    function refreshView(): void {
+      if (!input.value.trim()) {
+        if (isHeatPeaksSupported()) renderHeatPeaks();
+        else renderResults("");
+      } else renderResults(input.value);
+    }
+
     function open(): void {
       panel.hidden = false;
       toggle.setAttribute("aria-expanded", "true");
-      void options
-        .loadAllMessages?.()
-        .then((msgs) => {
-          if (Array.isArray(msgs) && msgs.length > 0) {
-            currentMessages = msgs;
-            if (!input.value.trim()) renderHeatPeaks();
-            else renderResults(input.value);
-          }
-        })
-        .catch(() => {});
-      renderHeatPeaks();
-      renderResults(input.value);
+      const loadPromise = options.loadAllMessages?.();
+      if (loadPromise) {
+        loadStatus = "loading";
+        if (isHeatPeaksSupported()) renderHeatPeaks();
+        else heatSection.hidden = true;
+        renderResults(input.value);
+        void loadPromise
+          .then((msgs) => {
+            loadStatus = "success";
+            if (Array.isArray(msgs)) currentMessages = msgs;
+            refreshView();
+          })
+          .catch(() => {
+            loadStatus = "error";
+            refreshView();
+          });
+      } else {
+        if (loadStatus !== "error")
+          loadStatus =
+            (options.getMessages?.() || currentMessages).length > 0
+              ? "success"
+              : "idle";
+        if (isHeatPeaksSupported()) renderHeatPeaks();
+        else heatSection.hidden = true;
+        renderResults(input.value);
+      }
       input.focus();
       input.select();
     }
@@ -384,11 +459,10 @@ globalThis.PipCompanion.danmakuSearchPanel = {
         cachedPeaksMessageCount = -1;
       }
       currentMessages = messages;
+      if (messages.length > 0 && loadStatus !== "loading")
+        loadStatus = "success";
       if (typeof duration === "number") currentDuration = duration;
-      if (!panel.hidden) {
-        if (!input.value.trim()) renderHeatPeaks();
-        else renderResults(input.value);
-      }
+      if (!panel.hidden) refreshView();
     }
 
     toggle.addEventListener("click", (e) => {
@@ -404,6 +478,7 @@ globalThis.PipCompanion.danmakuSearchPanel = {
       closeButton,
       heatSection,
       heatList,
+      heatStatus,
       resultsSection,
       resultsCount,
       resultsList,

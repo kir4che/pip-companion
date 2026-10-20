@@ -413,6 +413,18 @@
   "pipDanmakuHeatPeaks": {
     "message": "Top 3 Danmaku Highlights"
   },
+  "pipDanmakuSearchLoading": {
+    "message": "Loading danmaku..."
+  },
+  "pipDanmakuSearchFailed": {
+    "message": "Failed to load danmaku"
+  },
+  "pipDanmakuSearchNoMessages": {
+    "message": "No danmaku available yet"
+  },
+  "pipDanmakuSearchNoPeaks": {
+    "message": "No highlights available yet"
+  },
   "pipDanmakuSearchResultsCount": {
     "message": "Found $1 danmaku"
   },

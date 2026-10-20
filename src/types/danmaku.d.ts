@@ -142,6 +142,8 @@ interface ContentExtraBilibiliDanmakuApi {
     };
     setSource(value: unknown): void;
     getMessages?(): DanmakuData[];
+    loadAllMessages?(): Promise<DanmakuData[]>;
+    supportsHeatPeaks?(): boolean;
   };
 }
 
@@ -232,6 +234,7 @@ interface DanmakuSearchPanelElements {
   closeButton: HTMLButtonElement;
   heatSection: HTMLElement;
   heatList: HTMLElement;
+  heatStatus: HTMLElement;
   resultsSection: HTMLElement;
   resultsCount: HTMLElement;
   resultsList: HTMLElement;
@@ -259,6 +262,7 @@ interface DanmakuSearchPanelApi {
       loadAllMessages?: (() => Promise<DanmakuData[]>) | undefined;
       getDuration?: (() => number | undefined) | undefined;
       shortcutHint?: string | undefined;
+      supportsHeatPeaks?: boolean | (() => boolean) | undefined;
     },
   ): DanmakuSearchPanelElements;
 }

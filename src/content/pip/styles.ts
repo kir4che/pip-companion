@@ -395,6 +395,12 @@ globalThis.PipCompanion.PipStyles = {
         flex-direction: column;
         gap: 4px;
       }
+      .danmaku-heat-status {
+        padding: 8px 4px;
+        text-align: center;
+        color: #888;
+        font-size: 11px;
+      }
       .danmaku-heat-chip {
         display: flex;
         align-items: center;

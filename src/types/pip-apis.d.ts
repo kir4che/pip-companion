@@ -150,6 +150,7 @@ interface PipUiActions {
   formatTime(seconds: number): string;
   getDanmakuMessages?(): DanmakuData[];
   loadAllDanmakuMessages?(): Promise<DanmakuData[]>;
+  supportsDanmakuHeatPeaks?(): boolean;
   seekDanmakuJump?(seconds: number): void;
   getStoryboardFrame?(seconds: number): StoryboardFrame | null;
   resize(
@@ -1077,6 +1078,7 @@ interface PipCompanionGlobal {
   ContentDanmakuSearch: {
     getMessages(): DanmakuData[];
     loadAllMessages(): Promise<DanmakuData[]>;
+    supportsHeatPeaks?(): boolean;
   };
   ContentYouTubeDanmaku: ContentYouTubeDanmakuApi;
   bilibiliDanmakuConfig: BilibiliDanmakuConfigApi;

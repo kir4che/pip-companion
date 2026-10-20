@@ -457,6 +457,12 @@ async function loadBahamutDanmakuMessages(): Promise<DanmakuData[]> {
   return [];
 }
 
+function mergeExtraDanmakuMessages(base: DanmakuData[]): DanmakuData[] {
+  const extra = extraBilibiliDanmakuController.getMessages?.() || [];
+  if (extra.length === 0) return base;
+  return base.length > 0 ? base.concat(extra) : extra;
+}
+
 function getAllDanmakuMessages(): DanmakuData[] {
   let list: DanmakuData[] = [];
   if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE)
@@ -466,29 +472,44 @@ function getAllDanmakuMessages(): DanmakuData[] {
     list = youtubeDanmakuController.getMessages?.() || [];
   else if (DANMAKU_IS_TWITCH)
     list = danmakuSourcesController.getMessages?.() || [];
-  else list = extraBilibiliDanmakuController.getMessages?.() || [];
-  return list.filter((m) => !isDanmakuBlocked(m.text));
+
+  return mergeExtraDanmakuMessages(list).filter(
+    (m) => !isDanmakuBlocked(m.text),
+  );
 }
 
 async function loadAllDanmakuMessages(): Promise<DanmakuData[]> {
   let list: DanmakuData[] = [];
-  if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE) {
+  if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE)
     list =
       (await bilibiliDanmakuController.loadAllMessages?.()) ||
       bilibiliDanmakuController.getMessages?.() ||
       [];
-  } else if (DANMAKU_IS_BAHAMUT) list = await loadBahamutDanmakuMessages();
+  else if (DANMAKU_IS_BAHAMUT) list = await loadBahamutDanmakuMessages();
   else if (DANMAKU_IS_YOUTUBE)
     list = youtubeDanmakuController.getMessages?.() || [];
   else if (DANMAKU_IS_TWITCH)
     list = danmakuSourcesController.getMessages?.() || [];
-  else list = extraBilibiliDanmakuController.getMessages?.() || [];
+
+  const extra =
+    (await extraBilibiliDanmakuController.loadAllMessages?.()) ||
+    extraBilibiliDanmakuController.getMessages?.() ||
+    [];
+  if (extra.length > 0) list = list.length > 0 ? list.concat(extra) : extra;
+
   return list.filter((m) => !isDanmakuBlocked(m.text));
+}
+
+function supportsDanmakuHeatPeaks(): boolean {
+  if ((DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE) || DANMAKU_IS_BAHAMUT)
+    return true;
+  return extraBilibiliDanmakuController.supportsHeatPeaks?.() ?? false;
 }
 
 globalThis.PipCompanion.ContentDanmakuSearch = {
   getMessages: getAllDanmakuMessages,
   loadAllMessages: loadAllDanmakuMessages,
+  supportsHeatPeaks: supportsDanmakuHeatPeaks,
 };
 
 if (DANMAKU_IS_YOUTUBE) {

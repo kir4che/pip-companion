@@ -413,6 +413,18 @@
   "pipDanmakuHeatPeaks": {
     "message": "熱門彈幕 Top 3"
   },
+  "pipDanmakuSearchLoading": {
+    "message": "正在載入彈幕..."
+  },
+  "pipDanmakuSearchFailed": {
+    "message": "彈幕載入失敗"
+  },
+  "pipDanmakuSearchNoMessages": {
+    "message": "尚未取得彈幕資料"
+  },
+  "pipDanmakuSearchNoPeaks": {
+    "message": "暫無熱門彈幕"
+  },
   "pipDanmakuSearchResultsCount": {
     "message": "找到 $1 則彈幕"
   },

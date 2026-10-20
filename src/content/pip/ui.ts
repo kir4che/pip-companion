@@ -99,6 +99,7 @@ globalThis.PipCompanion.PipUI = (() => {
         },
         getMessages: actions.getDanmakuMessages,
         loadAllMessages: actions.loadAllDanmakuMessages,
+        supportsHeatPeaks: () => actions.supportsDanmakuHeatPeaks?.() ?? false,
         getDuration: () => actions.getVideo()?.duration,
         shortcutHint: globalThis.PipCompanion.util.formatShortcut(
           actions.getShortcut("pipDanmakuSearchShortcut"),
