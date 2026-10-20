@@ -30,6 +30,22 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     img_y_size: number;
   }
 
+  interface BangumiEpisodeInfo {
+    aid: string;
+    bvid: string;
+    cid: string;
+    epId: string;
+  }
+
+  interface BilibiliTarget {
+    type: "ugc" | "bangumi";
+    key: string;
+    bvid?: string;
+    page?: number;
+    epId?: string;
+    seasonId?: string;
+  }
+
   let cachedYtVideoId = "";
   let cachedYtStoryboard: ParsedYouTubeStoryboard | null = null;
   let ytFetchPending = false;
@@ -37,6 +53,8 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
   let cachedBilibiliKey = "";
   let cachedBilibiliData: BilibiliVideoshotData | null = null;
   const bilibiliFetchPending = new Set<string>();
+  const cachedBangumiEpisodes = new Map<string, BangumiEpisodeInfo>();
+  const cachedBangumiSeasons = new Map<string, string[]>();
 
   let cachedBahaData: BahaStoryboardData | null = null;
 
@@ -277,20 +295,107 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     };
   }
 
-  function getBilibiliBvid(): string | null {
-    return (
-      globalThis.PipCompanion.site.parseBilibiliVideoPath(location.pathname)
-        ?.bvid || null
+  function getBilibiliActivePageIndex(): number | null {
+    const multiPageItems = document.querySelectorAll<HTMLElement>(
+      "#multi_page .cur-list li, .multi-page .cur-list li, .cur-list li",
     );
+    if (multiPageItems.length > 1) {
+      const i = Array.from(multiPageItems).findIndex(
+        (el) => el.classList.contains("on") || el.classList.contains("active"),
+      );
+      if (i >= 0) return i + 1;
+    }
+    return null;
   }
 
   function getBilibiliPage(): number {
-    const page = Number(new URLSearchParams(location.search).get("p") || 1);
+    const urlParams = new URLSearchParams(location.search);
+    const hasExplicit = urlParams.has("p");
+    const page = Number(urlParams.get("p") || 1);
+    const domPage = getBilibiliActivePageIndex();
+    if (hasExplicit && Number.isSafeInteger(page) && page > 0) return page;
+    if (domPage !== null && domPage > 0) return domPage;
     return Number.isSafeInteger(page) && page > 0 ? page : 1;
   }
 
-  function getBilibiliKey(bvid: string): string {
-    return `${bvid}:p${getBilibiliPage()}`;
+  function getBilibiliTarget(): BilibiliTarget | null {
+    if (/^\/bangumi\/play\/(?:ss|ep)\d+/i.test(location.pathname)) {
+      const epMatch = location.pathname.match(/\/bangumi\/play\/ep(\d+)/i);
+      let epId = epMatch?.[1] || "";
+      const ssMatch = location.pathname.match(/\/bangumi\/play\/ss(\d+)/i);
+      const seasonId = ssMatch?.[1] || "";
+
+      if (!epId) {
+        const activeEp = document.querySelector<HTMLElement>(
+          ".ep-item.on, .ep-item.active, .ep-sub-list-item.on, .ep-sub-list-item.active, .cursor-pointer.ep-item.on",
+        );
+        epId = activeEp?.dataset.epId || activeEp?.dataset.id || "";
+      }
+
+      if (!epId && seasonId && cachedBangumiSeasons.has(seasonId)) {
+        const epIds = cachedBangumiSeasons.get(seasonId);
+        const firstEpId = epIds?.[0];
+        if (firstEpId) epId = firstEpId;
+      }
+
+      if (epId) {
+        return {
+          type: "bangumi",
+          key: `ep:${epId}`,
+          epId,
+          seasonId,
+        };
+      }
+      if (seasonId) {
+        return {
+          type: "bangumi",
+          key: `ss:${seasonId}`,
+          seasonId,
+        };
+      }
+      return null;
+    }
+
+    let video = globalThis.PipCompanion.site.parseBilibiliVideoPath(
+      location.pathname,
+    );
+    if (!video && location.pathname.startsWith("/list/")) {
+      const listBvid = new URL(location.href).searchParams.get("bvid");
+      if (listBvid && /^BV[\w]{10}$/i.test(listBvid)) {
+        video = { videoId: listBvid, bvid: listBvid, avid: "" };
+      }
+    }
+    if (!video) {
+      const activePodItem = document.querySelector<HTMLElement>(
+        ".video-pod__item.active, .video-pod__item[aria-current='true']",
+      );
+      const podBvid = activePodItem?.dataset.key;
+      if (podBvid && /^BV[\w]{10}$/i.test(podBvid)) {
+        video = { videoId: podBvid, bvid: podBvid, avid: "" };
+      }
+    }
+
+    if (video?.bvid) {
+      const page = getBilibiliPage();
+      return {
+        type: "ugc",
+        key: `${video.bvid}:p${page}`,
+        bvid: video.bvid,
+        page,
+      };
+    }
+    return null;
+  }
+
+  function revokeBilibiliBlobs(data: BilibiliVideoshotData | null): void {
+    if (!data?.image) return;
+    for (const url of data.image) {
+      if (typeof url === "string" && url.startsWith("blob:")) {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+      }
+    }
   }
 
   async function resolveBilibiliImagesToBlobs(
@@ -313,53 +418,154 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     );
   }
 
-  function loadBilibiliVideoshot(bvid: string) {
-    const page = getBilibiliPage();
-    const key = `${bvid}:p${page}`;
+  async function fetchBangumiEpisodeInfo(
+    epId?: string,
+    seasonId?: string,
+  ): Promise<BangumiEpisodeInfo | null> {
+    if (epId && cachedBangumiEpisodes.has(epId)) {
+      return cachedBangumiEpisodes.get(epId)!;
+    }
+    const param = epId
+      ? `ep_id=${encodeURIComponent(epId)}`
+      : `season_id=${encodeURIComponent(seasonId || "")}`;
+    if (!epId && !seasonId) return null;
+
+    try {
+      const res = await fetch(
+        `https://api.bilibili.com/pgc/view/web/season?${param}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) return null;
+      const json: unknown = await res.json();
+      if (
+        !globalThis.PipCompanion.util.isRecord(json) ||
+        json.code !== 0 ||
+        !globalThis.PipCompanion.util.isRecord(json.result)
+      )
+        return null;
+
+      const result = json.result;
+      const episodeLists: unknown[] = [];
+      if (Array.isArray(result.episodes)) episodeLists.push(...result.episodes);
+      if (Array.isArray(result.section)) {
+        for (const sec of result.section) {
+          if (
+            globalThis.PipCompanion.util.isRecord(sec) &&
+            Array.isArray(sec.episodes)
+          ) {
+            episodeLists.push(...sec.episodes);
+          }
+        }
+      }
+
+      const currentSeasonId = String(result.season_id ?? seasonId ?? "");
+      const seasonEpIds: string[] = [];
+
+      for (const item of episodeLists) {
+        if (!globalThis.PipCompanion.util.isRecord(item)) continue;
+        const itemId = String(item.id ?? item.ep_id ?? "");
+        const cid = String(item.cid ?? "");
+        const aid = String(item.aid ?? "");
+        const bvid = typeof item.bvid === "string" ? item.bvid : "";
+        if (/^\d+$/.test(cid) && itemId) {
+          const info: BangumiEpisodeInfo = { aid, bvid, cid, epId: itemId };
+          cachedBangumiEpisodes.set(itemId, info);
+          seasonEpIds.push(itemId);
+        }
+      }
+
+      if (currentSeasonId && seasonEpIds.length > 0) {
+        cachedBangumiSeasons.set(currentSeasonId, seasonEpIds);
+      }
+
+      if (epId && cachedBangumiEpisodes.has(epId)) {
+        return cachedBangumiEpisodes.get(epId)!;
+      }
+      if (!epId && seasonEpIds.length > 0) {
+        const firstEpId = seasonEpIds[0];
+        return firstEpId ? cachedBangumiEpisodes.get(firstEpId) || null : null;
+      }
+    } catch {
+      return null;
+    }
+    return null;
+  }
+
+  function loadBilibiliVideoshot(target: BilibiliTarget) {
+    const key = target.key;
     if (cachedBilibiliKey === key || bilibiliFetchPending.has(key)) return;
     bilibiliFetchPending.add(key);
 
-    const currentKey = () => {
-      const currentBvid = getBilibiliBvid();
-      return currentBvid ? getBilibiliKey(currentBvid) : "";
-    };
-    const query = `bvid=${encodeURIComponent(bvid)}`;
+    const currentKey = () => getBilibiliTarget()?.key || "";
+    let effectiveKey = key;
 
-    fetch(`https://api.bilibili.com/x/player/pagelist?${query}`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((json) => {
-        if (json?.code !== 0 || !Array.isArray(json.data)) return null;
-        const pageData = json.data.find(
-          (item: unknown): item is { page: number; cid: number } =>
-            globalThis.PipCompanion.util.isRecord(item) &&
-            item.page === page &&
-            typeof item.cid === "number" &&
-            Number.isSafeInteger(item.cid) &&
-            item.cid > 0,
-        );
-        return pageData?.cid
-          ? fetch(
-              `https://api.bilibili.com/x/player/videoshot?${query}&cid=${pageData.cid}&index=1`,
-              { credentials: "include" },
-            ).then((res) => res.json())
-          : null;
-      })
+    const fetchVideoshotPromise =
+      target.type === "bangumi"
+        ? fetchBangumiEpisodeInfo(target.epId, target.seasonId).then(
+            (epInfo) => {
+              if (!epInfo || !epInfo.cid) return null;
+              effectiveKey = `ep:${epInfo.epId}`;
+              const param = epInfo.bvid
+                ? `bvid=${encodeURIComponent(epInfo.bvid)}`
+                : `aid=${encodeURIComponent(epInfo.aid)}`;
+              return fetch(
+                `https://api.bilibili.com/x/player/videoshot?${param}&cid=${epInfo.cid}&index=1`,
+                { credentials: "include" },
+              ).then((res) => res.json());
+            },
+          )
+        : (() => {
+            const query = `bvid=${encodeURIComponent(target.bvid!)}`;
+            return fetch(
+              `https://api.bilibili.com/x/player/pagelist?${query}`,
+              {
+                credentials: "include",
+              },
+            )
+              .then((res) => res.json())
+              .then((json) => {
+                if (json?.code !== 0 || !Array.isArray(json.data)) return null;
+                const pageData = json.data.find(
+                  (item: unknown): item is { page: number; cid: number } =>
+                    globalThis.PipCompanion.util.isRecord(item) &&
+                    item.page === target.page &&
+                    typeof item.cid === "number" &&
+                    Number.isSafeInteger(item.cid) &&
+                    item.cid > 0,
+                );
+                return pageData?.cid
+                  ? fetch(
+                      `https://api.bilibili.com/x/player/videoshot?${query}&cid=${pageData.cid}&index=1`,
+                      { credentials: "include" },
+                    ).then((res) => res.json())
+                  : null;
+              });
+          })();
+
+    const isKeyCurrent = () => {
+      const cur = currentKey();
+      return cur === key || cur === effectiveKey;
+    };
+
+    fetchVideoshotPromise
       .then(async (json) => {
         if (
           !json ||
           json.code !== 0 ||
           !json.data ||
           !Array.isArray(json.data.image) ||
-          currentKey() !== key
+          !isKeyCurrent()
         )
           return;
 
         const data = json.data as BilibiliVideoshotData;
         data.image = await resolveBilibiliImagesToBlobs(data.image);
-        if (currentKey() !== key) return;
-        cachedBilibiliKey = key;
+        if (!isKeyCurrent()) {
+          revokeBilibiliBlobs(data);
+          return;
+        }
+        revokeBilibiliBlobs(cachedBilibiliData);
+        cachedBilibiliKey = currentKey() || effectiveKey;
         cachedBilibiliData = data;
       })
       .catch(() => {})
@@ -679,12 +885,9 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     }
 
     if (platform === "bilibili") {
-      const bvid = getBilibiliBvid();
-      if (
-        bvid &&
-        (cachedBilibiliKey !== getBilibiliKey(bvid) || !cachedBilibiliData)
-      )
-        loadBilibiliVideoshot(bvid);
+      const target = getBilibiliTarget();
+      if (target && (cachedBilibiliKey !== target.key || !cachedBilibiliData))
+        loadBilibiliVideoshot(target);
       return;
     }
 
@@ -721,12 +924,11 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
     }
 
     if (platform === "bilibili") {
-      const bvid = getBilibiliBvid();
-      if (!bvid) return null;
-      const key = getBilibiliKey(bvid);
-      if (cachedBilibiliKey !== key || !cachedBilibiliData)
-        loadBilibiliVideoshot(bvid);
-      if (cachedBilibiliData && cachedBilibiliKey === key)
+      const target = getBilibiliTarget();
+      if (!target) return null;
+      if (cachedBilibiliKey !== target.key || !cachedBilibiliData)
+        loadBilibiliVideoshot(target);
+      if (cachedBilibiliData && cachedBilibiliKey === target.key)
         return getBilibiliFrame(cachedBilibiliData, seconds, video.duration);
       return null;
     }
@@ -748,6 +950,7 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
       );
     cachedYtVideoId = "";
     cachedYtStoryboard = null;
+    revokeBilibiliBlobs(cachedBilibiliData);
     cachedBilibiliKey = "";
     cachedBilibiliData = null;
     cachedBahaData = null;
@@ -755,6 +958,19 @@ globalThis.PipCompanion.ContentStoryboard = (() => {
 
   window.addEventListener("popstate", reset, { passive: true });
   window.addEventListener("hashchange", reset, { passive: true });
+  window.addEventListener(
+    "message",
+    (e) => {
+      if (
+        e.source === window &&
+        e.origin === location.origin &&
+        e.data?.type === "PIP_BILI_NAVIGATE"
+      ) {
+        reset();
+      }
+    },
+    { passive: true },
+  );
 
   return {
     getFrame,
