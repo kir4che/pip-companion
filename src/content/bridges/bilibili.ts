@@ -178,4 +178,21 @@ interface BilibiliPlaylistComponent {
     },
     { passive: true },
   );
+  const notifyNavigation = () => {
+    window.postMessage({ type: "PIP_BILI_NAVIGATE" }, location.origin);
+  };
+  const originalPushState = history.pushState;
+  history.pushState = function (...args) {
+    const result = originalPushState.apply(this, args);
+    notifyNavigation();
+    return result;
+  };
+  const originalReplaceState = history.replaceState;
+  history.replaceState = function (...args) {
+    const result = originalReplaceState.apply(this, args);
+    notifyNavigation();
+    return result;
+  };
+  window.addEventListener("popstate", notifyNavigation, { passive: true });
+  window.addEventListener("hashchange", notifyNavigation, { passive: true });
 })();

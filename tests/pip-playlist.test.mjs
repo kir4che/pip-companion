@@ -158,6 +158,41 @@ function setupBahamut(currentSn) {
   return { playlist, links, clicked };
 }
 
+function setupBilibiliBangumi(currentEpId) {
+  const clicked = [];
+  const items = ["476877", "476878"].map((epId, index) => ({
+    dataset: { epId },
+    textContent: `第${index + 1}話`,
+    classList: { contains: () => false },
+    getAttribute: () => null,
+    contains: () => false,
+    querySelectorAll: () => [],
+    querySelector: () => null,
+    click() {
+      clicked.push(epId);
+    },
+  }));
+  const playlist = loadPlaylist({
+    site: {
+      isYouTubeHost: () => false,
+      isBahamutHost: () => false,
+      isBilibiliHost: () => true,
+      isBilibiliLiveHost: () => false,
+      parseBilibiliVideoPath: () => null,
+    },
+    location: {
+      href: `https://www.bilibili.com/bangumi/play/ep${currentEpId ?? ""}`,
+      origin: "https://www.bilibili.com",
+      hostname: "www.bilibili.com",
+      pathname: `/bangumi/play/ep${currentEpId ?? ""}`,
+      search: "",
+    },
+    querySelector: () => null,
+    querySelectorAll: () => items,
+  });
+  return Object.assign(playlist, { clicked });
+}
+
 function setupBilibili(currentBvid) {
   const items = ["BV1", "BV2"].map((bvid, index) => ({
     dataset: { key: bvid },
@@ -186,7 +221,7 @@ function setupBilibili(currentBvid) {
     querySelector: (selector) => (selector === ".video-pod__list" ? {} : null),
     querySelectorAll: (selector) =>
       selector ===
-      ".video-pod__item, .cur-list li, .multi-page li, .multi-page-list li, .ep-list li, .episode-list li, .season-list li"
+      ".video-pod__item, .cur-list li, .multi-page li, .multi-page-list li, .ep-list li, .episode-list li, .season-list li, .ep-item, .ep-sub-list-item, .section-ep-item, .bpx-player-ctrl-eplist-item"
         ? items
         : [],
   });
@@ -226,6 +261,12 @@ test("uses known current indices for Bahamut and Bilibili next state", () => {
   assert.equal(setupBilibili("BV1").getNextItemState(), "available");
   assert.equal(setupBilibili("BV2").getNextItemState(), "unavailable");
   assert.equal(setupBilibili("missing").getNextItemState(), "unknown");
+
+  const bangumiFirst = setupBilibiliBangumi("476877");
+  assert.equal(bangumiFirst.hasPlaylist(), true);
+  assert.equal(bangumiFirst.getNextItemState(), "available");
+  const bangumiLast = setupBilibiliBangumi("476878");
+  assert.equal(bangumiLast.getNextItemState(), "unavailable");
 });
 
 test("Bahamut selection preserves playback state before following an episode link", () => {
@@ -238,6 +279,16 @@ test("Bahamut selection preserves playback state before following an episode lin
 
   assert.equal(prepared, true);
   assert.deepEqual(clicked, [links[1].href]);
+});
+
+test("Bilibili Bangumi selection clicks the target element without hard reload", () => {
+  const bangumi = setupBilibiliBangumi("476877");
+  let prepared = false;
+  bangumi.selectPlaylistItem(1, () => {
+    prepared = true;
+  });
+  assert.equal(prepared, true);
+  assert.deepEqual(bangumi.clicked, ["476878"]);
 });
 
 test("next playback selects the following generic episode", () => {

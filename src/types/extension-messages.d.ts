@@ -114,7 +114,11 @@ type ExtensionMessage =
       page: number;
       startSegment?: number;
       endSegment?: number;
-    } & ({ bvid: string; avid?: never } | { avid: string; bvid?: never }))
+    } & (
+      | { bvid: string; avid?: never; epId?: never }
+      | { avid: string; bvid?: never; epId?: never }
+      | { epId: string; bvid?: never; avid?: never }
+    ))
   | { type: "GET_BAHAMUT_DANMAKU"; videoSn: string }
   | {
       type: "START_EXTRA_TWITCH_CHAT";

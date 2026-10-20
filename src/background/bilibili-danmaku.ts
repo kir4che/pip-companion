@@ -30,10 +30,11 @@ function isBilibiliDanmakuRequest(
     (value.endSegment !== undefined && !Number.isSafeInteger(value.endSegment))
   )
     return false;
-  return (
-    (typeof value.bvid === "string" && value.avid === undefined) ||
-    (typeof value.avid === "string" && value.bvid === undefined)
-  );
+  const count =
+    (typeof value.bvid === "string" ? 1 : 0) +
+    (typeof value.avid === "string" ? 1 : 0) +
+    (typeof value.epId === "string" ? 1 : 0);
+  return count === 1;
 }
 
 let cachedLegacyDanmaku: {
@@ -293,6 +294,65 @@ async function fetchBilibiliPageMetadata(
   )
     throw new Error("Bilibili video page metadata was not found");
   return { cid, aid, duration };
+}
+
+const cachedBangumiEpisodes = new Map<
+  string,
+  { aid: string; cid: string; duration: number }
+>();
+
+async function fetchBilibiliBangumiMetadata(
+  epId: string,
+): Promise<{ cid: string; aid: string; duration: number }> {
+  const cached = cachedBangumiEpisodes.get(epId);
+  if (cached) return cached;
+
+  const url = new URL("https://api.bilibili.com/pgc/view/web/season");
+  url.searchParams.set("ep_id", epId);
+  const response = await fetchWithRetry(
+    url,
+    { credentials: "include" },
+    "Bangumi episode metadata",
+  );
+  if (!response.ok)
+    throw new Error(`Bangumi episode metadata HTTP ${response.status}`);
+
+  const json: unknown = await response.json();
+  if (!isRecord(json) || json.code !== 0 || !isRecord(json.result))
+    throw new Error("Bilibili bangumi metadata was not found");
+
+  const result = json.result;
+  const episodeLists: unknown[] = [];
+  if (Array.isArray(result.episodes)) episodeLists.push(...result.episodes);
+  if (Array.isArray(result.section)) {
+    for (const sec of result.section) {
+      if (isRecord(sec) && Array.isArray(sec.episodes)) {
+        episodeLists.push(...sec.episodes);
+      }
+    }
+  }
+
+  for (const item of episodeLists) {
+    if (!isRecord(item)) continue;
+    const itemId = String(item.id ?? item.ep_id ?? "");
+    const cid = String(item.cid ?? "");
+    const aid = String(item.aid ?? "");
+    const rawDuration = Number(item.duration);
+    const duration =
+      rawDuration > 10_000 ? Math.round(rawDuration / 1000) : rawDuration;
+    if (
+      /^\d+$/.test(cid) &&
+      /^\d+$/.test(aid) &&
+      Number.isFinite(duration) &&
+      duration > 0
+    ) {
+      cachedBangumiEpisodes.set(itemId, { cid, aid, duration });
+    }
+  }
+
+  const match = cachedBangumiEpisodes.get(epId);
+  if (!match) throw new Error(`Bangumi episode ${epId} was not found`);
+  return match;
 }
 
 function readProtoVarint(
@@ -558,15 +618,20 @@ export function registerBilibiliDanmakuListener() {
 
       const bvid = message.bvid || "";
       const avid = message.avid || "";
+      const epId = message.epId || "";
       const page = message.page;
       const requestedStartSegment = message.startSegment ?? 1;
       const requestedEndSegment = message.endSegment ?? requestedStartSegment;
       const rangeRequested =
         message.startSegment !== undefined || message.endSegment !== undefined;
 
+      const hasVideoTarget =
+        /^BV[\w]{10}$/i.test(bvid) || /^\d+$/.test(avid) || /^\d+$/.test(epId);
+      const targetCount = (bvid ? 1 : 0) + (avid ? 1 : 0) + (epId ? 1 : 0);
+
       if (
-        (!/^BV[\w]{10}$/i.test(bvid) && !/^\d+$/.test(avid)) ||
-        (Boolean(bvid) && Boolean(avid)) ||
+        !hasVideoTarget ||
+        targetCount !== 1 ||
         !Number.isInteger(page) ||
         page < 1 ||
         page > 1000 ||
@@ -582,49 +647,54 @@ export function registerBilibiliDanmakuListener() {
 
       void (async () => {
         try {
-          const videoUrl = new URL(
-            "https://api.bilibili.com/x/web-interface/view",
-          );
-          videoUrl.searchParams.set(bvid ? "bvid" : "aid", bvid || avid);
-          const videoResponse = await fetchWithRetry(
-            videoUrl,
-            { credentials: "include" },
-            "Video info",
-          );
           let cid: string;
           let aid: string;
           let duration: number;
-          if (videoResponse.status === 412) {
-            ({ cid, aid, duration } = await fetchBilibiliPageMetadata(
-              bvid || avid,
-              page,
-            ));
+
+          if (epId) {
+            ({ cid, aid, duration } = await fetchBilibiliBangumiMetadata(epId));
           } else {
-            if (!videoResponse.ok)
-              throw new Error(`Video info HTTP ${videoResponse.status}`);
+            const videoUrl = new URL(
+              "https://api.bilibili.com/x/web-interface/view",
+            );
+            videoUrl.searchParams.set(bvid ? "bvid" : "aid", bvid || avid);
+            const videoResponse = await fetchWithRetry(
+              videoUrl,
+              { credentials: "include" },
+              "Video info",
+            );
+            if (videoResponse.status === 412) {
+              ({ cid, aid, duration } = await fetchBilibiliPageMetadata(
+                bvid || avid,
+                page,
+              ));
+            } else {
+              if (!videoResponse.ok)
+                throw new Error(`Video info HTTP ${videoResponse.status}`);
 
-            const videoInfo: unknown = await videoResponse.json();
-            const videoData =
-              isRecord(videoInfo) && isRecord(videoInfo.data)
-                ? videoInfo.data
-                : null;
-            const pages = Array.isArray(videoData?.pages)
-              ? videoData.pages
-              : [];
-            const part = pages[page - 1];
-            cid = String(isRecord(part) ? (part.cid ?? "") : "");
-            aid = String(videoData?.aid ?? "");
-            duration = Number(isRecord(part) ? part.duration : undefined);
+              const videoInfo: unknown = await videoResponse.json();
+              const videoData =
+                isRecord(videoInfo) && isRecord(videoInfo.data)
+                  ? videoInfo.data
+                  : null;
+              const pages = Array.isArray(videoData?.pages)
+                ? videoData.pages
+                : [];
+              const part = pages[page - 1];
+              cid = String(isRecord(part) ? (part.cid ?? "") : "");
+              aid = String(videoData?.aid ?? "");
+              duration = Number(isRecord(part) ? part.duration : undefined);
 
-            if (
-              !isRecord(videoInfo) ||
-              videoInfo.code !== 0 ||
-              !/^\d+$/.test(cid) ||
-              !/^\d+$/.test(aid) ||
-              !Number.isFinite(duration) ||
-              duration <= 0
-            )
-              throw new Error("Bilibili video part was not found");
+              if (
+                !isRecord(videoInfo) ||
+                videoInfo.code !== 0 ||
+                !/^\d+$/.test(cid) ||
+                !/^\d+$/.test(aid) ||
+                !Number.isFinite(duration) ||
+                duration <= 0
+              )
+                throw new Error("Bilibili video part was not found");
+            }
           }
 
           const segmentCount = Math.ceil(duration / BILIBILI_SEGMENT_SECONDS);

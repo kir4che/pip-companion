@@ -415,7 +415,13 @@ function resetDanmakuVisibilityOnMediaChange() {
     );
     if (videoId) nextMediaKey = `youtube:${videoId}`;
   } else if (IS_BILIBILI) {
-    nextMediaKey = `bilibili:${url.pathname}|${url.searchParams.get("p") || "1"}`;
+    const activePage =
+      document
+        .querySelector(
+          "#multi_page .cur-list li.on, .multi-page .cur-list li.on, .video-pod__item.active, [aria-current='true']",
+        )
+        ?.textContent?.trim() || "";
+    nextMediaKey = `bilibili:${url.pathname}|${url.searchParams.get("p") || "1"}|${activePage}`;
   } else {
     const source = state.sourceVideo?.currentSrc || state.sourceVideo?.src;
     if (source) nextMediaKey = `${url.pathname}|${source}`;
@@ -707,6 +713,23 @@ window.addEventListener("yt-navigate-finish", () => {
   nudgeScan();
 });
 window.addEventListener("yt-player-updated", nudgeScan);
+window.addEventListener(
+  "message",
+  (e) => {
+    if (
+      e.source === window &&
+      e.origin === location.origin &&
+      e.data?.type === "PIP_BILI_NAVIGATE"
+    ) {
+      resetDanmakuVisibilityOnMediaChange();
+      toggleFloatingComments(false);
+      nudgeScan();
+    }
+  },
+  { passive: true },
+);
+window.addEventListener("popstate", nudgeScan, { passive: true });
+window.addEventListener("hashchange", nudgeScan, { passive: true });
 document.addEventListener(
   "play",
   (event) => {

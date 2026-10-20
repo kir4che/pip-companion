@@ -501,11 +501,14 @@ globalThis.PipCompanion.util = (() => {
       case "GET_BILIBILI_DANMAKU": {
         const hasBvid = typeof value.bvid === "string";
         const hasAvid = typeof value.avid === "string";
-        const onlyBvid = hasBvid && value.avid === undefined;
-        const onlyAvid = hasAvid && value.bvid === undefined;
+        const hasEpId = typeof value.epId === "string";
+        const count = (hasBvid ? 1 : 0) + (hasAvid ? 1 : 0) + (hasEpId ? 1 : 0);
+        if (count !== 1) return false;
         const validVideoId = hasBvid
           ? /^BV[\w]{10}$/i.test(value.bvid as string)
-          : typeof value.avid === "string" && /^\d+$/.test(value.avid);
+          : hasAvid
+            ? /^\d+$/.test(value.avid as string)
+            : /^\d+$/.test(value.epId as string);
         const page = value.page;
         const startSegment = value.startSegment;
         const endSegment = value.endSegment;
@@ -515,7 +518,6 @@ globalThis.PipCompanion.util = (() => {
             : (endSegment as number) >= (startSegment as number) &&
               (endSegment as number) - (startSegment as number) <= 5;
         return (
-          (onlyBvid || onlyAvid) &&
           validVideoId &&
           typeof page === "number" &&
           Number.isSafeInteger(page) &&

@@ -5,6 +5,7 @@ interface BilibiliVideoIdentity {
   avid: string;
   page: number;
   key: string;
+  epId?: string;
 }
 
 interface BilibiliDanmakuMessage extends DanmakuData {
@@ -172,6 +173,7 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
   ): ContentBilibiliDanmakuController {
     let bilibiliPipVideo: HTMLVideoElement | null = null;
     let bilibiliPipSourceVideo: HTMLVideoElement | null = null;
+    let bilibiliVideoSourceKey = "";
     let bilibiliVideoController: AbortController | null = null;
     let bilibiliPageKey = "";
     let bilibiliMessages: BilibiliDanmakuMessage[] = [];
@@ -204,27 +206,36 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       bilibiliEmittedMessages = new WeakSet();
     }
 
-    function getBangumiVideoIdentity(): BilibiliVideoIdentity | null {
-      for (const script of document.scripts) {
-        const match = script.textContent?.match(
-          /"episode_info"\s*:\s*(\{[^{}]*\})/,
+    function getBilibiliActivePageIndex(): number | null {
+      const multiPageItems = document.querySelectorAll<HTMLElement>(
+        "#multi_page .cur-list li, .multi-page .cur-list li, .cur-list li",
+      );
+      if (multiPageItems.length > 1) {
+        const index = Array.from(multiPageItems).findIndex(
+          (el) =>
+            el.classList.contains("on") || el.classList.contains("active"),
         );
-        if (!match) continue;
+        if (index >= 0) return index + 1;
+      }
+      return null;
+    }
 
-        const episodeJson = match[1];
-        if (episodeJson === undefined) continue;
-
-        try {
-          const episode: unknown = JSON.parse(episodeJson);
-          if (!globalThis.PipCompanion.util.isRecord(episode)) continue;
-          const avid = String(episode.aid ?? "");
-          const cid = String(episode.cid ?? "");
-          if (!/^\d+$/.test(avid) || !/^\d+$/.test(cid)) continue;
-          const episodeId = String(episode.ep_id || cid);
-          return { bvid: "", avid, page: 1, key: `ep:${episodeId}` };
-        } catch {
-          continue;
-        }
+    function getBangumiVideoIdentity(): BilibiliVideoIdentity | null {
+      const epMatch = location.pathname.match(/\/bangumi\/play\/ep(\d+)/i);
+      const urlEpId = epMatch?.[1] || "";
+      const activeEp = document.querySelector<HTMLElement>(
+        ".ep-item.on, .ep-item.active, .ep-sub-list-item.on, .ep-sub-list-item.active",
+      );
+      const domEpId = activeEp?.dataset.epId || activeEp?.dataset.id || "";
+      const currentEpId = urlEpId || domEpId;
+      if (currentEpId) {
+        return {
+          bvid: "",
+          avid: "",
+          epId: currentEpId,
+          page: 1,
+          key: `ep:${currentEpId}`,
+        };
       }
       return null;
     }
@@ -233,12 +244,46 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       if (/^\/bangumi\/play\/(?:ss|ep)\d+/i.test(location.pathname))
         return getBangumiVideoIdentity();
 
-      const video = globalThis.PipCompanion.site.parseBilibiliVideoPath(
+      let video = globalThis.PipCompanion.site.parseBilibiliVideoPath(
         location.pathname,
       );
-      const page = Number(new URL(location.href).searchParams.get("p") || 1);
-      if (!video || !Number.isInteger(page) || page < 1 || page > 1000)
-        return null;
+
+      if (!video && location.pathname.startsWith("/list/")) {
+        const listBvid = new URL(location.href).searchParams.get("bvid");
+        if (listBvid && /^BV[\w]{10}$/i.test(listBvid)) {
+          video = { videoId: listBvid, bvid: listBvid, avid: "" };
+        }
+      }
+
+      const activePodItem = document.querySelector<HTMLElement>(
+        ".video-pod__item.active, .video-pod__item[aria-current='true']",
+      );
+      const podBvid = activePodItem?.dataset.key;
+      if (podBvid && /^BV[\w]{10}$/i.test(podBvid)) {
+        video = { videoId: podBvid, bvid: podBvid, avid: "" };
+      }
+
+      if (!video) return null;
+
+      const urlParams = new URL(location.href).searchParams;
+      const hasExplicitUrlPage = urlParams.has("p");
+      const urlPage = Number(urlParams.get("p") || 1);
+      const domPage = getBilibiliActivePageIndex();
+
+      let page = 1;
+      if (
+        hasExplicitUrlPage &&
+        Number.isInteger(urlPage) &&
+        urlPage >= 1 &&
+        urlPage <= 1000
+      ) {
+        page = urlPage;
+      } else if (domPage !== null && domPage >= 1 && domPage <= 1000) {
+        page = domPage;
+      } else if (Number.isInteger(urlPage) && urlPage >= 1 && urlPage <= 1000) {
+        page = urlPage;
+      }
+
       return {
         bvid: video.bvid,
         avid: video.avid,
@@ -487,7 +532,11 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
 
       sendBilibiliMessage({
         type: "GET_BILIBILI_DANMAKU",
-        ...(identity.bvid ? { bvid: identity.bvid } : { avid: identity.avid }),
+        ...(identity.epId
+          ? { epId: identity.epId }
+          : identity.bvid
+            ? { bvid: identity.bvid }
+            : { avid: identity.avid }),
         page: identity.page,
         startSegment: requestStart,
         endSegment: requestEnd,
@@ -615,13 +664,22 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
         return;
       }
 
-      if (identity.key !== bilibiliPageKey) {
+      const targetSourceKey = targetVideo.currentSrc || targetVideo.src || "";
+      const sourceChanged =
+        bilibiliVideoSourceKey !== "" &&
+        targetSourceKey !== "" &&
+        bilibiliVideoSourceKey !== targetSourceKey;
+
+      if (identity.key !== bilibiliPageKey || sourceChanged) {
         bilibiliVideoController?.abort();
         bilibiliVideoController = null;
         bilibiliPipVideo = null;
         bilibiliPageKey = identity.key;
+        bilibiliVideoSourceKey = targetSourceKey;
         resetBilibiliState();
         renderer.clear();
+      } else if (bilibiliVideoSourceKey === "" && targetSourceKey !== "") {
+        bilibiliVideoSourceKey = targetSourceKey;
       }
 
       if (targetVideo !== bilibiliPipVideo) {
@@ -678,6 +736,20 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
           },
           { signal: controller.signal },
         );
+        targetVideo.addEventListener(
+          "loadedmetadata",
+          () => {
+            checkAndBindBilibiliDanmaku(targetVideo);
+          },
+          { signal: controller.signal },
+        );
+        targetVideo.addEventListener(
+          "emptied",
+          () => {
+            dependencies.getRenderer()?.clear();
+          },
+          { signal: controller.signal },
+        );
 
         renderer.setPlaybackRate(targetVideo.playbackRate);
         if (bilibiliMessagesLoaded)
@@ -714,6 +786,7 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       bilibiliVideoController = null;
       bilibiliPipVideo = null;
       bilibiliPipSourceVideo = null;
+      bilibiliVideoSourceKey = "";
       bilibiliPageKey = "";
       resetBilibiliState();
     }

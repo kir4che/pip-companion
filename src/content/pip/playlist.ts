@@ -12,6 +12,11 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     ".episode-list",
     ".season-list",
     ".bpx-player-ctrl-eplist",
+    ".ep-list-wrapper",
+    "#eplist_module",
+    ".ep-section-module",
+    ".sections-list",
+    ".ep-item",
   ];
   const YOUTUBE_PLAYLIST_SELECTORS =
     "ytd-playlist-panel-video-renderer, ytd-playlist-video-renderer";
@@ -294,11 +299,18 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
   }
 
   function getBilibiliPlaylistElements(): HTMLElement[] {
-    const elements = Array.from(
+    let elements = Array.from(
       document.querySelectorAll<HTMLElement>(
-        ".video-pod__item, .cur-list li, .multi-page li, .multi-page-list li, .ep-list li, .episode-list li, .season-list li",
+        ".video-pod__item, .cur-list li, .multi-page li, .multi-page-list li, .ep-list li, .episode-list li, .season-list li, .ep-item, .ep-sub-list-item, .section-ep-item, .bpx-player-ctrl-eplist-item",
       ),
     );
+    if (elements.length < 2) {
+      elements = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          "[class*='ep-item'], [class*='ep_item'], [class*='epItem'], a[href*='/bangumi/play/ep']",
+        ),
+      );
+    }
     return elements.filter(
       (element, index) =>
         elements.findIndex(
@@ -314,17 +326,37 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
     const currentBvid = globalThis.PipCompanion.site.parseBilibiliVideoPath(
       location.pathname,
     )?.bvid;
-    const routeCurrentIndex = currentBvid
-      ? elements.findIndex((element) => element.dataset.key === currentBvid)
-      : -1;
+    const currentEpId = location.pathname.match(
+      /\/bangumi\/play\/ep(\d+)/i,
+    )?.[1];
+    let routeCurrentIndex = -1;
+    if (currentEpId) {
+      routeCurrentIndex = elements.findIndex(
+        (el) =>
+          el.dataset.epId === currentEpId ||
+          el.dataset.id === currentEpId ||
+          el.dataset.key === currentEpId ||
+          el.dataset.key === `ep${currentEpId}` ||
+          Boolean(el.querySelector?.(`a[href*="ep${currentEpId}"]`)) ||
+          el.getAttribute("href")?.includes(`ep${currentEpId}`),
+      );
+    } else if (currentBvid) {
+      routeCurrentIndex = elements.findIndex(
+        (el) => el.dataset.key === currentBvid,
+      );
+    }
     const currentIndex =
       routeCurrentIndex >= 0
         ? routeCurrentIndex
         : elements.findIndex(
-            (element) =>
-              element.classList.contains("on") ||
-              element.classList.contains("active") ||
-              element.getAttribute("aria-current") === "true",
+            (el) =>
+              el.classList.contains("on") ||
+              el.classList.contains("active") ||
+              el.classList.contains("cursor") ||
+              el.getAttribute("aria-current") === "true" ||
+              Boolean(
+                el.querySelector?.(".on, .active, [aria-current='true']"),
+              ),
           );
     return {
       items: elements.map((element, index) => {
@@ -569,17 +601,10 @@ globalThis.PipCompanion.ContentPlaylist = (() => {
       }
       const element = getBilibiliPlaylistElements()[index];
       if (!element) return;
-      const link = element.matches("a[href]")
-        ? (element as HTMLAnchorElement)
-        : element.querySelector<HTMLAnchorElement>("a[href]");
-      if (link?.href && /^https?:$/i.test(new URL(link.href).protocol)) {
-        // Bilibili 部分集數項目的 click handler 位於 Vue 元件之外，直接導向真正的 http(s) href 比對外層 li 觸發 click 更可靠。
-        location.assign(link.href);
-        return;
-      }
       const target =
-        element.querySelector<HTMLElement>("button, [role='button'], a") ||
-        element;
+        element.querySelector<HTMLElement>(
+          "a[href], button, [role='button']",
+        ) || element;
       target.click();
       return;
     }

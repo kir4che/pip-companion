@@ -174,11 +174,11 @@ globalThis.PipCompanion.ContentPlayback = (() => {
       return null;
 
     if (isBilibiliPage()) {
-      if (!globalThis.PipCompanion.ContentPlaylist.getPlaylist()) return null;
       for (const selector of BILIBILI_NEXT_SELECTORS) {
         const candidate = document.querySelector<NextControl>(selector);
         if (candidate && isUsableNextControl(candidate)) return candidate;
       }
+      if (!globalThis.PipCompanion.ContentPlaylist.getPlaylist()) return null;
       return null;
     }
 

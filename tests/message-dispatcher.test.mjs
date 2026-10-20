@@ -241,8 +241,17 @@ test("routes only schema-valid messages to handlers registered for their type", 
   assert.equal(received[0].message, request);
   assert.equal(received[0].sender, sender);
 
+  const bangumiRequest = {
+    type: "GET_BILIBILI_DANMAKU",
+    epId: "476877",
+    page: 1,
+  };
+  dispatch(bangumiRequest, sender);
+  assert.equal(received.length, 2);
+  assert.equal(received[1].message, bangumiRequest);
+
   dispatch({ type: "GET_PIP_STATE" });
-  assert.equal(received[1], "pip-state");
+  assert.equal(received[2], "pip-state");
 });
 
 test("keeps async responses open and converts handler rejections to failure responses", async () => {
