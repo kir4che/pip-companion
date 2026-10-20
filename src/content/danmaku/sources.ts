@@ -32,11 +32,13 @@
   }
 
   function parseReplayTimestamp(value?: string | null): number | null {
-    const timestamp = value?.trim();
-    if (!timestamp || !/^\d{1,3}:\d{2}(?::\d{2})?$/.test(timestamp))
-      return null;
+    if (!value) return null;
+    const cleaned = value.replace(/[\u200E\u200F\u202A-\u202E\s]/g, "");
+    if (!cleaned) return null;
+    if (cleaned.startsWith("-")) return 0;
+    if (!/^\d{1,4}:\d{2}(?::\d{2})?$/.test(cleaned)) return null;
 
-    return globalThis.PipCompanion.util.parseTime(timestamp);
+    return globalThis.PipCompanion.util.parseTime(cleaned);
   }
 
   function appendMessageText(parts: DanmakuPart[], text: string): void {
@@ -185,13 +187,15 @@
     let siteDanmakuRoot: Element | null = null;
     let siteDanmakuPageKey = "";
     let processedSiteDanmaku = new WeakMap<Element, string>();
+    const collectedMessages: DanmakuData[] = [];
+    const MAX_COLLECTED_MESSAGES = 2000;
 
     const TWITCH_CHAT_ROOT_SELECTOR =
       '[data-test-selector="chat-scrollable-area__message-container"], .chat-scrollable-area__message-container, [data-a-target="chat-scroller"], .video-chat__message-list-wrapper ul';
     const TWITCH_MESSAGE_SELECTOR =
       '[data-a-target="chat-line-message"], .chat-line__message, [data-test-selector="chat-line-message"], [data-test-selector="chat-line"], .vod-message';
     const TWITCH_VOD_MESSAGE_SELECTOR =
-      ".video-chat__message-list-wrapper ul > *";
+      ".video-chat__message-list-wrapper ul > *, .vod-message";
 
     function isTwitchVodPage(): boolean {
       return SOURCE_IS_TWITCH && /^\/videos\/\d+/.test(location.pathname);
@@ -292,6 +296,7 @@
           };
         return text ? { text, parts, author } : null;
       }
+      let replayTime: number | undefined;
       if (SOURCE_IS_TWITCH) {
         const body = node.querySelector(
           '[data-a-target="chat-line-message-body"], [data-a-target="chat-message-text"], .text-fragment, .message',
@@ -301,11 +306,38 @@
           '[data-a-target="chat-message-username"], .chat-author__display-name',
         );
         author = (authorNode?.textContent || "").trim();
+
+        const timeNode = node.querySelector(
+          '[data-a-target="video-chat-message-time"], .video-chat__message-time, .vod-message__time, [data-test-selector*="time"], [class*="message-time"]',
+        );
+        const parsed = parseReplayTimestamp(timeNode?.textContent);
+        if (
+          typeof parsed === "number" &&
+          Number.isFinite(parsed) &&
+          parsed >= 0
+        ) {
+          replayTime = parsed;
+        } else {
+          const video = document.querySelector("video");
+          if (
+            video &&
+            typeof video.currentTime === "number" &&
+            Number.isFinite(video.currentTime) &&
+            video.currentTime >= 0
+          ) {
+            replayTime = Math.floor(video.currentTime);
+          }
+        }
       }
 
       const { parts, text } = extractMessageContent(messageNode);
       if (!text) return null;
-      return { text, parts, author };
+      return {
+        text,
+        parts,
+        author,
+        ...(typeof replayTime === "number" ? { replayTime } : {}),
+      };
     }
 
     function processSiteDanmakuNode(node: Node, initial = false): void {
@@ -315,6 +347,10 @@
         const signature = `${data.author || ""}\u0000${data.text || ""}`;
         if (processedSiteDanmaku.get(candidate) === signature) continue;
         processedSiteDanmaku.set(candidate, signature);
+        collectedMessages.push(data);
+        if (collectedMessages.length > MAX_COLLECTED_MESSAGES) {
+          collectedMessages.shift();
+        }
         if (!initial) dependencies.broadcast(data);
       }
     }
@@ -330,6 +366,7 @@
         siteDanmakuRoot = null;
         siteDanmakuPageKey = pageKey;
         processedSiteDanmaku = new WeakMap();
+        collectedMessages.length = 0;
         dependencies.clear();
       }
 
@@ -382,10 +419,12 @@
 
     return {
       checkAndBind: checkAndBindSiteDanmaku,
+      getMessages: () => [...collectedMessages],
       destroy() {
         siteDanmakuObserver?.disconnect();
         siteDanmakuObserver = null;
         siteDanmakuRoot = null;
+        collectedMessages.length = 0;
       },
     };
   }

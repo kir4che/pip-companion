@@ -464,6 +464,8 @@ function getAllDanmakuMessages(): DanmakuData[] {
   else if (DANMAKU_IS_BAHAMUT) list = bahamutFullMessages || [];
   else if (DANMAKU_IS_YOUTUBE)
     list = youtubeDanmakuController.getMessages?.() || [];
+  else if (DANMAKU_IS_TWITCH)
+    list = danmakuSourcesController.getMessages?.() || [];
   else list = extraBilibiliDanmakuController.getMessages?.() || [];
   return list.filter((m) => !isDanmakuBlocked(m.text));
 }
@@ -478,6 +480,8 @@ async function loadAllDanmakuMessages(): Promise<DanmakuData[]> {
   } else if (DANMAKU_IS_BAHAMUT) list = await loadBahamutDanmakuMessages();
   else if (DANMAKU_IS_YOUTUBE)
     list = youtubeDanmakuController.getMessages?.() || [];
+  else if (DANMAKU_IS_TWITCH)
+    list = danmakuSourcesController.getMessages?.() || [];
   else list = extraBilibiliDanmakuController.getMessages?.() || [];
   return list.filter((m) => !isDanmakuBlocked(m.text));
 }

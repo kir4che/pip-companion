@@ -83,8 +83,17 @@
         typeof data.replayTime !== "number" ||
         !Number.isFinite(data.replayTime)
       ) {
-        if (!initial) dependencies.broadcast(data);
-        return;
+        const videoCurrent = replayVideo?.currentTime;
+        if (
+          typeof videoCurrent === "number" &&
+          Number.isFinite(videoCurrent) &&
+          videoCurrent >= 0
+        ) {
+          data.replayTime = Math.floor(videoCurrent);
+        } else {
+          if (!initial) dependencies.broadcast(data);
+          return;
+        }
       }
 
       const currentTime = replayVideo?.currentTime;
@@ -664,7 +673,31 @@
         replayMessages.clear();
         pendingReplayMessages.clear();
       },
-      getMessages: () => [...replayMessages.values()].map((e) => e.data),
+      getMessages: () => {
+        const chatFrame = getChatIframe();
+        if (chatFrame) {
+          try {
+            const chatDoc =
+              chatFrame.contentDocument || chatFrame.contentWindow?.document;
+            const container = chatDoc ? findChatItemsContainer(chatDoc) : null;
+            if (container) {
+              container
+                .querySelectorAll(
+                  "yt-live-chat-text-message-renderer, yt-live-chat-paid-message-renderer",
+                )
+                .forEach((node) => {
+                  const data =
+                    globalThis.PipCompanion.ContentDanmakuSources.parseYouTubeMessage(
+                      node,
+                      false,
+                    );
+                  if (data) receiveDanmaku(data, { initial: true });
+                });
+            }
+          } catch {}
+        }
+        return [...replayMessages.values()].map((e) => e.data);
+      },
     };
   }
 

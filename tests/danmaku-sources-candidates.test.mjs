@@ -30,6 +30,10 @@ class FakeElement {
     this.childNodes = text ? [new FakeText(text)] : [];
   }
 
+  get textContent() {
+    return this.childNodes.map((c) => c.textContent).join("");
+  }
+
   matches(selector) {
     return String(selector)
       .split(",")
@@ -156,4 +160,92 @@ test("bahamut sources 把站內彈幕廣播出去，但排除擴充自己的節�
     ["簽到啦"],
     "擴充自己的節點不得重播",
   );
+});
+
+test("twitch sources 收集彈幕並解析 VOD 時間戳", () => {
+  let observerCallback = null;
+  const broadcasts = [];
+  const root = new FakeElement({
+    className: "video-chat__message-list-wrapper",
+    tag: "div",
+  });
+  const ul = new FakeElement({ tag: "ul", parent: root });
+
+  const context = {
+    PipCompanion: {
+      site: {
+        isYouTubeHost: () => false,
+        isTwitchHost: () => true,
+        isBahamutHost: () => false,
+        isBilibiliHost: () => false,
+        isBilibiliLiveHost: () => false,
+      },
+      util: {
+        parseTime: (value) => {
+          const parts = value.split(":").map(Number);
+          return parts.reduce((acc, part) => acc * 60 + part, 0);
+        },
+      },
+    },
+    location: {
+      hostname: "www.twitch.tv",
+      pathname: "/videos/123456789",
+      search: "",
+      href: "https://www.twitch.tv/videos/123456789",
+      origin: "https://www.twitch.tv",
+    },
+    document: {
+      querySelector: (selector) => {
+        if (selector.includes("video-chat__message-list-wrapper")) return root;
+        return null;
+      },
+      querySelectorAll: () => [],
+      body: new FakeElement({ tag: "body" }),
+    },
+    window: {
+      getComputedStyle: () => ({ backgroundColor: "rgba(0, 0, 0, 0)" }),
+    },
+    Node: { TEXT_NODE: 3, ELEMENT_NODE: 1 },
+    Element: FakeElement,
+    URL,
+    MutationObserver: class {
+      constructor(callback) {
+        observerCallback = callback;
+      }
+      observe() {}
+      disconnect() {}
+    },
+  };
+  vm.runInNewContext(source, context);
+
+  const controller = context.PipCompanion.ContentDanmakuSources.create({
+    broadcast: (data) => broadcasts.push(data),
+    clear: () => {},
+    isSettingsLoaded: () => true,
+    isVisible: () => true,
+  });
+
+  controller.checkAndBind();
+
+  const msgNode = new FakeElement({
+    className: "vod-message",
+    parent: ul,
+  });
+  msgNode.querySelector = (selector) => {
+    if (selector.includes("time")) {
+      return new FakeElement({ text: "01:23" });
+    }
+    if (selector.includes("body") || selector.includes("text")) {
+      return new FakeElement({ text: "Twitch 彈幕測試" });
+    }
+    return null;
+  };
+
+  observerCallback([{ type: "childList", addedNodes: [msgNode] }]);
+
+  assert.equal(broadcasts.length, 1);
+  assert.equal(broadcasts[0].text, "Twitch 彈幕測試");
+  assert.equal(broadcasts[0].replayTime, 83);
+  assert.equal(controller.getMessages().length, 1);
+  assert.equal(controller.getMessages()[0].replayTime, 83);
 });

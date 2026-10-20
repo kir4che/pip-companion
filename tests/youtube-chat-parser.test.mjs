@@ -74,6 +74,29 @@ test("parses cross-realm YouTube text and emoji nodes without instanceof checks"
   assert.equal(data.parts[1].src, "https://example.com/emoji.png");
 });
 
+test("parses YouTube timestamps with Unicode direction marks and negative offsets", () => {
+  const parse = parser();
+  const msg1 = message();
+  msg1.querySelector = (selector) =>
+    ({
+      "#message": { childNodes: [{ nodeType: 3, textContent: "test" }] },
+      "#timestamp": { textContent: "\u200e1:05\u200e" },
+      "#author-name": { textContent: "author" },
+    })[selector] || null;
+  const res1 = parse(msg1);
+  assert.equal(res1.replayTime, 65);
+
+  const msg2 = message();
+  msg2.querySelector = (selector) =>
+    ({
+      "#message": { childNodes: [{ nodeType: 3, textContent: "test" }] },
+      "#timestamp": { textContent: "-0:05" },
+      "#author-name": { textContent: "author" },
+    })[selector] || null;
+  const res2 = parse(msg2);
+  assert.equal(res2.replayTime, 0);
+});
+
 test("relay parsing neither consumes messages nor depends on local renderer markers", () => {
   const parse = parser(),
     node = message();

@@ -155,6 +155,7 @@ interface ContentDanmakuSourcesDependencies {
 interface ContentDanmakuSourcesController {
   checkAndBind(): void;
   destroy(): void;
+  getMessages?(): DanmakuData[];
 }
 
 interface ContentDanmakuSourcesApi {
