@@ -86,6 +86,30 @@ globalThis.PipCompanion.PipUI = (() => {
       makeButton,
     });
 
+    const danmakuSearch = globalThis.PipCompanion.danmakuSearchPanel.create(
+      doc,
+      t,
+      {
+        makeButton,
+        onSeek: (seconds) => {
+          const videoSource = actions.getVideo();
+          if (videoSource) seekVideo(videoSource, seconds);
+          actions.seekDanmakuJump?.(seconds);
+        },
+        getMessages: actions.getDanmakuMessages,
+        loadAllMessages: actions.loadAllDanmakuMessages,
+        getDuration: () => actions.getVideo()?.duration,
+        shortcutHint: globalThis.PipCompanion.util.formatShortcut(
+          actions.getShortcut("pipDanmakuSearchShortcut"),
+        ),
+      },
+    );
+    const {
+      toggle: danmakuSearchToggle,
+      panel: danmakuSearchPanel,
+      input: danmakuSearchInput,
+    } = danmakuSearch;
+
     const playButton = makeButton("play", "▶", t("pipPlayVideo"));
     const nextButton = makeButton("next", "", t("pipNextEpisode"));
     nextButton.hidden = true;
@@ -184,12 +208,14 @@ globalThis.PipCompanion.PipUI = (() => {
       speedControl,
       translationButton,
       playlistButton,
+      danmakuSearchToggle,
     );
     screen.append(
       subtitle,
       feedback,
       danmakuSendStatus,
       danmakuSendPanel,
+      danmakuSearchPanel,
       playlistPanel,
       translationPanel,
       miniProgress,
@@ -226,6 +252,7 @@ globalThis.PipCompanion.PipUI = (() => {
         "pipPlaybackRateUpShortcut",
       ]);
       setAriaShortcuts(volumeButton, ["pipMuteShortcut"]);
+      setAriaShortcuts(danmakuSearchToggle, ["pipDanmakuSearchShortcut"]);
     };
     refreshShortcuts();
 
@@ -601,6 +628,7 @@ globalThis.PipCompanion.PipUI = (() => {
       translationPanel.hidden = !open;
       translationButton.setAttribute("aria-expanded", String(open));
       if (open) {
+        danmakuSearch.close();
         refreshSubtitleTracks();
         refreshSubtitleTranslationServices();
         refreshSubtitleTranslationPreferences();
@@ -785,6 +813,10 @@ globalThis.PipCompanion.PipUI = (() => {
         }
       },
       setDanmakuEnabled: (enabled: boolean) => setDanmakuEnabled(enabled),
+      openDanmakuSearch: () => danmakuSearch.open(),
+      toggleDanmakuSearch: () => danmakuSearch.togglePanel(),
+      setDanmakuMessages: (messages: DanmakuData[], duration?: number) =>
+        danmakuSearch.setMessages(messages, duration),
       setThumbnailPreviewEnabled: (enabled: boolean) => {
         if (!enabled) clearTimeTooltipThumb();
       },
@@ -792,7 +824,10 @@ globalThis.PipCompanion.PipUI = (() => {
     };
 
     const update = () => actions.updatePlaybackUi();
-    const togglePlayback = () => actions.togglePlayback();
+    const togglePlayback = () => {
+      danmakuSearch.close();
+      actions.togglePlayback();
+    };
     let danmakuSendStatusTimer: number | undefined;
     const setDanmakuSendStatus = (msg: string | null) => {
       if (danmakuSendStatusTimer !== undefined) {
@@ -820,6 +855,7 @@ globalThis.PipCompanion.PipUI = (() => {
     };
     const openDanmakuSendPanel = () => {
       if (!danmakuEnabled || !actions.canSendDanmaku) return;
+      danmakuSearch.close();
       setDanmakuSendPanelOpen(true);
       refreshDanmakuCharacterLimit();
       danmakuSendInput.focus();
@@ -837,6 +873,7 @@ globalThis.PipCompanion.PipUI = (() => {
     const setDanmakuEnabled = (enabled: boolean) => {
       danmakuEnabled = enabled;
       danmakuSendToggle.hidden = !enabled || !actions.canSendDanmaku;
+      danmakuSearchToggle.hidden = !enabled;
       danmakuSendInput.disabled = !enabled || !actions.canSendDanmaku;
       danmakuSendSubmit.disabled =
         !enabled ||
@@ -846,6 +883,7 @@ globalThis.PipCompanion.PipUI = (() => {
       if (!enabled) {
         closeDanmakuSendPanel();
         danmakuSendInput.blur();
+        danmakuSearch.close();
       }
     };
     const updateDanmakuCharacterCount = () => {
@@ -1015,6 +1053,12 @@ globalThis.PipCompanion.PipUI = (() => {
         playlistButton.contains(target as Node));
     const isPlaylistPanelFocusTarget = (target: EventTarget | null) =>
       target !== null && playlistPanel.contains(target as Node);
+    const isDanmakuSearchTarget = (target: EventTarget | null) =>
+      target !== null &&
+      (danmakuSearchPanel.contains(target as Node) ||
+        danmakuSearchToggle.contains(target as Node));
+    const isDanmakuSearchFocusTarget = (target: EventTarget | null) =>
+      target !== null && danmakuSearchPanel.contains(target as Node);
     let playlistCloseTimer = 0;
     eventScope.listen(win, "pointerleave", () => {
       const activeElement = doc.activeElement;
@@ -1022,6 +1066,10 @@ globalThis.PipCompanion.PipUI = (() => {
       if (!isTranslationPanelFocusTarget(activeElement))
         closeTranslationPanel();
       if (!danmakuSendPanel.contains(activeElement)) closeDanmakuSendPanel();
+      if (!isDanmakuSearchFocusTarget(activeElement)) danmakuSearch.close();
+    });
+    eventScope.listen(win, "blur", () => {
+      danmakuSearch.close();
     });
     eventScope.listen(screen, "pointerenter", () => {
       eventScope.clearTimeout(playlistCloseTimer);
@@ -1043,6 +1091,7 @@ globalThis.PipCompanion.PipUI = (() => {
           activeElement?.matches(":focus-visible") &&
           (isPlaylistPanelFocusTarget(activeElement) ||
             isTranslationPanelFocusTarget(activeElement) ||
+            isDanmakuSearchFocusTarget(activeElement) ||
             pipSelects.some((select) =>
               globalThis.PipCompanion.customSelect.containsTarget(
                 select,
@@ -1053,6 +1102,7 @@ globalThis.PipCompanion.PipUI = (() => {
           return;
         closePlaylist();
         closeTranslationPanel();
+        danmakuSearch.close();
         for (const select of pipSelects)
           globalThis.PipCompanion.customSelect.closeForSelect(select);
       }, 250);
@@ -1063,6 +1113,8 @@ globalThis.PipCompanion.PipUI = (() => {
       (e) => {
         if (!playlistPanel.hidden && !isPlaylistTarget(e.target))
           closePlaylist();
+        if (danmakuSearch.isOpen() && !isDanmakuSearchTarget(e.target))
+          danmakuSearch.close();
       },
       { capture: true },
     );
@@ -1072,9 +1124,31 @@ globalThis.PipCompanion.PipUI = (() => {
       (e) => {
         if (!playlistPanel.hidden && !isPlaylistTarget(e.target))
           closePlaylist();
+        if (danmakuSearch.isOpen() && !isDanmakuSearchTarget(e.target))
+          danmakuSearch.close();
       },
       { capture: true },
     );
+    eventScope.listen(progress, "pointerdown", () => {
+      danmakuSearch.close();
+    });
+
+    const originalSearchOpen = danmakuSearch.open;
+    danmakuSearch.open = () => {
+      closePlaylist();
+      closeTranslationPanel();
+      closeDanmakuSendPanel();
+      originalSearchOpen();
+    };
+    const originalSearchTogglePanel = danmakuSearch.togglePanel;
+    danmakuSearch.togglePanel = () => {
+      if (!danmakuSearch.isOpen()) {
+        closePlaylist();
+        closeTranslationPanel();
+        closeDanmakuSendPanel();
+      }
+      originalSearchTogglePanel();
+    };
     eventScope.listen(
       win,
       "keydown",
@@ -1171,9 +1245,25 @@ globalThis.PipCompanion.PipUI = (() => {
         return;
       }
       if (
+        (matches("pipDanmakuSearchShortcut") ||
+          ((e.ctrlKey || e.metaKey) && e.code === "KeyF")) &&
+        danmakuEnabled &&
+        (e.target === video ||
+          e.target === screen ||
+          e.target === doc.body ||
+          e.target === doc.documentElement ||
+          e.target === danmakuSearchInput)
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        danmakuSearch.togglePanel();
+        return;
+      }
+      if (
         e.target === volumeValue ||
         e.target === timeCurrent ||
-        e.target === danmakuSendInput
+        e.target === danmakuSendInput ||
+        e.target === danmakuSearchInput
       )
         return;
       const target = e.target instanceof Element ? e.target : null;

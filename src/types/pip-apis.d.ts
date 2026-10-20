@@ -148,6 +148,9 @@ interface PipUiActions {
   closePip(): void;
   screenshot(): void;
   formatTime(seconds: number): string;
+  getDanmakuMessages?(): DanmakuData[];
+  loadAllDanmakuMessages?(): Promise<DanmakuData[]>;
+  seekDanmakuJump?(seconds: number): void;
   getStoryboardFrame?(seconds: number): StoryboardFrame | null;
   resize(
     innerWidth: number,
@@ -184,6 +187,9 @@ interface PipUiHandle {
   dispose(): void;
   refreshLocale(): void;
   refreshShortcuts(): void;
+  openDanmakuSearch?(): void;
+  toggleDanmakuSearch?(): void;
+  setDanmakuMessages?(messages: DanmakuData[], duration?: number): void;
   setDanmakuEnabled(enabled: boolean): void;
   setThumbnailPreviewEnabled(enabled: boolean): void;
   refreshSubtitleTracks(): void;
@@ -478,6 +484,8 @@ interface ContentBilibiliDanmakuController {
   setSourceVideo(video: HTMLVideoElement | null): void;
   checkAndBind(video: HTMLVideoElement | null): void;
   destroy(): void;
+  getMessages?(): DanmakuData[];
+  loadAllMessages?(): Promise<DanmakuData[]>;
 }
 
 interface ContentBilibiliDanmakuApi {
@@ -925,6 +933,7 @@ interface PipCompanionGlobal {
   translationLanguageOptions: TranslationLanguageOptionsApi;
   subtitleTranslationPanel: SubtitleTranslationPanelApi;
   danmakuInputPanel: DanmakuInputPanelApi;
+  danmakuSearchPanel: DanmakuSearchPanelApi;
   playbackControls: PlaybackControlsApi;
   ContentVideo: ContentVideoApi;
   ContentPlatform: ContentPlatformApi;
@@ -972,9 +981,14 @@ interface PipCompanionGlobal {
   ContentDanmakuRenderer: ContentDanmakuRendererApi;
   ContentDanmakuSources: ContentDanmakuSourcesApi;
   ContentDanmakuJump: ContentDanmakuJumpApi;
+  ContentDanmakuSearch: {
+    getMessages(): DanmakuData[];
+    loadAllMessages(): Promise<DanmakuData[]>;
+  };
   ContentYouTubeDanmaku: ContentYouTubeDanmakuApi;
   bilibiliDanmakuConfig: BilibiliDanmakuConfigApi;
   danmakuJump: DanmakuJumpApi;
+  danmakuSearch: DanmakuSearchApi;
   danmakuSettings: DanmakuSettingsApi;
   subtitleSettings: SubtitleSettingsApi;
   subtitleTranslationSettings: SubtitleTranslationSettingsApi;

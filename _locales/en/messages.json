@@ -29,6 +29,9 @@
   "shortcutDanmakuInput": {
     "message": "Danmaku input"
   },
+  "shortcutDanmakuSearch": {
+    "message": "Search Danmaku"
+  },
   "shortcutResizePip": {
     "message": "Resize PiP"
   },
@@ -397,6 +400,27 @@
   },
   "pipDanmakuInputClose": {
     "message": "Close danmaku input"
+  },
+  "pipDanmakuSearchOpen": {
+    "message": "Search danmaku"
+  },
+  "pipDanmakuSearchClose": {
+    "message": "Close danmaku search"
+  },
+  "pipDanmakuSearchPlaceholder": {
+    "message": "Search danmaku keywords (Enter to jump)..."
+  },
+  "pipDanmakuHeatPeaks": {
+    "message": "Top 3 Danmaku Highlights"
+  },
+  "pipDanmakuSearchResultsCount": {
+    "message": "Found $1 danmaku"
+  },
+  "pipDanmakuSearchEmpty": {
+    "message": "No matching danmaku"
+  },
+  "pipDanmakuSearchHint": {
+    "message": "Type keywords to search danmaku"
   },
   "pipChatMessage": {
     "message": "Chat message"

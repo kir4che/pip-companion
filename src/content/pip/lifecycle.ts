@@ -583,6 +583,13 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
         getDanmakuCharacterLimit:
           globalThis.PipCompanion.ContentDanmakuSender.getCharacterLimit,
         sendDanmaku: globalThis.PipCompanion.ContentDanmakuSender.send,
+        getDanmakuMessages: () =>
+          globalThis.PipCompanion.ContentDanmakuSearch?.getMessages?.() || [],
+        loadAllDanmakuMessages: () =>
+          globalThis.PipCompanion.ContentDanmakuSearch?.loadAllMessages?.() ||
+          Promise.resolve([]),
+        seekDanmakuJump: (seconds: number) =>
+          globalThis.PipCompanion.ContentDanmakuJump?.seek?.(seconds),
         matchesCommentsShortcut: (e) =>
           state.commentsEnabled &&
           matchesShortcut(e, state.shortcuts.commentsShortcut),

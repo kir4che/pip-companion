@@ -930,7 +930,12 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
       },
     );
 
-    return { checkAndBind, getSource, setSource };
+    return {
+      checkAndBind,
+      getSource,
+      setSource,
+      getMessages: () => messages,
+    };
   }
 
   globalThis.PipCompanion =

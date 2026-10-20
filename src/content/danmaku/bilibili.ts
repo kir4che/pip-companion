@@ -779,6 +779,21 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       bilibiliPipSourceVideo = video;
     }
 
+    function getMessages(): BilibiliDanmakuMessage[] {
+      return bilibiliMessages;
+    }
+
+    async function loadAllMessages(): Promise<BilibiliDanmakuMessage[]> {
+      const identity = getBilibiliVideoIdentity();
+      if (!identity || bilibiliLegacyFallback) return bilibiliMessages;
+      const count = bilibiliSegmentCount || 1;
+      for (let s = 1; s <= count; s += 5) {
+        const end = Math.min(count, s + 4);
+        requestBilibiliSegments(identity, s, end);
+      }
+      return bilibiliMessages;
+    }
+
     function destroy(): void {
       bilibiliVideoController?.abort();
       bilibiliVideoController = null;
@@ -793,6 +808,8 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       setSourceVideo,
       checkAndBind: checkAndBindBilibiliDanmaku,
       destroy,
+      getMessages,
+      loadAllMessages,
     };
   }
 

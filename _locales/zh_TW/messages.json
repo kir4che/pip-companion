@@ -29,6 +29,9 @@
   "shortcutDanmakuInput": {
     "message": "彈幕輸入"
   },
+  "shortcutDanmakuSearch": {
+    "message": "搜尋彈幕"
+  },
   "shortcutResizePip": {
     "message": "調整子母畫面大小"
   },
@@ -397,6 +400,27 @@
   },
   "pipDanmakuInputClose": {
     "message": "關閉彈幕輸入"
+  },
+  "pipDanmakuSearchOpen": {
+    "message": "搜尋彈幕"
+  },
+  "pipDanmakuSearchClose": {
+    "message": "關閉彈幕搜尋"
+  },
+  "pipDanmakuSearchPlaceholder": {
+    "message": "搜尋彈幕關鍵字（Enter 跳轉）..."
+  },
+  "pipDanmakuHeatPeaks": {
+    "message": "熱門彈幕 Top 3"
+  },
+  "pipDanmakuSearchResultsCount": {
+    "message": "找到 $1 則彈幕"
+  },
+  "pipDanmakuSearchEmpty": {
+    "message": "無相符彈幕"
+  },
+  "pipDanmakuSearchHint": {
+    "message": "輸入關鍵字以搜尋彈幕"
   },
   "pipChatMessage": {
     "message": "彈幕內容"

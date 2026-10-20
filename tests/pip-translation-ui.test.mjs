@@ -7,11 +7,13 @@ import ts from "typescript";
 const providers = ["none", "microsoft", "google", "deepl"];
 const source = [
   "../../shared/subtitle-language-tags.ts",
+  "../../shared/danmaku-search.ts",
   "styles.ts",
   "playlist-rendering.ts",
   "progress-math.ts",
   "translation-language-options.ts",
   "danmaku-input-panel.ts",
+  "danmaku-search-panel.ts",
   "subtitle-translation-panel.ts",
   "playback-controls.ts",
   "event-scope.ts",

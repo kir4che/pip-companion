@@ -29,6 +29,9 @@
   "shortcutDanmakuInput": {
     "message": "弹幕输入"
   },
+  "shortcutDanmakuSearch": {
+    "message": "搜索弹幕"
+  },
   "shortcutResizePip": {
     "message": "调整画中画大小"
   },
@@ -397,6 +400,27 @@
   },
   "pipDanmakuInputClose": {
     "message": "关闭弹幕输入"
+  },
+  "pipDanmakuSearchOpen": {
+    "message": "搜索弹幕"
+  },
+  "pipDanmakuSearchClose": {
+    "message": "关闭弹幕搜索"
+  },
+  "pipDanmakuSearchPlaceholder": {
+    "message": "搜索弹幕关键字（Enter 跳转）..."
+  },
+  "pipDanmakuHeatPeaks": {
+    "message": "高能弹幕 Top 3"
+  },
+  "pipDanmakuSearchResultsCount": {
+    "message": "找到 $1 条弹幕"
+  },
+  "pipDanmakuSearchEmpty": {
+    "message": "无匹配弹幕"
+  },
+  "pipDanmakuSearchHint": {
+    "message": "输入关键字以搜索弹幕"
   },
   "pipChatMessage": {
     "message": "弹幕内容"

@@ -116,6 +116,13 @@ globalThis.PipCompanion.util = (() => {
       shift: false,
       meta: false,
     },
+    pipDanmakuSearchShortcut: {
+      code: "KeyF",
+      ctrl: !isMac,
+      alt: false,
+      shift: false,
+      meta: isMac,
+    },
     pipAutoFitShortcut: {
       code: "KeyR",
       ctrl: false,

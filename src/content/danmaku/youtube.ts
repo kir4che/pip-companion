@@ -683,6 +683,7 @@
         replayMessages.clear();
         pendingReplayMessages.clear();
       },
+      getMessages: () => [...replayMessages.values()].map((e) => e.data),
     };
   }
 

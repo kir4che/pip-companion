@@ -47,13 +47,14 @@ globalThis.PipCompanion.PipStyles = {
           -apple-system,
           sans-serif;
       }
-      .app,
-      .screen {
+      .app {
         width: 100%;
         height: 100%;
       }
       .screen {
         position: relative;
+        width: 100%;
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -237,6 +238,237 @@ globalThis.PipCompanion.PipStyles = {
         border-radius: 16px;
         background: rgba(12, 12, 12, 0.84);
       }
+      .danmaku-search-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .danmaku-search-toggle svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+      }
+      .danmaku-search-panel {
+        position: absolute;
+        z-index: 85;
+        right: 8px;
+        bottom: 48px;
+        width: min(340px, calc(100% - 16px));
+        max-height: min(75%, 360px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        padding: 8px;
+        border: 1px solid #ffffff22;
+        border-radius: 12px;
+        background: #121214fa;
+        backdrop-filter: blur(12px);
+        box-shadow: 0 8px 32px #000c;
+        font-size: 12px;
+        color: #eee;
+      }
+      .danmaku-search-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+      }
+      .danmaku-search-input-wrap {
+        position: relative;
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 14px;
+        background: rgba(12, 12, 12, 0.84);
+      }
+      .danmaku-search-input-wrap:focus-within {
+        border-color: rgba(255, 255, 255, 0.32);
+      }
+      .danmaku-search-input-icon {
+        width: 14px;
+        height: 14px;
+        fill: #888;
+        flex-shrink: 0;
+      }
+      .danmaku-search-input {
+        flex: 1 1 auto;
+        min-width: 0;
+        height: 28px;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: #fff;
+        font: 14px system-ui, sans-serif;
+      }
+      .danmaku-search-input::placeholder {
+        color: #888;
+        font: 13px system-ui, sans-serif;
+      }
+      .danmaku-search-clear {
+        width: auto;
+        height: auto;
+        background: transparent;
+        color: #888;
+        cursor: pointer;
+        font-size: 12px;
+        padding: 2px 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .danmaku-search-clear:hover {
+        color: #fff;
+        background: transparent;
+      }
+      .danmaku-search-clear:focus-visible {
+        outline: none;
+        box-shadow: none;
+        background: transparent;
+      }
+      .danmaku-search-close {
+        background: none;
+        color: #aaa;
+        font-size: 14px;
+        padding: 4px 6px;
+      }
+      .danmaku-search-close:hover {
+        background: #ffffff18;
+        color: #fff;
+      }
+      .danmaku-heat-section {
+        margin-top: 4px;
+        display: flex;
+        flex-direction: column;
+      }
+      .danmaku-heat-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: #ff9800;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .danmaku-heat-chips {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .danmaku-heat-chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        padding: 4px 8px;
+        background: #ffffff0a;
+        border: 1px solid #ffffff12;
+        border-radius: 6px;
+        color: #eee;
+        cursor: pointer;
+        text-align: left;
+        font-size: 11px;
+      }
+      .danmaku-heat-chip:hover {
+        background: #ff980022;
+        border-color: #ff980066;
+      }
+      .danmaku-heat-rank {
+        font-weight: 700;
+        color: #ff9800;
+        font-size: 10px;
+      }
+      .danmaku-heat-chip[data-rank="1"] .danmaku-heat-rank {
+        color: #ff5252;
+      }
+      .danmaku-heat-chip[data-rank="2"] .danmaku-heat-rank {
+        color: #ff7043;
+      }
+      .danmaku-heat-chip[data-rank="3"] .danmaku-heat-rank {
+        color: #ffb74d;
+      }
+      .danmaku-heat-time {
+        font-family: monospace;
+        color: #3ea6ff;
+        font-weight: 600;
+      }
+      .danmaku-heat-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: #ccc;
+      }
+      .danmaku-results-section {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .danmaku-results-count {
+        font-size: 10px;
+        color: #888;
+        margin-bottom: 4px;
+      }
+      .danmaku-results-list {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .danmaku-result-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px 6px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .danmaku-result-item:hover,
+      .danmaku-result-item.is-active {
+        background: #ffffff18;
+      }
+      .danmaku-result-time {
+        font-family: monospace;
+        font-size: 11px;
+        color: #3ea6ff;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .danmaku-result-text {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        color: #eee;
+      }
+      .danmaku-result-mark {
+        background: #ffd60044;
+        color: #ffe57f;
+        border-radius: 2px;
+        padding: 0 1px;
+      }
+      .danmaku-result-count {
+        font-size: 10px;
+        color: #888;
+        background: #ffffff12;
+        padding: 1px 4px;
+        border-radius: 4px;
+        flex-shrink: 0;
+      }
+      .danmaku-search-empty {
+        padding: 16px 8px;
+        text-align: center;
+        color: #777;
+        font-size: 11px;
+      }
       .danmaku-send-field {
         position: relative;
         flex: 1 1 auto;
@@ -252,8 +484,6 @@ globalThis.PipCompanion.PipStyles = {
         background: transparent;
         color: #fff;
         font: 14px system-ui, sans-serif;
-        -webkit-user-select: text;
-        user-select: text;
       }
       .danmaku-send-count {
         display: none;
@@ -329,7 +559,7 @@ globalThis.PipCompanion.PipStyles = {
         box-shadow: inset 0 0 0 2px #3ea6ff;
         background: #111f;
       }
-      input:not([type="range"]):not(.danmaku-send-input):focus-visible {
+      input:not([type="range"]):not(.danmaku-send-input):not(.danmaku-search-input):focus-visible {
         outline: none;
         box-shadow: inset 0 -2px 0 #3ea6ff;
       }
@@ -379,7 +609,6 @@ globalThis.PipCompanion.PipStyles = {
         border-radius: 50%;
       }
       input[type="range"]:focus-visible::-webkit-slider-thumb {
-        border-radius: 50%;
         box-shadow: 0 0 0 2px #111, 0 0 0 4px #3ea6ff;
       }
       button svg {
@@ -387,9 +616,6 @@ globalThis.PipCompanion.PipStyles = {
         width: 16px;
         height: 16px;
         fill: currentColor;
-      }
-      .playlist-button {
-        line-height: 0;
       }
       .custom-select {
         position: relative;
@@ -501,6 +727,9 @@ globalThis.PipCompanion.PipStyles = {
         font-weight: 650;
         letter-spacing: 0.06em;
         text-transform: uppercase;
+      }
+      .playlist-button {
+        line-height: 0;
       }
       .playlist-button img {
         display: block;
@@ -756,7 +985,6 @@ globalThis.PipCompanion.PipStyles = {
       }
       .volume-slider,
       .speed-slider {
-        position: static;
         width: 28px;
         height: 100px;
         margin: 0;
@@ -814,10 +1042,6 @@ globalThis.PipCompanion.PipStyles = {
         }
         .controls .speed-button {
           width: 34px;
-        }
-        .translation-button {
-          width: 28px;
-          height: 28px;
         }
         .time {
           min-width: 55px;

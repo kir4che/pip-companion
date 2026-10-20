@@ -360,6 +360,61 @@ globalThis.PipCompanion.ContentDanmakuJump = {
   seek: seekDanmakuJump,
 };
 
+let bahamutFullMessages: DanmakuData[] | null = null;
+let bahamutVideoSn: string | null = null;
+
+async function loadBahamutDanmakuMessages(): Promise<DanmakuData[]> {
+  const currentSn =
+    new URL(location.href).searchParams.get("sn") ||
+    (window as unknown as { animefun?: { videoSn?: string | number } })
+      ?.animefun?.videoSn;
+  const snStr = currentSn ? String(currentSn) : null;
+  if (!snStr) return [];
+  if (bahamutFullMessages && bahamutVideoSn === snStr)
+    return bahamutFullMessages;
+  try {
+    const res: unknown = await chrome.runtime.sendMessage({
+      type: "GET_BAHAMUT_DANMAKU",
+      videoSn: snStr,
+    } satisfies ExtensionMessage);
+    if (
+      globalThis.PipCompanion.util.isRecord(res) &&
+      res.ok === true &&
+      Array.isArray(res.messages)
+    ) {
+      bahamutVideoSn = snStr;
+      bahamutFullMessages = res.messages;
+      return bahamutFullMessages;
+    }
+  } catch {}
+  return [];
+}
+
+function getAllDanmakuMessages(): DanmakuData[] {
+  if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE)
+    return bilibiliDanmakuController.getMessages?.() || [];
+  if (DANMAKU_IS_BAHAMUT) return bahamutFullMessages || [];
+  if (DANMAKU_IS_YOUTUBE) return youtubeDanmakuController.getMessages?.() || [];
+  return extraBilibiliDanmakuController.getMessages?.() || [];
+}
+
+async function loadAllDanmakuMessages(): Promise<DanmakuData[]> {
+  if (DANMAKU_IS_BILIBILI && !DANMAKU_IS_BILIBILI_LIVE)
+    return (
+      (await bilibiliDanmakuController.loadAllMessages?.()) ||
+      bilibiliDanmakuController.getMessages?.() ||
+      []
+    );
+  if (DANMAKU_IS_BAHAMUT) return await loadBahamutDanmakuMessages();
+  if (DANMAKU_IS_YOUTUBE) return youtubeDanmakuController.getMessages?.() || [];
+  return extraBilibiliDanmakuController.getMessages?.() || [];
+}
+
+globalThis.PipCompanion.ContentDanmakuSearch = {
+  getMessages: getAllDanmakuMessages,
+  loadAllMessages: loadAllDanmakuMessages,
+};
+
 if (DANMAKU_IS_YOUTUBE) {
   window.addEventListener("yt-navigate-finish", () => {
     setTimeout(checkAndBindDanmakuChat, 600);

@@ -139,6 +139,7 @@ interface ContentExtraBilibiliDanmakuApi {
       errorRevision?: number;
     };
     setSource(value: unknown): void;
+    getMessages?(): DanmakuData[];
   };
 }
 
@@ -181,12 +182,82 @@ interface ContentYouTubeDanmakuController {
   isLive(): boolean;
   setRelayClock(clock: YouTubeChatClock): void;
   destroy(): void;
+  getMessages?(): DanmakuData[];
 }
 
 interface ContentYouTubeDanmakuApi {
   create(
     dependencies: ContentYouTubeDanmakuDependencies,
   ): ContentYouTubeDanmakuController;
+}
+
+interface DanmakuSearchResult {
+  time: number;
+  text: string;
+  color?: string;
+  count?: number;
+}
+
+interface DanmakuHeatPeak {
+  time: number;
+  count: number;
+  representativeText: string;
+}
+
+interface DanmakuSearchApi {
+  searchDanmaku(
+    messages: DanmakuData[],
+    query: string,
+    options?: { maxResults?: number },
+  ): DanmakuSearchResult[];
+  calculateDanmakuHeatPeaks(
+    messages: DanmakuData[],
+    duration?: number,
+    options?: {
+      bucketSeconds?: number;
+      topN?: number;
+      minDistanceSeconds?: number;
+    },
+  ): DanmakuHeatPeak[];
+}
+
+interface DanmakuSearchPanelElements {
+  toggle: HTMLButtonElement;
+  panel: HTMLElement;
+  input: HTMLInputElement;
+  clearButton: HTMLButtonElement;
+  closeButton: HTMLButtonElement;
+  heatSection: HTMLElement;
+  heatList: HTMLElement;
+  resultsSection: HTMLElement;
+  resultsCount: HTMLElement;
+  resultsList: HTMLElement;
+  emptyState: HTMLElement;
+  focus(): void;
+  open(): void;
+  close(): void;
+  togglePanel(): void;
+  isOpen(): boolean;
+  setMessages(messages: DanmakuData[], duration?: number): void;
+}
+
+interface DanmakuSearchPanelApi {
+  create(
+    doc: Document,
+    t: (key: string, substitutions?: string | string[]) => string,
+    options: {
+      makeButton(
+        action: string,
+        label: string,
+        ariaLabel: string,
+      ): HTMLButtonElement;
+      onSeek(seconds: number): void;
+      getMessages?: (() => DanmakuData[]) | undefined;
+      loadAllMessages?: (() => Promise<DanmakuData[]>) | undefined;
+      getDuration?: (() => number | undefined) | undefined;
+      shortcutHint?: string | undefined;
+    },
+  ): DanmakuSearchPanelElements;
 }
 
 interface DanmakuJumpApi {

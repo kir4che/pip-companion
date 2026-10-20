@@ -24,5 +24,6 @@ type ShortcutKey =
   | "pipPlaybackRateDownShortcut"
   | "pipPlaybackRateUpShortcut"
   | "pipDanmakuInputShortcut"
+  | "pipDanmakuSearchShortcut"
   | "pipAutoFitShortcut"
   | "pipResizeShortcut";
