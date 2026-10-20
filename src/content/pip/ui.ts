@@ -197,19 +197,59 @@ globalThis.PipCompanion.PipUI = (() => {
       speedControl,
       speedSlider,
     } = playbackControls;
-    controls.append(
-      timeTooltip,
-      danmakuSendToggle,
-      playButton,
-      nextButton,
-      timeGroup,
+
+    const controlElements: Record<PlayerControlId, HTMLElement> = {
+      "danmaku-send": danmakuSendToggle,
+      play: playButton,
+      next: nextButton,
+      time: timeGroup,
       progress,
-      volumeControl,
-      speedControl,
-      translationButton,
-      playlistButton,
-      danmakuSearchToggle,
-    );
+      volume: volumeControl,
+      speed: speedControl,
+      translation: translationButton,
+      playlist: playlistButton,
+      "danmaku-search": danmakuSearchToggle,
+    };
+
+    const playerControlsSettings =
+      globalThis.PipCompanion?.playerControlsSettings;
+
+    const applyControlsLayout = (customConfig?: PlayerControlItemConfig[]) => {
+      const config =
+        customConfig ||
+        playerControlsSettings?.DEFAULT_CONTROLS_CONFIG ||
+        (Object.keys(controlElements).map((id) => ({
+          id: id as PlayerControlId,
+          visible: true,
+        })) as PlayerControlItemConfig[]);
+
+      const elementsToAppend: HTMLElement[] = [];
+      for (const item of config) {
+        const el = controlElements[item.id];
+        if (el) {
+          if (!item.visible) el.dataset.controlHidden = "true";
+          else delete el.dataset.controlHidden;
+          elementsToAppend.push(el);
+        }
+      }
+      controls.replaceChildren(timeTooltip, ...elementsToAppend);
+    };
+
+    if (playerControlsSettings && globalThis.chrome?.storage?.local) {
+      void globalThis.chrome.storage.local
+        .get(playerControlsSettings.STORAGE_KEY)
+        .then(
+          (stored) => {
+            const config = playerControlsSettings.normalize(
+              stored[playerControlsSettings.STORAGE_KEY],
+            );
+            applyControlsLayout(config);
+          },
+          () => {
+            applyControlsLayout();
+          },
+        );
+    } else applyControlsLayout();
     screen.append(
       subtitle,
       feedback,
@@ -798,6 +838,7 @@ globalThis.PipCompanion.PipUI = (() => {
       refreshShortcuts,
       refreshSubtitleTranslationPreferences,
       refreshSubtitleTranslationServices,
+      applyControlsLayout,
       refreshSubtitleTranslationLanguages: () => {
         const preferences = actions.getSubtitleTranslationPreferences();
         if (

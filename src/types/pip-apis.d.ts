@@ -196,6 +196,7 @@ interface PipUiHandle {
   refreshSubtitleTranslationPreferences(): void;
   refreshSubtitleTranslationLanguages(): void;
   refreshSubtitleTranslationServices(): void;
+  applyControlsLayout?(config?: PlayerControlItemConfig[]): void;
 }
 
 interface SubtitleTranslationPanelElements {
@@ -906,7 +907,49 @@ interface RuntimeMessageDispatcherFactory {
   ): RuntimeMessageDispatcher;
 }
 
+type PlayerControlId =
+  | "danmaku-send"
+  | "play"
+  | "next"
+  | "time"
+  | "progress"
+  | "volume"
+  | "speed"
+  | "translation"
+  | "playlist"
+  | "danmaku-search";
+
+interface PlayerControlItemConfig {
+  id: PlayerControlId;
+  visible: boolean;
+}
+
+interface PlayerControlsSettingsApi {
+  STORAGE_KEY: string;
+  CONTROL_IDS: readonly PlayerControlId[];
+  DEFAULT_CONTROLS_CONFIG: readonly PlayerControlItemConfig[];
+  normalize(raw: unknown): PlayerControlItemConfig[];
+  getItemName(id: PlayerControlId, t: (key: string) => string): string;
+}
+
+interface PlayerControlsOptionsController {
+  load(): Promise<void>;
+  render(): void;
+  handleStorageChange(change: chrome.storage.StorageChange | undefined): void;
+}
+
+interface PlayerControlsOptionsApi {
+  create(options: {
+    storage: StorageAreaAdapter;
+    settings: PlayerControlsSettingsApi;
+    t: (key: string, substitutions?: string | string[]) => string;
+    showStatus: (msg: string, err?: boolean) => void;
+  }): PlayerControlsOptionsController;
+}
+
 interface PipCompanionGlobal {
+  playerControlsSettings: PlayerControlsSettingsApi;
+  optionsPlayerControlsOptions: PlayerControlsOptionsApi;
   runtimeMessages: RuntimeMessageDispatcher;
   createRuntimeMessageDispatcher: RuntimeMessageDispatcherFactory;
   locales: Record<"en" | "zh_TW" | "zh_CN", Record<string, LocaleMessage>>;

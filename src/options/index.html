@@ -14,9 +14,10 @@
           <h1 class="brand-title">__MSG_optionsBrandTitle__</h1>
         </div>
         <nav class="nav-menu" aria-label="__MSG_popupAllSettings__">
-          <a href="#general" class="nav-item active"
-            >__MSG_popupGeneralSettings__</a
+          <a href="#player-controls" class="nav-item active"
+            >__MSG_optionsPlayerControls__</a
           >
+          <a href="#general" class="nav-item">__MSG_popupGeneralSettings__</a>
           <a href="#features" class="nav-item">__MSG_popupFeatureSettings__</a>
           <a href="#shortcuts" class="nav-item">__MSG_popupShortcuts__</a>
           <a href="#danmaku" class="nav-item">__MSG_popupDanmakuStyle__</a>
@@ -26,12 +27,110 @@
           >
         </nav>
       </aside>
-
       <main class="content">
         <header class="content-header">
           <h2>__MSG_popupAllSettings__</h2>
         </header>
-
+        <section id="player-controls" class="settings-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h3>__MSG_optionsPlayerControls__</h3>
+              <span class="setting-help">
+                <button
+                  class="setting-help-trigger"
+                  type="button"
+                  aria-label="__MSG_optionsPlayerControlsHelpLabel__"
+                  aria-describedby="player-controls-help-tooltip"
+                >
+                  <span aria-hidden="true">?</span>
+                </button>
+                <span
+                  id="player-controls-help-tooltip"
+                  class="setting-tooltip"
+                  role="tooltip"
+                  >__MSG_optionsPlayerControlsDesc__</span
+                >
+              </span>
+              <span
+                id="player-controls-unsaved-badge"
+                class="unsaved-badge"
+                hidden
+              >
+                __MSG_optionsPlayerControlsUnsaved__
+              </span>
+            </div>
+          </div>
+          <div class="player-controls-editor">
+            <div class="ctrl-editor-section">
+              <div class="ctrl-editor-header">
+                <span class="ctrl-section-title">
+                  __MSG_optionsPlayerControlsActive__
+                </span>
+              </div>
+              <div class="mock-pip-window">
+                <div class="mock-pip-screen">
+                  <div class="mock-pip-video-bg">
+                    <div class="mock-pip-ambient-glow"></div>
+                  </div>
+                  <div class="mock-pip-controls-bar">
+                    <div
+                      id="player-controls-active-list"
+                      class="mock-pip-controls"
+                      role="list"
+                    ></div>
+                    <div
+                      id="player-controls-active-empty"
+                      class="mock-pip-controls-empty"
+                      hidden
+                    >
+                      __MSG_optionsPlayerControlsActiveEmpty__
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="ctrl-editor-section">
+              <div class="ctrl-editor-header">
+                <span class="ctrl-section-title">
+                  __MSG_optionsPlayerControlsHidden__
+                </span>
+              </div>
+              <div
+                id="player-controls-hidden-list"
+                class="ctrl-hidden-pool"
+                role="list"
+              ></div>
+            </div>
+          </div>
+          <div class="controls-actions-row">
+            <div class="actions-left">
+              <button
+                id="player-controls-reset"
+                class="secondary-btn"
+                type="button"
+              >
+                __MSG_optionsPlayerControlsReset__
+              </button>
+              <button
+                id="player-controls-revert"
+                class="secondary-btn"
+                type="button"
+                disabled
+              >
+                __MSG_optionsPlayerControlsRevert__
+              </button>
+            </div>
+            <div class="actions-right">
+              <button
+                id="player-controls-save"
+                class="primary-btn"
+                type="button"
+              >
+                __MSG_optionsPlayerControlsSave__
+              </button>
+            </div>
+          </div>
+        </section>
         <!-- 一般設定 -->
         <section id="general" class="settings-card">
           <div class="card-header">
@@ -991,6 +1090,8 @@
     <script src="../../shared/subtitle-style-store.js"></script>
     <script src="../../shared/subtitle-translation-settings.js"></script>
     <script src="../../shared/subtitle-translation-config.js"></script>
+    <script src="../../shared/player-controls-settings.js"></script>
+    <script src="/options/player-controls-options.js"></script>
     <script src="../../shared/shortcut-settings.js"></script>
     <script src="/options/shortcut-input.js"></script>
     <script src="/options/shortcut-settings.js"></script>

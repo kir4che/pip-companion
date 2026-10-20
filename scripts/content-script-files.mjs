@@ -6,6 +6,7 @@ export const contentScriptFiles = [
   "shared/danmaku-search.js",
   "shared/site-utils.js",
   "shared/danmaku-settings.js",
+  "shared/player-controls-settings.js",
   "shared/subtitle-settings.js",
   "shared/subtitle-translation-settings.js",
   "shared/subtitle-language-tags.js",

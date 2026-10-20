@@ -742,5 +742,71 @@
   },
   "pipCaptionsOff": {
     "message": "字幕：關"
+  },
+  "optionsPlayerControls": {
+    "message": "自訂 PiP 播放列"
+  },
+  "optionsPlayerControlsDesc": {
+    "message": "拖曳圖示可自訂順序與顯示項目，調整後需點擊「儲存設定」套用。"
+  },
+  "optionsPlayerControlsHelpLabel": {
+    "message": "關於自訂 PiP 播放列"
+  },
+  "optionsPlayerControlsActive": {
+    "message": "播放列顯示項目（可拖曳排序或拖至下方隱藏）"
+  },
+  "optionsPlayerControlsHidden": {
+    "message": "已隱藏項目（可拖曳或點擊放回播放列）"
+  },
+  "optionsPlayerControlsActiveEmpty": {
+    "message": "播放列目前沒有任何控制項，請從下方拖曳或加入控制項。"
+  },
+  "optionsPlayerControlsSave": {
+    "message": "儲存設定"
+  },
+  "optionsPlayerControlsReset": {
+    "message": "重設為預設值"
+  },
+  "optionsPlayerControlsRevert": {
+    "message": "還原變更"
+  },
+  "optionsPlayerControlsSaved": {
+    "message": "播放列設定已成功儲存！"
+  },
+  "optionsPlayerControlsUnsaved": {
+    "message": "有未儲存的變更"
+  },
+  "optionsPlayerControlsItemPlay": {
+    "message": "播放 / 暫停"
+  },
+  "optionsPlayerControlsItemDanmakuSend": {
+    "message": "發送彈幕"
+  },
+  "optionsPlayerControlsItemNext": {
+    "message": "下一集"
+  },
+  "optionsPlayerControlsItemTime": {
+    "message": "播放時間"
+  },
+  "optionsPlayerControlsItemProgress": {
+    "message": "進度條"
+  },
+  "optionsPlayerControlsItemVolume": {
+    "message": "音量控制"
+  },
+  "optionsPlayerControlsItemSpeed": {
+    "message": "播放速度"
+  },
+  "optionsPlayerControlsItemTranslation": {
+    "message": "字幕與翻譯"
+  },
+  "optionsPlayerControlsItemPlaylist": {
+    "message": "播放清單"
+  },
+  "optionsPlayerControlsItemDanmakuSearch": {
+    "message": "搜尋彈幕"
+  },
+  "optionsPlayerControlsShowItem": {
+    "message": "顯示"
   }
 }

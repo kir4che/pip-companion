@@ -712,5 +712,71 @@
   },
   "popupExtraDanmakuConnected": {
     "message": "Source connected."
+  },
+  "optionsPlayerControls": {
+    "message": "Customize PiP Controls"
+  },
+  "optionsPlayerControlsDesc": {
+    "message": "Drag icons to reorder or hide. Click 'Save Settings' to apply changes."
+  },
+  "optionsPlayerControlsHelpLabel": {
+    "message": "About customizing PiP controls"
+  },
+  "optionsPlayerControlsActive": {
+    "message": "Visible in Player Bar (drag to reorder or drag down to hide)"
+  },
+  "optionsPlayerControlsHidden": {
+    "message": "Hidden Controls (drag or click to add back to player bar)"
+  },
+  "optionsPlayerControlsActiveEmpty": {
+    "message": "No controls currently on the player bar. Drag or add items from below."
+  },
+  "optionsPlayerControlsSave": {
+    "message": "Save Settings"
+  },
+  "optionsPlayerControlsReset": {
+    "message": "Reset to Default"
+  },
+  "optionsPlayerControlsRevert": {
+    "message": "Discard Changes"
+  },
+  "optionsPlayerControlsSaved": {
+    "message": "Player controls configuration saved successfully!"
+  },
+  "optionsPlayerControlsUnsaved": {
+    "message": "Unsaved changes"
+  },
+  "optionsPlayerControlsItemPlay": {
+    "message": "Play / Pause"
+  },
+  "optionsPlayerControlsItemDanmakuSend": {
+    "message": "Send Danmaku"
+  },
+  "optionsPlayerControlsItemNext": {
+    "message": "Next Episode"
+  },
+  "optionsPlayerControlsItemTime": {
+    "message": "Current Time"
+  },
+  "optionsPlayerControlsItemProgress": {
+    "message": "Progress Bar"
+  },
+  "optionsPlayerControlsItemVolume": {
+    "message": "Volume Control"
+  },
+  "optionsPlayerControlsItemSpeed": {
+    "message": "Playback Speed"
+  },
+  "optionsPlayerControlsItemTranslation": {
+    "message": "Subtitles & Translation"
+  },
+  "optionsPlayerControlsItemPlaylist": {
+    "message": "Playlist"
+  },
+  "optionsPlayerControlsItemDanmakuSearch": {
+    "message": "Search Danmaku"
+  },
+  "optionsPlayerControlsShowItem": {
+    "message": "Show"
   }
 }

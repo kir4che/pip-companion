@@ -12,6 +12,7 @@ try {
 util.setLanguagePreference(uiLanguage);
 const danmakuSettings = globalThis.PipCompanion.danmakuSettings;
 const subtitleSettings = globalThis.PipCompanion.subtitleSettings;
+const playerControlsSettings = globalThis.PipCompanion.playerControlsSettings;
 const subtitleTranslationSettings =
   globalThis.PipCompanion.subtitleTranslationSettings;
 const t = util.getMessage;
@@ -80,7 +81,16 @@ function refreshOptionsLocale() {
   danmakuStyleOptions.render();
   subtitleStyleOptions.render();
   subtitleTranslationOptions.render();
+  playerControlsOptions.render();
 }
+
+const playerControlsOptions =
+  globalThis.PipCompanion.optionsPlayerControlsOptions.create({
+    storage: storage.local,
+    settings: playerControlsSettings,
+    t,
+    showStatus,
+  });
 
 const subtitleTranslationOptions =
   globalThis.PipCompanion.subtitleTranslationOptions.create({
@@ -302,6 +312,10 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   if (translationConfigChange)
     subtitleTranslationOptions.update(translationConfigChange.newValue);
 
+  const playerControlsChange = changes[playerControlsSettings.STORAGE_KEY];
+  if (playerControlsChange)
+    playerControlsOptions.handleStorageChange(playerControlsChange);
+
   subtitleStyleOptions.handleStorageChange(changes);
 });
 
@@ -310,7 +324,7 @@ const navItems = document.querySelectorAll<HTMLAnchorElement>(".nav-item");
 const sections = document.querySelectorAll<HTMLElement>(".settings-card");
 
 window.addEventListener("scroll", () => {
-  let currentId = "";
+  let currentId = sections[0]?.id || "";
   const scrollPosition = window.scrollY + 100;
   for (const section of sections) {
     if (section.offsetTop <= scrollPosition) currentId = section.id;
@@ -333,3 +347,4 @@ void loadSeekSeconds();
 void danmakuStyleOptions.load();
 subtitleStyleOptions.load();
 void subtitleTranslationOptions.load();
+void playerControlsOptions.load();

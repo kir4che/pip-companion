@@ -88,7 +88,9 @@ body {
   border-radius: 6px;
   color: #f4f4f5;
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 .nav-item:hover {
@@ -459,8 +461,6 @@ body {
   cursor: help;
 }
 
-/* ? 在系統字型的字框中偏左 0.34px、偏上 0.22px，grid 置中的是字框不是墨跡
-   shortcut: 只在 system-ui@12px 下量測，換字型或字級需重新量測 */
 .setting-help-trigger > span {
   transform: translate(0.375px, 0.2px);
 }
@@ -808,7 +808,6 @@ body {
   color: #a1a1aa;
   font-size: 13px;
   text-decoration: none;
-  transition: color 0.15s ease;
 }
 
 .support-footer a:hover {
@@ -884,4 +883,546 @@ select:focus-visible {
   .translation-remove-btn {
     margin-right: 0;
   }
+}
+
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-title-group .setting-help {
+  display: inline-flex;
+  align-items: center;
+}
+
+.card-title-group .setting-tooltip {
+  left: 0;
+  right: auto;
+  max-width: 320px;
+}
+
+.unsaved-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: #78350f;
+  color: #fde68a;
+  border: 1px solid #b45309;
+  font-size: 11px;
+  font-weight: 500;
+  animation: pulse-badge 2s infinite ease-in-out;
+}
+
+@keyframes pulse-badge {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.75;
+  }
+}
+
+.player-controls-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 16px 0;
+}
+
+.ctrl-editor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ctrl-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.ctrl-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #a1a1aa;
+}
+
+.mock-pip-window {
+  width: 100%;
+  max-width: 680px;
+  margin: 4px auto 0;
+  border-radius: 12px;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  user-select: none;
+}
+
+.mock-pip-screen {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.mock-pip-video-bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 35%,
+    #1e1b4b 0%,
+    #0c0a1a 45%,
+    #000000 85%
+  );
+  pointer-events: none;
+}
+
+.mock-pip-ambient-glow {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 160px;
+  height: 60px;
+  background: rgba(59, 130, 246, 0.15);
+  filter: blur(40px);
+  border-radius: 50%;
+}
+
+.mock-pip-controls-bar {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  padding: 24px 8px 8px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.92));
+}
+
+.mock-pip-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 38px;
+  border-radius: 6px;
+}
+
+.mock-pip-controls-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  color: #71717a;
+  font-size: 12px;
+  font-style: italic;
+  text-align: center;
+}
+
+.mock-pip-slot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.mock-pip-slot.slot-progress {
+  flex: 1 1 auto;
+  min-width: 60px;
+}
+
+.mock-pip-slot:active {
+  cursor: grabbing;
+}
+
+.mock-pip-slot.is-dragging {
+  opacity: 0.35;
+  transform: scale(0.95);
+  cursor: grabbing;
+}
+
+.mock-pip-slot.drag-over-before {
+  transform: translateX(4px);
+}
+
+.mock-pip-slot.drag-over-before::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  background: #3b82f6;
+  border-radius: 2px;
+  box-shadow: 0 0 6px #3b82f6;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.mock-pip-slot.drag-over-after {
+  transform: translateX(-4px);
+}
+
+.mock-pip-slot.drag-over-after::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  background: #3b82f6;
+  border-radius: 2px;
+  box-shadow: 0 0 6px #3b82f6;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.mock-pip-slot-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #18181b;
+  color: #f4f4f5;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+  z-index: 20;
+}
+
+.mock-pip-slot:hover .mock-pip-slot-tooltip {
+  opacity: 1;
+}
+
+body.is-dragging-active .mock-pip-slot-tooltip {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+.pip-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 6px;
+  background: rgba(24, 24, 27, 0.95);
+  border: 1.5px solid #3b82f6;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+}
+
+.pip-drag-ghost-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pip-drag-ghost-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.pip-drag-ghost-icon .mock-pip-progress-static {
+  width: 44px;
+}
+
+.mock-pip-btn {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(17, 17, 17, 0.73);
+  font:
+    18px/1 system-ui,
+    sans-serif;
+}
+
+.mock-pip-slot:hover .mock-pip-btn {
+  background: rgba(68, 68, 68, 0.86);
+}
+
+.mock-pip-btn svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.mock-pip-btn-speed {
+  width: 36px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mock-pip-time {
+  flex: 0 0 auto;
+  min-width: 78px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 4px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #fff;
+  cursor: grab;
+}
+
+.mock-pip-time .time-current {
+  width: 28px;
+  height: 18px;
+  padding: 0 2px;
+  margin: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  color: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.mock-pip-slot:hover .time-current {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.mock-pip-time .time-duration {
+  font-size: 12px;
+  color: #fff;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.mock-pip-slot-body {
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mock-pip-progress-static {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.mock-pip-progress-track {
+  position: relative;
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+}
+
+.mock-pip-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 35%;
+  background: #f33;
+  border-radius: 2px 0 0 2px;
+}
+
+.mock-pip-progress-thumb {
+  position: absolute;
+  top: 50%;
+  left: 35%;
+  width: 10px;
+  height: 10px;
+  background: #f33;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.mock-pip-slot.slot-progress .mock-pip-slot-body {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.ctrl-hidden-pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  min-height: 68px;
+  padding: 14px;
+  background: rgba(24, 24, 27, 0.4);
+  border: 1px dashed #3f3f46;
+  border-radius: 10px;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.container-drag-over {
+  border-color: #3b82f6 !important;
+  background-color: rgba(59, 130, 246, 0.08) !important;
+}
+
+.mock-hidden-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 5px;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 20px;
+  color: #f4f4f5;
+  font-size: 12px;
+  cursor: grab;
+  user-select: none;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.mock-hidden-item:hover {
+  background: #323238;
+  border-color: #52525b;
+  transform: translateY(-1px);
+}
+
+.mock-hidden-item:active {
+  cursor: grabbing;
+}
+
+.mock-hidden-item.is-dragging {
+  opacity: 0.35;
+  cursor: grabbing;
+}
+
+.mock-hidden-item.drag-over-before {
+  border-left: 3px solid #3b82f6;
+  transform: translateX(3px);
+}
+
+.mock-hidden-item.drag-over-after {
+  border-right: 3px solid #3b82f6;
+  transform: translateX(-3px);
+}
+
+.mock-hidden-item .mock-pip-btn {
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
+}
+
+.mock-hidden-item .mock-pip-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.mock-hidden-item .mock-pip-time {
+  min-width: 0;
+  height: 24px;
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.mock-hidden-item .mock-pip-time .time-current {
+  width: 24px;
+  font-size: 11px;
+  padding: 0;
+}
+
+.mock-hidden-item .mock-pip-progress-static {
+  width: 50px;
+  flex: 0 0 50px;
+  min-width: 50px;
+  pointer-events: none;
+}
+
+.hidden-item-label {
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.hidden-item-add-btn {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.hidden-item-add-btn:hover {
+  background: #10b981;
+  color: #fff;
+  transform: scale(1.15);
+}
+
+.controls-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #27272a;
+  margin-top: 8px;
+}
+
+.controls-actions-row .actions-left {
+  display: flex;
+  gap: 8px;
+}
+
+.controls-actions-row .actions-right {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-dirty {
+  background: #2563eb !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+  font-weight: 600;
 }

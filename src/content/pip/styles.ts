@@ -170,6 +170,9 @@ globalThis.PipCompanion.PipStyles = {
         transform: none;
         pointer-events: auto;
       }
+      .controls > [data-control-hidden="true"] {
+        display: none !important;
+      }
       .mini-progress {
         position: absolute;
         z-index: 2;

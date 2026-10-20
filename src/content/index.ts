@@ -95,6 +95,12 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
   }
   if (changes.pauseOnPipClose)
     state.pauseOnPipClose = changes.pauseOnPipClose.newValue !== false;
+  if (changes.playerControls) {
+    const config = globalThis.PipCompanion?.playerControlsSettings?.normalize(
+      changes.playerControls.newValue,
+    );
+    state.pipUi?.applyControlsLayout?.(config);
+  }
   if (changes.seekSeconds)
     state.seekSeconds = normalizeSeekSeconds(changes.seekSeconds.newValue);
   const subtitleStyleChange = changes[subtitleSettings.STORAGE_KEY];
