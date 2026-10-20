@@ -11,6 +11,28 @@ const BILIBILI_MAX_SEGMENT_BYTES = 8_000_000;
 const BILIBILI_MAX_TOTAL_BYTES = 32_000_000;
 const BILIBILI_LEGACY_CACHE_TTL_MS = 5 * 60 * 1000;
 const BILIBILI_RETRY_DELAYS_MS = [300, 900];
+const BILIBILI_FETCH_TIMEOUT_MS = 5000;
+const BV_TABLE = "fZodR9XQDSUm21yCkr6zBqiveYah8bt4xsWpHnJE7jL5VG3guMTKNPAwcF";
+const BV_TR: Record<string, bigint> = {};
+for (let i = 0; i < 58; i++) BV_TR[BV_TABLE[i]!] = BigInt(i);
+const BV_S = [11, 10, 3, 8, 4, 6];
+const BV_XOR = 177451812n;
+const BV_ADD = 8728348608n;
+
+function bv2av(bv: string): string {
+  try {
+    let r = 0n;
+    for (let i = 0; i < 6; i++) {
+      const char = bv[BV_S[i]!] || "";
+      const val = BV_TR[char];
+      if (val === undefined) return "";
+      r += val * 58n ** BigInt(i);
+    }
+    return String((r - BV_ADD) ^ BV_XOR);
+  } catch {
+    return "";
+  }
+}
 const WBI_MIXIN_KEY_TABLE = [
   46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49,
   33, 9, 42, 19, 29, 28, 14, 39, 12, 38, 41, 13, 37, 48, 7, 16, 24, 55, 40, 61,
@@ -59,6 +81,7 @@ async function fetchWithRetry(
     try {
       const response = await fetch(input, {
         ...init,
+        signal: init.signal ?? AbortSignal.timeout(BILIBILI_FETCH_TIMEOUT_MS),
         referrer: "https://www.bilibili.com/",
         referrerPolicy: "strict-origin-when-cross-origin",
       });
@@ -178,7 +201,7 @@ async function getWbiMixinKey(): Promise<string> {
   const subKey = subUrl.split("/").pop()?.split(".")[0] || "";
   const source = `${imageKey}${subKey}`;
 
-  if (!isRecord(result) || result.code !== 0 || source.length < 64)
+  if (!isRecord(result) || source.length < 64)
     throw new Error("Bilibili WBI keys are unavailable");
 
   cachedWbiMixinKey = WBI_MIXIN_KEY_TABLE.map((i) => source[i])
@@ -253,6 +276,38 @@ function parseBilibiliInitialState(html: string): unknown {
     return JSON.parse(html.slice(jsonStart, jsonEnd));
   } catch {
     throw new Error("Bilibili video page metadata is invalid");
+  }
+}
+
+async function fetchBilibiliPagelistMetadata(
+  videoId: string,
+  page: number,
+): Promise<{ cid: string; aid: string; duration: number } | null> {
+  try {
+    const isBvid = /^BV[\w]{10}$/i.test(videoId);
+    const param = isBvid
+      ? `bvid=${encodeURIComponent(videoId)}`
+      : `aid=${encodeURIComponent(videoId)}`;
+    const url = new URL(`https://api.bilibili.com/x/player/pagelist?${param}`);
+    const response = await fetchWithRetry(
+      url,
+      { credentials: "include" },
+      "Pagelist metadata",
+    );
+    if (!response.ok) return null;
+    const json: unknown = await response.json();
+    if (!isRecord(json) || json.code !== 0 || !Array.isArray(json.data))
+      return null;
+    const part = json.data[page - 1];
+    if (!isRecord(part)) return null;
+    const cid = String(part.cid ?? "");
+    const duration = Number(part.duration);
+    if (!/^\d+$/.test(cid) || !Number.isFinite(duration) || duration <= 0)
+      return null;
+    const aid = isBvid ? bv2av(videoId) : videoId;
+    return { cid, aid: aid || cid, duration };
+  } catch {
+    return null;
   }
 }
 
@@ -646,6 +701,14 @@ export function registerBilibiliDanmakuListener() {
       }
 
       void (async () => {
+        let fallbackCid = "";
+        let fallbackSendLegacy:
+          | ((
+              legacy: Awaited<
+                ReturnType<typeof getCachedLegacyBilibiliDanmaku>
+              >,
+            ) => void)
+          | null = null;
         try {
           let cid: string;
           let aid: string;
@@ -654,46 +717,53 @@ export function registerBilibiliDanmakuListener() {
           if (epId) {
             ({ cid, aid, duration } = await fetchBilibiliBangumiMetadata(epId));
           } else {
-            const videoUrl = new URL(
-              "https://api.bilibili.com/x/web-interface/view",
+            const pagelist = await fetchBilibiliPagelistMetadata(
+              bvid || avid,
+              page,
             );
-            videoUrl.searchParams.set(bvid ? "bvid" : "aid", bvid || avid);
-            const videoResponse = await fetchWithRetry(
-              videoUrl,
-              { credentials: "include" },
-              "Video info",
-            );
-            if (videoResponse.status === 412) {
-              ({ cid, aid, duration } = await fetchBilibiliPageMetadata(
-                bvid || avid,
-                page,
-              ));
-            } else {
-              if (!videoResponse.ok)
-                throw new Error(`Video info HTTP ${videoResponse.status}`);
+            if (pagelist) ({ cid, aid, duration } = pagelist);
+            else {
+              const videoUrl = new URL(
+                "https://api.bilibili.com/x/web-interface/view",
+              );
+              videoUrl.searchParams.set(bvid ? "bvid" : "aid", bvid || avid);
+              const videoResponse = await fetchWithRetry(
+                videoUrl,
+                { credentials: "include" },
+                "Video info",
+              );
+              if (videoResponse.status === 412) {
+                ({ cid, aid, duration } = await fetchBilibiliPageMetadata(
+                  bvid || avid,
+                  page,
+                ));
+              } else {
+                if (!videoResponse.ok)
+                  throw new Error(`Video info HTTP ${videoResponse.status}`);
 
-              const videoInfo: unknown = await videoResponse.json();
-              const videoData =
-                isRecord(videoInfo) && isRecord(videoInfo.data)
-                  ? videoInfo.data
-                  : null;
-              const pages = Array.isArray(videoData?.pages)
-                ? videoData.pages
-                : [];
-              const part = pages[page - 1];
-              cid = String(isRecord(part) ? (part.cid ?? "") : "");
-              aid = String(videoData?.aid ?? "");
-              duration = Number(isRecord(part) ? part.duration : undefined);
+                const videoInfo: unknown = await videoResponse.json();
+                const videoData =
+                  isRecord(videoInfo) && isRecord(videoInfo.data)
+                    ? videoInfo.data
+                    : null;
+                const pages = Array.isArray(videoData?.pages)
+                  ? videoData.pages
+                  : [];
+                const part = pages[page - 1];
+                cid = String(isRecord(part) ? (part.cid ?? "") : "");
+                aid = String(videoData?.aid ?? "");
+                duration = Number(isRecord(part) ? part.duration : undefined);
 
-              if (
-                !isRecord(videoInfo) ||
-                videoInfo.code !== 0 ||
-                !/^\d+$/.test(cid) ||
-                !/^\d+$/.test(aid) ||
-                !Number.isFinite(duration) ||
-                duration <= 0
-              )
-                throw new Error("Bilibili video part was not found");
+                if (
+                  !isRecord(videoInfo) ||
+                  videoInfo.code !== 0 ||
+                  !/^\d+$/.test(cid) ||
+                  !/^\d+$/.test(aid) ||
+                  !Number.isFinite(duration) ||
+                  duration <= 0
+                )
+                  throw new Error("Bilibili video part was not found");
+              }
             }
           }
 
@@ -735,6 +805,8 @@ export function registerBilibiliDanmakuListener() {
               segmentEnd,
             });
           };
+          fallbackCid = cid;
+          fallbackSendLegacy = sendLegacyFallback;
 
           if (
             segmentStart > segmentCount ||
@@ -749,7 +821,14 @@ export function registerBilibiliDanmakuListener() {
             return;
           }
 
-          const mixinKey = await getWbiMixinKey();
+          let mixinKey: string;
+          try {
+            mixinKey = await getWbiMixinKey();
+          } catch {
+            const legacy = await getCachedLegacyBilibiliDanmaku(cid);
+            sendLegacyFallback(legacy);
+            return;
+          }
           const comments = [];
           const seenCommentIds = new Set();
           const unavailableSegments: { segment: number; status: number }[] = [];
@@ -914,6 +993,13 @@ export function registerBilibiliDanmakuListener() {
             fallbackError,
           });
         } catch (err) {
+          if (fallbackCid && fallbackSendLegacy) {
+            try {
+              const legacy = await getCachedLegacyBilibiliDanmaku(fallbackCid);
+              fallbackSendLegacy(legacy);
+              return;
+            } catch {}
+          }
           sendResponse({
             ok: false,
             error:

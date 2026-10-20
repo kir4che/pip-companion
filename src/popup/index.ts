@@ -294,13 +294,19 @@ openButton.addEventListener("click", async () => {
       pipState = await chrome.tabs.sendMessage(tab.id, {
         type: "PING",
       } satisfies ExtensionMessage);
-    } catch {
+    } catch (err) {
+      if (isExtensionContextInvalidated(err)) {
+        showStatus(t("pipExtensionContextInvalidated"), true);
+        return;
+      }
       const [injectionState] = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: () => Boolean(globalThis.PipCompanion?.locales),
       });
-      if (injectionState?.result)
-        throw new Error("Content scripts already started");
+      if (injectionState?.result) {
+        showStatus(t("pipExtensionContextInvalidated"), true);
+        return;
+      }
 
       const contentScripts = chrome.runtime
         .getManifest()

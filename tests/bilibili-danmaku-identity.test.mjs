@@ -14,9 +14,11 @@ const bilibiliSource = ts.transpileModule(
 
 function createBilibiliDanmakuEnvironment(
   initialUrl = "https://www.bilibili.com/video/BV1xx411c7mD/",
+  { messagesFor = () => [] } = {},
 ) {
   const sentMessages = [];
   const clearedRenderers = [];
+  const emittedMessages = [];
   const listeners = new Map();
 
   class MockElement {
@@ -24,8 +26,8 @@ function createBilibiliDanmakuEnvironment(
       this.tagName = tagName.toUpperCase();
       const classSet = new Set();
       this.classList = {
-        add(c) {
-          classSet.add(c);
+        add(...classes) {
+          for (const c of classes) classSet.add(c);
         },
         delete(c) {
           classSet.delete(c);
@@ -130,7 +132,9 @@ function createBilibiliDanmakuEnvironment(
     setPaused() {},
     beginSeekRestore() {},
     endSeekRestore() {},
-    emit() {},
+    emit(data) {
+      emittedMessages.push(data);
+    },
   };
 
   const context = {
@@ -142,7 +146,7 @@ function createBilibiliDanmakuEnvironment(
           sentMessages.push(msg);
           return Promise.resolve({
             ok: true,
-            messages: [],
+            messages: messagesFor(msg),
             duration: 100,
             segmentCount: 1,
             segmentStart: 1,
@@ -205,6 +209,7 @@ function createBilibiliDanmakuEnvironment(
     mockVideo,
     sentMessages,
     clearedRenderers,
+    emittedMessages,
   };
 }
 
@@ -276,4 +281,81 @@ test("Bilibili danmaku detects Bangumi episode switch across SPA navigation", ()
   assert.equal(env.sentMessages.length, 2);
   assert.equal(env.sentMessages[1].epId, "814831");
   assert.ok(env.clearedRenderers.length > 0);
+});
+
+test("Bilibili danmaku resyncs the playback cursor when the same video reloads for the next episode", async () => {
+  const flush = async () => {
+    for (let i = 0; i < 3; i++)
+      await new Promise((resolve) => setTimeout(resolve, 0));
+  };
+  const env = createBilibiliDanmakuEnvironment(
+    "https://www.bilibili.com/video/BV1xx411c7mD/?p=1",
+    {
+      messagesFor: (msg) =>
+        msg.page === 1
+          ? [{ id: "1", replayTime: 1, type: "right", text: "ep1" }]
+          : [{ id: "2", replayTime: 1, type: "right", text: "ep2" }],
+    },
+  );
+
+  env.controller.checkAndBind(env.mockVideo);
+  await flush();
+  env.mockVideo.currentTime = 1.1;
+  env.mockVideo.dispatchEvent("timeupdate");
+  assert.deepEqual(
+    env.emittedMessages.map((msg) => msg.text),
+    ["ep1"],
+  );
+
+  // 自動換集：URL 先更新，媒體仍停在舊影片的時間點。
+  env.mockLocation.search = "?p=2";
+  env.mockVideo.currentTime = 60;
+  env.controller.checkAndBind(env.mockVideo);
+  await flush();
+  assert.equal(env.sentMessages.at(-1).page, 2);
+
+  // 媒體在同一元素重新載入後，游標應對齊新影片的播放位置。
+  env.mockVideo.currentTime = 0;
+  env.emittedMessages.length = 0;
+  env.mockVideo.dispatchEvent("loadedmetadata");
+  env.mockVideo.currentTime = 1.1;
+  env.mockVideo.dispatchEvent("timeupdate");
+
+  assert.deepEqual(
+    env.emittedMessages.map((msg) => msg.text),
+    ["ep2"],
+  );
+});
+
+test("Bilibili danmaku detects Bangumi episode from DOM in season page (/bangumi/play/ss...)", () => {
+  const env = createBilibiliDanmakuEnvironment(
+    "https://www.bilibili.com/bangumi/play/ss33802",
+  );
+
+  const epItem = env.mockDocument.createElement("div");
+  epItem.classList.add("bpx-player-ctrl-eplist-item", "active");
+  epItem.dataset.epId = "814835";
+  env.mockDocument.body.children.push(epItem);
+
+  env.controller.checkAndBind(env.mockVideo);
+
+  assert.equal(env.sentMessages.length, 1);
+  assert.equal(env.sentMessages[0].epId, "814835");
+});
+
+test("Bilibili danmaku detects active item bvid in playlist without URL bvid param", () => {
+  const env = createBilibiliDanmakuEnvironment(
+    "https://www.bilibili.com/list/watchlater",
+  );
+
+  const podItem = env.mockDocument.createElement("div");
+  podItem.classList.add("video-pod__item", "active");
+  podItem.dataset.key = "BV1xx411c7mD";
+  env.mockDocument.body.children.push(podItem);
+
+  env.controller.checkAndBind(env.mockVideo);
+
+  assert.equal(env.sentMessages.length, 1);
+  assert.equal(env.sentMessages[0].bvid, "BV1xx411c7mD");
+  assert.equal(env.sentMessages[0].page, 1);
 });

@@ -762,12 +762,14 @@ function createRuntimeMessageDispatcher(
 globalThis.PipCompanion.createRuntimeMessageDispatcher =
   createRuntimeMessageDispatcher;
 
-let runtimeMessages: RuntimeMessageDispatcher | null = null;
-globalThis.PipCompanion.runtimeMessages = {
-  addListener(types, handler) {
-    runtimeMessages ??= createRuntimeMessageDispatcher((listener) =>
-      chrome.runtime.onMessage.addListener(listener),
-    );
-    runtimeMessages.addListener(types, handler);
-  },
-};
+globalThis.PipCompanion.runtimeMessages = (() => {
+  let runtimeMessages: RuntimeMessageDispatcher | null = null;
+  return {
+    addListener(types, handler) {
+      runtimeMessages ??= createRuntimeMessageDispatcher((listener) =>
+        chrome.runtime.onMessage.addListener(listener),
+      );
+      runtimeMessages.addListener(types, handler);
+    },
+  };
+})();

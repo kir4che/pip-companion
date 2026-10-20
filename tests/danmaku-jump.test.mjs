@@ -47,6 +47,8 @@ test("ignores 空降 danmaku without a valid timestamp", () => {
   assert.equal(parseJumpSeconds("空降兵03:10 出擊"), 190, "帶額外文字仍吃時間");
   assert.equal(parseJumpSeconds("這裡沒有時間"), null);
   assert.equal(parseJumpSeconds("03:10 開始"), null, "無關鍵字的時間戳");
+  assert.equal(parseJumpSeconds("1:30"), null, "單純時間戳不觸發跳轉");
+  assert.equal(parseJumpSeconds("02:34"), null, "單純時間戳不觸發跳轉");
   assert.equal(parseJumpSeconds("跳到03:10"), null, "跳字不算關鍵字");
   assert.equal(parseJumpSeconds(""), null);
   assert.equal(parseJumpSeconds(null), null);

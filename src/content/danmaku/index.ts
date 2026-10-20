@@ -23,7 +23,7 @@ const MAX_FIXED_DANMAKU_RESTORE_SECONDS = 2;
 // 依解析器的 600 秒上限及最慢 50% 速度設定計算
 const MAX_ADVANCED_DANMAKU_RESTORE_SECONDS = 1200;
 
-let danmakuEnabled = false;
+let danmakuEnabled = true;
 let danmakuVisible = true;
 let danmakuSettingsLoaded = false;
 let danmakuEnabledChangedDuringLoad = false;
@@ -171,6 +171,7 @@ function initDanmakuInPip(
     bilibiliDanmakuController.setSourceVideo(video);
     bilibiliDanmakuController.checkAndBind(video);
   }
+  if (DANMAKU_IS_YOUTUBE) checkAndBindDanmakuChat();
   if (DANMAKU_IS_TWITCH || DANMAKU_IS_BAHAMUT || DANMAKU_IS_BILIBILI_LIVE)
     checkAndBindSiteDanmaku();
 }

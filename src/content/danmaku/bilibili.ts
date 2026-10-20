@@ -224,11 +224,22 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
       const epMatch = location.pathname.match(/\/bangumi\/play\/ep(\d+)/i);
       const urlEpId = epMatch?.[1] || "";
       const activeEp = document.querySelector<HTMLElement>(
-        ".ep-item.on, .ep-item.active, .ep-sub-list-item.on, .ep-sub-list-item.active",
+        ".ep-item.on, .ep-item.active, .ep-sub-list-item.on, .ep-sub-list-item.active, .section-ep-item.on, .section-ep-item.active, .bpx-player-ctrl-eplist-item.active, .bpx-player-ctrl-eplist-item.on, [class*='ep-item'].on, [class*='ep-item'].active, [class*='ep_item'].on, [class*='ep_item'].active",
       );
-      const domEpId = activeEp?.dataset.epId || activeEp?.dataset.id || "";
+      const domEpId =
+        activeEp?.dataset.epId ||
+        activeEp?.dataset.id ||
+        activeEp?.dataset.key?.replace(/^ep/i, "") ||
+        activeEp
+          ?.getAttribute("href")
+          ?.match(/\/bangumi\/play\/ep(\d+)/i)?.[1] ||
+        activeEp
+          ?.querySelector<HTMLAnchorElement>("a[href*='/bangumi/play/ep']")
+          ?.getAttribute("href")
+          ?.match(/\/bangumi\/play\/ep(\d+)/i)?.[1] ||
+        "";
       const currentEpId = urlEpId || domEpId;
-      if (currentEpId) {
+      if (currentEpId)
         return {
           bvid: "",
           avid: "",
@@ -236,7 +247,6 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
           page: 1,
           key: `ep:${currentEpId}`,
         };
-      }
       return null;
     }
 
@@ -250,18 +260,21 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
 
       if (!video && location.pathname.startsWith("/list/")) {
         const listBvid = new URL(location.href).searchParams.get("bvid");
-        if (listBvid && /^BV[\w]{10}$/i.test(listBvid)) {
+        if (listBvid && /^BV[\w]{10}$/i.test(listBvid))
           video = { videoId: listBvid, bvid: listBvid, avid: "" };
-        }
       }
 
       const activePodItem = document.querySelector<HTMLElement>(
-        ".video-pod__item.active, .video-pod__item[aria-current='true']",
+        ".video-pod__item.active, .video-pod__item[aria-current='true'], .cur-list li.on, .cur-list li.active",
       );
-      const podBvid = activePodItem?.dataset.key;
-      if (podBvid && /^BV[\w]{10}$/i.test(podBvid)) {
+      const podBvid =
+        activePodItem?.dataset.key ||
+        activePodItem
+          ?.querySelector<HTMLAnchorElement>("a[href*='/video/BV']")
+          ?.getAttribute("href")
+          ?.match(/\/video\/(BV[\w]{10})/i)?.[1];
+      if (podBvid && /^BV[\w]{10}$/i.test(podBvid))
         video = { videoId: podBvid, bvid: podBvid, avid: "" };
-      }
 
       if (!video) return null;
 
@@ -647,18 +660,26 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
 
     function checkAndBindBilibiliDanmaku(video: HTMLVideoElement | null): void {
       const renderer = dependencies.getRenderer();
-      if (!isBilibili || !dependencies.isSettingsLoaded() || !renderer) return;
+      if (!isBilibili || !dependencies.isSettingsLoaded()) return;
       if (video) bilibiliPipSourceVideo = video;
 
-      const targetVideo = bilibiliPipSourceVideo;
+      const targetVideo =
+        bilibiliPipSourceVideo ??
+        (video instanceof HTMLVideoElement
+          ? video
+          : (document.querySelector<HTMLVideoElement>(
+              "#bilibili-player video, .bpx-player-video-wrap video, video",
+            ) ?? null));
       const identity = getBilibiliVideoIdentity();
       if (!dependencies.isVisible() || !identity || !targetVideo) {
-        bilibiliVideoController?.abort();
-        bilibiliVideoController = null;
-        bilibiliPipVideo = null;
-        bilibiliPageKey = "";
-        resetBilibiliState();
-        renderer.clear();
+        if (renderer) {
+          bilibiliVideoController?.abort();
+          bilibiliVideoController = null;
+          bilibiliPipVideo = null;
+          bilibiliPageKey = "";
+          resetBilibiliState();
+          renderer.clear();
+        }
         return;
       }
 
@@ -675,12 +696,11 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
         bilibiliPageKey = identity.key;
         bilibiliVideoSourceKey = targetSourceKey;
         resetBilibiliState();
-        renderer.clear();
-      } else if (bilibiliVideoSourceKey === "" && targetSourceKey !== "") {
+        renderer?.clear();
+      } else if (bilibiliVideoSourceKey === "" && targetSourceKey !== "")
         bilibiliVideoSourceKey = targetSourceKey;
-      }
 
-      if (targetVideo !== bilibiliPipVideo) {
+      if (renderer && targetVideo !== bilibiliPipVideo) {
         bilibiliVideoController?.abort();
         const controller = new AbortController();
         bilibiliVideoController = controller;
@@ -734,10 +754,17 @@ globalThis.PipCompanion.ContentBilibiliDanmaku = (() => {
           },
           { signal: controller.signal },
         );
+        // 換片時同一個元素可能沿用舊的播放游標，重新對齊目前時間才不會整段沒彈幕。
+        const resyncPlaybackCursor = () => {
+          if (!bilibiliMessagesLoaded) return;
+          resetBilibiliPlaybackCursor(targetVideo.currentTime);
+          processBilibiliDanmaku(targetVideo);
+        };
         targetVideo.addEventListener(
           "loadedmetadata",
           () => {
             checkAndBindBilibiliDanmaku(targetVideo);
+            resyncPlaybackCursor();
           },
           { signal: controller.signal },
         );
