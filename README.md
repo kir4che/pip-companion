@@ -16,9 +16,10 @@ A browser extension that brings web videos into Picture-in-Picture, with subtitl
 ## Features
 
 - **Picture-in-Picture controls:** play/pause, scrub the timeline, volume, playback speed, frame stepping, play next video, and more.
+  - **Customizable appearance:** customize the primary theme color, and drag to reorder, show, or hide player control items in settings.
   - **Volume boost:** same-origin videos can be boosted up to 300%; cross-origin videos may be limited to 100%.
   - **Playback speed:** adjust from 0.25× to 5×; automatically hidden during live streams to preserve sync, and some websites may impose limits.
-  - **Progress bar & previews:** keeps the mini progress bar visible at the bottom when controls are hidden, and hovering over the seek bar previews thumbnails.
+  - **Progress bar & previews:** keeps the mini progress bar visible at the bottom when controls are hidden, and hovering over the seek bar previews timeline thumbnails (supports YouTube, Bilibili, Bahamut Anime Crazy, and Netflix).
   - **Jump to a timestamp:** enter a video time to jump directly to that point.
   - **Bilingual subtitles:** display subtitles that can be read from the video in PiP, with switchable tracks by the languages the video provides.
     - Customizable styles.
@@ -27,13 +28,16 @@ A browser extension that brings web videos into Picture-in-Picture, with subtitl
 - **Danmaku:**
   - Display native danmaku from Bilibili and Bahamut Anime Crazy.
   - Render chat messages from YouTube and Twitch as danmaku.
+  - **Danmaku search:** search current danmaku by keyword inside PiP, automatically discover Top 3 highlight timestamps, and click to jump directly to playback.
+  - **Auto timestamp jump:** detect timestamp tags in danmaku (e.g., `空降 02:45`, `跳傘7:30`) with clickable jump boxes or opt-in automatic jumping.
   - Send danmaku from PiP on Bahamut Anime Crazy, YouTube Live, and Bilibili.
+  - **Keyword filtering:** filter danmaku using plain text or regular expressions (Regex).
+  - **Extra danmaku:** overlay danmaku/chat from Bilibili, Bahamut Anime Crazy, Twitch, or YouTube onto other videos.
   - Customize danmaku appearance.
-  - Extra danmaku: overlay danmaku/chat from Bilibili, Bahamut Anime Crazy, Twitch, or YouTube onto other videos.
 - **Floating comments:** open the comments panel on YouTube and Bilibili video pages while watching.
 - **Screenshots:** save the video frame as a PNG file.
 - **Follow playback:** when enabled and the PiP source pauses while another page (or the same page) has a playing video, PiP hands off to it. Due to browser restrictions, cross-tab handoff requires a click on that tab.
-- **Feature toggles and keyboard shortcuts:** toggle danmaku, screenshots, floating comments, and follow playback individually; customize shortcuts for PiP, comments, screenshots, and danmaku.
+- **Feature toggles and keyboard shortcuts:** toggle danmaku, screenshots, floating comments, and follow playback individually; customize shortcuts for PiP, comments, screenshots, danmaku, and danmaku search.
 - **Localized interface:** Available in Traditional Chinese, Simplified Chinese, and English. Change the language in Settings.
 - **Embedded videos:** detect videos in matching iframes. Cross-origin compatibility depends on the website and browser permissions, so not every player is guaranteed to work.
 
@@ -72,9 +76,10 @@ A browser extension that brings web videos into Picture-in-Picture, with subtitl
 | Adjust volume            | `↓` / `↑`                 |
 | Mute                     | `M`                       |
 | Subtitles                | `C`                       |
-| Fanmaku                  | `D`                       |
+| Danmaku                  | `D`                       |
 | Danmaku input            | `Enter`                   |
-| Ffloating comments       | `Alt/Opt + C`             |
+| Danmaku search           | `Ctrl/Cmd + F`            |
+| Floating comments        | `Alt/Opt + C`             |
 | Take screenshot          | `Alt/Opt + P`             |
 | Adjust playback speed    | `Shift + ,` / `Shift + .` |
 | Step one frame           | `,` / `.`                 |

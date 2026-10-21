@@ -1,11 +1,11 @@
 PiP Companion Privacy Policy
 
-Last updated: 2026-10-15
+Last updated: 2026-10-20
 
 1. Data processing
 The extension has no accounts, advertising, analytics, or tracking, and the developer operates no server to collect user data. Content scripts run automatically on the listed supported platforms. On other websites, they are injected only after the user opens the extension popup and activates PiP; Chrome grants temporary access to that tab through activeTab. The extension does not request access to every website. Video, subtitles, chat/danmaku, and player state are processed locally. Page content is not sent to the developer.
 
-Shortcuts, feature toggles, seek interval, UI language, subtitle and danmaku appearance settings, and subtitle translation preferences (such as target language and display mode) are stored in the browser's local extension storage. The PiP tab and playback state, window bounds, and per-tab extra-danmaku settings are kept in session storage. Session data is cleared when the browser session ends; per-tab danmaku settings are removed when that tab closes. Screenshots are downloaded to the user's device when requested.
+Shortcuts, feature toggles, seek interval, UI language, player control items and PiP theme color preferences, auto-jump toggle, danmaku blocklist keywords, subtitle and danmaku appearance settings, and subtitle translation preferences (such as target language and display mode) are stored in the browser's local extension storage. The PiP tab and playback state, window bounds, and per-tab extra-danmaku settings are kept in session storage. Session data is cleared when the browser session ends; per-tab danmaku settings are removed when that tab closes. Screenshots are downloaded to the user's device when requested.
 
 When machine translation is used in PiP, subtitle text and the selected target language are sent directly to the chosen provider: Microsoft Translator, Google Cloud Translation, or DeepL. The extension may also request the provider's language list, and the settings connection test sends a short sample text. Your API key and, for Microsoft, region setting are stored in the browser's local extension storage. The key is sent only to the chosen translation provider with its requests, not to this project. You can remove the selected provider's saved key in Subtitle translation settings. Subtitle text is not sent to the developer.
 

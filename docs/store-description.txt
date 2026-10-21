@@ -1,16 +1,14 @@
-Press Shift + Alt/Opt + P on a page with a video to toggle Picture-in-Picture (PiP).
+Want to keep a video in view while you browse or work? Press Shift + Alt/Opt + P to open it in PiP.
 
-Features
-• PiP controls for playback, seeking (including timestamp entry), volume, speed, and frame stepping. Play next on supported sites.
-• Playlists and thumbnail previews for YouTube, Bilibili, and Bahamut Anime Crazy.
-• Bilingual subtitles: show subtitles available on the video in PiP, with switchable tracks and customizable styles. The second subtitle can use the native track or live translation services (bring your own API key).
-• Danmaku (scrolling comments): show native danmaku on Bilibili and Bahamut Anime Crazy, or display YouTube and Twitch chat as scrolling messages. Send from PiP on Bilibili, Bahamut Anime Crazy, and YouTube Live. Extra danmaku from Bilibili, Bahamut Anime Crazy, or Twitch can be overlaid onto other videos.
-• Floating comment panels for YouTube and Bilibili.
-• Save supported video frames as PNG.
-• Follow playback: when enabled, switch to another playing video when the PiP video pauses.
-• Resize PiP to fit the video's aspect ratio.
-• In Settings, toggle danmaku, screenshots, floating comments, and follow playback; customize shortcuts, seek interval, subtitle and danmaku styles, subtitle translation services, and interface language (Traditional Chinese, Simplified Chinese, or English).
-• Detect videos in supported iframes; compatibility depends on the site and browser permissions.
+What you can do
+• Control video without switching back: play or pause, seek by dragging or entering a time, adjust volume and speed, or step frame by frame. Resize the PiP window to fit the video; play the next video on supported sites.
+• Find what you want to watch: browse supported playlists, preview thumbnails on supported video timelines, or search danmaku for highlights.
+• Subtitles your way: switch available subtitle tracks, customize how they look, or add a second subtitle line with live translation.
+• See and join the conversation: on supported sites, show danmaku or turn live chat into danmaku. Search danmaku, filter keywords, and send messages from PiP where supported and permitted. You can also overlay danmaku from other sources on videos.
+• Keep the discussion open: view floating comment panels for YouTube and Bilibili while you watch.
+• Save a moment: capture video frames as PNG on supported platforms.
+• Make PiP yours: reorder or hide playback controls, and customize shortcuts, subtitle styles, and danmaku appearance.
+• When follow playback is enabled, the PiP switches to another playing video when its current video pauses.
 
 Platform support and limitations: https://github.com/kir4che/pip-companion/blob/main/docs/platform-support.md
 
