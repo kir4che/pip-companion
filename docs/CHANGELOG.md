@@ -1,3 +1,17 @@
+## 0.6.0
+
+- Added danmaku keyword search inside PiP with dynamic Top 3 highlight timestamps
+- Added danmaku timestamp tag recognition (e.g., "空降 MM:SS") with clickable jump boxes and opt-in forward-only auto jump
+- Added danmaku keyword filtering with a management interface supporting plain text and regular expressions (Regex)
+- Added customizable PiP player controls to reorder, show, or hide control items via drag-and-drop in settings
+- Added customizable PiP theme colors for player controls and progress bars
+- Added seek-bar thumbnail previews for Bilibili Bangumi series
+- Improved YouTube replay chat sync tolerance and native fallback, and ensured single-track subtitle discovery and icon visibility
+- Fixed Bilibili Bangumi playlist recognition and episode switch danmaku updates, and optimized segment danmaku preloading
+- Fixed Twitch VOD danmaku timestamp fallback to align with the bound video's current playback time
+- Improved danmaku deduplication, ensured danmaku clears immediately upon seeking, and strictly synchronized native subtitle toggle state
+- Avoided hover preview videos during PiP video scanning, adjusted time-tooltip positioning, and refined toast notification handling
+
 ## 0.5.0
 
 - Added multi-track and bilingual subtitles, with live translation via Microsoft Translator, Google Cloud Translation, or DeepL (bring your own API key)
