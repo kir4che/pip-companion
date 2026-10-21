@@ -130,13 +130,18 @@ globalThis.PipCompanion.subtitleRemoteRequests = {
 
     function updateYouTubePrimaryTrackKey() {
       const key =
-        state.youtubeTracks.find((track) => track.selected)?.key ?? "";
+        state.youtubeTracks.find((track) => track.selected)?.key ??
+        (state.youtubeTracks.length === 1
+          ? (state.youtubeTracks[0]?.key ?? "")
+          : "");
       if (key !== youtubePrimary.trackKey) youtubePrimary.reset(key);
       return key;
     }
 
     function requestYouTubePrimaryCues() {
-      const track = state.youtubeTracks.find((item) => item.selected);
+      const track =
+        state.youtubeTracks.find((item) => item.selected) ??
+        (state.youtubeTracks.length === 1 ? state.youtubeTracks[0] : undefined);
       updateYouTubePrimaryTrackKey();
       if (options.isYouTube && track?.canLoadCues) youtubePrimary.request();
     }

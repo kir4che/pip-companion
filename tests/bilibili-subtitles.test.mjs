@@ -529,6 +529,53 @@ test("manual override in PiP does not persist to subsequent PiP sessions if nati
   assert.equal(context.state.subtitlessOn, false);
 });
 
+test("YouTube PiP retains subtitle source icon even when native subtitle is default off", () => {
+  const { subtitles, context, posted } = setupSubtitles({
+    platform: "youtube",
+  });
+  context.document.querySelector = (sel) => {
+    if (sel.includes("ytp-subtitles-button"))
+      return {
+        getAttribute: (attr) => (attr === "aria-pressed" ? "false" : null),
+        style: { display: "" },
+      };
+    return null;
+  };
+
+  subtitles.initializeSubtitlesOn();
+  assert.equal(context.state.subtitlessOn, false);
+  // 檢查是否確認有字幕來源（讓 PiP 字幕 ICON 顯示）
+  assert.equal(subtitles.hasSubtitleSource(), true);
+  // 檢查在字幕關閉狀態下 refreshSubtitle 依然會請求 tracks
+  subtitles.refreshSubtitle();
+  assert.equal(
+    posted.some((m) => m?.type === "PIP_REQUEST_YT_SUBTITLE_TRACKS"),
+    true,
+  );
+});
+
+test("YouTube single subtitle track is automatically selected and loaded on enable", () => {
+  const { subtitles, context, remoteRequests } = setupSubtitles({
+    platform: "youtube",
+  });
+  remoteRequests.state.youtubeTracks = [
+    {
+      key: "zh",
+      label: "中文",
+      language: "zh",
+      selected: false,
+      canLoadCues: true,
+    },
+  ];
+
+  subtitles.initializeSubtitlesOn();
+  // 單一軌道時，打開字幕自動選中並可加載 cues。
+  context.state.subtitlessOn = true;
+  assert.equal(remoteRequests.updateYouTubePrimaryTrackKey(), "zh");
+  remoteRequests.requestYouTubePrimaryCues();
+  assert.equal(remoteRequests.youtubePrimary.trackKey, "zh");
+});
+
 test("unknown native switch retains the existing overlay fallback", () => {
   const { subtitles, context } = setupSubtitles({ overlayText: "字幕" });
   subtitles.initializeSubtitlesOn();

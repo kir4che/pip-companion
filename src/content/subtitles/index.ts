@@ -142,6 +142,11 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     remoteSubtitleRequestState.youtubeTracks = e.data.tracks.filter(
       globalThis.PipCompanion.subtitleTrackValidation.isYouTubeTrack,
     );
+    if (
+      remoteSubtitleRequestState.youtubeTracks.length === 1 &&
+      state.subtitlessOn
+    )
+      remoteSubtitleRequestState.youtubeTracks[0]!.selected = true;
     updateYouTubePrimarySubtitleTrackKey();
     requestYouTubePrimarySubtitleCues();
     if (
@@ -351,6 +356,16 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     return standardTextTrack.getTracks(state.sourceVideo);
   }
 
+  function hasYouTubeSubtitleButton(): boolean {
+    const button = getYouTubeSubtitleButton();
+    if (!button) return false;
+    if (button.hidden === true || button.style?.display === "none")
+      return false;
+    if (button.getAttribute?.("aria-disabled") === "true") return false;
+    if (button.classList?.contains?.("ytp-button-disabled")) return false;
+    return true;
+  }
+
   function hasSubtitleSource() {
     const textTracks = Array.from(state.sourceVideo?.textTracks ?? []).filter(
       (track) => {
@@ -366,6 +381,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
     if (
       textTracks.length ||
       getNativeSubtitleTracks().length ||
+      hasYouTubeSubtitleButton() ||
       state.subtitleNode?.isConnected ||
       findGenericSubtitleNode()
     )
@@ -385,9 +401,11 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
 
   function syncYouTubePrimarySubtitleTimeline(): boolean {
     if (!IS_YOUTUBE || !state.pipUi || !state.subtitlessOn) return false;
-    const track = remoteSubtitleRequestState.youtubeTracks.find(
-      (item) => item.selected,
-    );
+    const track =
+      remoteSubtitleRequestState.youtubeTracks.find((item) => item.selected) ??
+      (remoteSubtitleRequestState.youtubeTracks.length === 1
+        ? remoteSubtitleRequestState.youtubeTracks[0]
+        : null);
     const key = updateYouTubePrimarySubtitleTrackKey();
     if (!key || !track?.canLoadCues) return false;
     if (youtubePrimary.loadedTrack !== key) {
@@ -908,6 +926,7 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       const button = getYouTubeSubtitleButton();
       setSubtitlesEnabled(button?.getAttribute("aria-pressed") === "true");
       applySubtitleEnabledOverride();
+      requestYouTubeSubtitleTracks();
       return;
     }
 
@@ -987,6 +1006,8 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
 
     applySubtitleEnabledOverride();
     bilibiliSubtitles.requestTracks();
+    requestYouTubeSubtitleTracks();
+    requestNetflixSubtitleTracks();
     if (!state.subtitlessOn) {
       clearSubtitleEmptyTimer();
       state.subtitleObserver?.disconnect();
@@ -997,8 +1018,6 @@ globalThis.PipCompanion.ContentSubtitles = (() => {
       renderSubtitle();
       return;
     }
-    requestYouTubeSubtitleTracks();
-    requestNetflixSubtitleTracks();
     if (isNetflixSecondaryTrackActive()) return;
 
     bilibiliSubtitles.loadTrack(bilibiliSubtitles.primaryKey);

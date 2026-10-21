@@ -86,24 +86,56 @@
       .join(":");
   }
 
+  function extractCaptionTracksFromResponse(
+    response: unknown,
+  ): Record<string, unknown>[] {
+    if (!isRecord(response)) return [];
+    const captions = isRecord(response.captions)
+      ? ((response.captions.playerCaptionsTracklistRenderer ??
+          response.captions.playerCaptionsRenderer ??
+          response.captions) as Record<string, unknown>)
+      : null;
+    if (isRecord(captions) && Array.isArray(captions.captionTracks))
+      return captions.captionTracks.filter(isRecord);
+    const subtitles = isRecord(response.subtitles)
+      ? ((response.subtitles.playerSubtitlesTracklistRenderer ??
+          response.subtitles) as Record<string, unknown>)
+      : null;
+    if (isRecord(subtitles) && Array.isArray(subtitles.subtitleTracks))
+      return subtitles.subtitleTracks.filter(isRecord);
+    return [];
+  }
+
   function getPlayerSubtitleTracks(
     player: YouTubePlayer,
   ): Record<string, unknown>[] {
     try {
-      const response = player.getPlayerResponse?.();
-      if (isRecord(response)) {
-        const captions = isRecord(response.captions)
-          ? response.captions.playerCaptionsTracklistRenderer
-          : null;
-        if (isRecord(captions) && Array.isArray(captions.captionTracks))
-          return captions.captionTracks.filter(isRecord);
-        const subtitles = isRecord(response.subtitles)
-          ? response.subtitles.playerSubtitlesTracklistRenderer
-          : null;
-        return isRecord(subtitles) && Array.isArray(subtitles.subtitleTracks)
-          ? subtitles.subtitleTracks.filter(isRecord)
-          : [];
+      let tracks = extractCaptionTracksFromResponse(
+        player.getPlayerResponse?.(),
+      );
+      if (tracks.length) return tracks;
+
+      if (window.ytInitialPlayerResponse) {
+        tracks = extractCaptionTracksFromResponse(
+          window.ytInitialPlayerResponse,
+        );
+        if (tracks.length) return tracks;
       }
+
+      const args = window.ytplayer?.config?.args;
+      if (isRecord(args)) {
+        const raw = args.raw_player_response ?? args.player_response;
+        if (typeof raw === "string") {
+          try {
+            tracks = extractCaptionTracksFromResponse(JSON.parse(raw));
+            if (tracks.length) return tracks;
+          } catch {}
+        } else if (isRecord(raw)) {
+          tracks = extractCaptionTracksFromResponse(raw);
+          if (tracks.length) return tracks;
+        }
+      }
+
       return [];
     } catch {
       return [];
@@ -249,7 +281,11 @@
     const playerTracks = getPlayerSubtitleTracks(player);
     if (!available.length) return playerTracks;
     return available.map((track) => {
-      const playerTrack = findPlayerSubtitleTrack(track, playerTracks);
+      const playerTrack =
+        findPlayerSubtitleTrack(track, playerTracks) ??
+        (available.length === 1 && playerTracks.length === 1
+          ? playerTracks[0]
+          : null);
       return playerTrack && typeof playerTrack.baseUrl === "string"
         ? { ...track, baseUrl: playerTrack.baseUrl }
         : track;
@@ -434,13 +470,45 @@
     );
   }
 
+  function isTrackSelected(
+    track: Record<string, unknown>,
+    selectedKey: string,
+    current: unknown,
+    totalCount: number,
+    isButtonOn: boolean,
+  ): boolean {
+    if (totalCount === 1 && isButtonOn) return true;
+    const key = getSubtitleTrackKey(track);
+    if (selectedKey && key === selectedKey) return true;
+    if (isRecord(current)) {
+      if (
+        typeof current.languageCode === "string" &&
+        current.languageCode &&
+        current.languageCode === track.languageCode
+      ) {
+        if (!current.kind || !track.kind || current.kind === track.kind)
+          return true;
+      }
+    }
+    return false;
+  }
+
   function syncYouTubeSubtitleTracks() {
     try {
       const player = document.querySelector<YouTubePlayer>("#movie_player");
       const tracks = player ? getSubtitleTracks(player) : [];
       const current = player ? getPlayerOption(player, "track") : undefined;
       const selectedKey = isRecord(current) ? getSubtitleTrackKey(current) : "";
-      const videoId = player?.getVideoData?.()?.video_id || "";
+      const button = document.querySelector<HTMLElement>(
+        "#movie_player .ytp-subtitles-button",
+      );
+      const isButtonOn = button?.getAttribute("aria-pressed") === "true";
+      const videoId =
+        player?.getVideoData?.()?.video_id ||
+        new URL(location.href).searchParams.get("v") ||
+        location.pathname.match(/\/(?:shorts|live)\/([^/?]+)/)?.[1] ||
+        document.documentElement?.dataset?.pipYtVideoId ||
+        "";
       window.postMessage(
         {
           type: "PIP_YT_SUBTITLE_TRACKS",
@@ -456,7 +524,13 @@
                 : ""),
             language:
               typeof track.languageCode === "string" ? track.languageCode : "",
-            selected: getSubtitleTrackKey(track) === selectedKey,
+            selected: isTrackSelected(
+              track,
+              selectedKey,
+              current,
+              tracks.length,
+              isButtonOn,
+            ),
             canLoadCues: canLoadSubtitleCues(track),
           })),
         },
@@ -699,6 +773,18 @@
       if (e.data?.type === "PIP_REQUEST_YT_DATA") requestSync();
     },
     { passive: true },
+  );
+
+  document.addEventListener(
+    "click",
+    (e) => {
+      const target = e.target;
+      if (!(target instanceof Element)) return;
+      if (target.closest("#movie_player .ytp-subtitles-button")) {
+        window.setTimeout(() => syncYouTubeSubtitleTracks(), 50);
+      }
+    },
+    true,
   );
 
   let pollCount = 0;
