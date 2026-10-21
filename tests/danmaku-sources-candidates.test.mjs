@@ -260,3 +260,88 @@ test("twitch sources 收集彈幕並解析 VOD 時間戳", () => {
   observerCallback([{ type: "childList", addedNodes: [msgNode] }]);
   assert.equal(broadcasts.length, 1, "同一訊息節點重複通知只廣播一次");
 });
+
+test("Twitch VOD 彈幕在無時間標籤時優先使用 getSourceVideo 回退時間", () => {
+  let observerCallback = null;
+  const broadcasts = [];
+  const root = new FakeElement({
+    className: "video-chat__message-list-wrapper",
+  });
+  const ul = new FakeElement({ tag: "ul", parent: root });
+
+  const primaryVideo = { currentTime: 42.8 };
+  const fallbackVideo = { currentTime: 999 };
+
+  const context = {
+    PipCompanion: {
+      site: {
+        isYouTubeHost: () => false,
+        isTwitchHost: (host) => host.includes("twitch.tv"),
+        isBahamutHost: () => false,
+        isBilibiliHost: () => false,
+        isBilibiliLiveHost: () => false,
+      },
+      util: { parseTime: () => null },
+    },
+    location: {
+      hostname: "www.twitch.tv",
+      pathname: "/videos/123456789",
+      search: "",
+      href: "https://www.twitch.tv/videos/123456789",
+      origin: "https://www.twitch.tv",
+    },
+    document: {
+      querySelector: (selector) => {
+        if (selector.includes("video-chat__message-list-wrapper")) return root;
+        if (selector === "video") return fallbackVideo;
+        return null;
+      },
+      querySelectorAll: () => [],
+      body: new FakeElement({ tag: "body" }),
+    },
+    window: {
+      getComputedStyle: () => ({ backgroundColor: "rgba(0, 0, 0, 0)" }),
+    },
+    Node: { TEXT_NODE: 3, ELEMENT_NODE: 1 },
+    Element: FakeElement,
+    URL,
+    MutationObserver: class {
+      constructor(callback) {
+        observerCallback = callback;
+      }
+      observe() {}
+      disconnect() {}
+    },
+  };
+  vm.runInNewContext(source, context);
+
+  const controller = context.PipCompanion.ContentDanmakuSources.create({
+    broadcast: (data) => broadcasts.push(data),
+    clear: () => {},
+    isSettingsLoaded: () => true,
+    isVisible: () => true,
+    getSourceVideo: () => primaryVideo,
+  });
+
+  controller.checkAndBind();
+
+  const msgNode = new FakeElement({
+    className: "vod-message",
+    parent: ul,
+  });
+  msgNode.querySelector = (selector) => {
+    if (selector.includes("body") || selector.includes("text")) {
+      return new FakeElement({ text: "無時間戳訊息" });
+    }
+    return null;
+  };
+
+  observerCallback([{ type: "childList", addedNodes: [msgNode] }]);
+
+  assert.equal(broadcasts.length, 1);
+  assert.equal(
+    broadcasts[0].replayTime,
+    42,
+    "應優先取用 getSourceVideo 的 42 秒而非 fallbackVideo 的 999 秒",
+  );
+});

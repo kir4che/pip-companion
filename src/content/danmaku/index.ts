@@ -299,6 +299,7 @@ const danmakuSourcesController =
     isVisible: isDanmakuVisible,
     broadcast: broadcastDanmaku,
     clear: clearDanmaku,
+    getSourceVideo: () => state.sourceVideo,
   });
 const extraBilibiliDanmakuController =
   globalThis.PipCompanion.ContentExtraBilibiliDanmaku.create({

@@ -320,7 +320,8 @@
         ) {
           replayTime = parsed;
         } else {
-          const video = document.querySelector("video");
+          const video =
+            dependencies.getSourceVideo?.() || document.querySelector("video");
           if (
             video &&
             typeof video.currentTime === "number" &&

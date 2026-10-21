@@ -152,6 +152,7 @@ interface ContentDanmakuSourcesDependencies {
   isVisible(): boolean;
   broadcast(data: DanmakuData, options?: DanmakuEmitOptions): void;
   clear(): void;
+  getSourceVideo?(): HTMLVideoElement | null;
 }
 
 interface ContentDanmakuSourcesController {
