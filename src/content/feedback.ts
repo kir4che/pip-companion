@@ -20,10 +20,7 @@ globalThis.PipCompanion.ContentFeedback = (() => {
   }
 
   function showFeedback(text: string) {
-    if (!state.pipUi) {
-      showPageToast(text);
-      return;
-    }
+    if (!state.pipUi) return;
     state.pipUi.feedback.dataset.mode = "text";
     state.pipUi.feedback.textContent = text;
     revealFeedback();
