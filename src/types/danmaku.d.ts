@@ -50,7 +50,6 @@ interface LaneOccupancy {
 interface ReplayMessageEntry {
   data: DanmakuData;
   replayTime: number;
-  emitted: boolean;
 }
 
 interface BilibiliAdvancedDanmaku {
@@ -122,6 +121,7 @@ interface ContentDanmakuRendererApi {
 }
 
 interface ContentExtraBilibiliDanmakuDependencies {
+  lateToleranceSeconds: number;
   clear?(): void;
   isVisible(): boolean;
   isSourceAvailable(video: HTMLVideoElement | null): boolean;

@@ -240,12 +240,23 @@ test("twitch sources 收集彈幕並解析 VOD 時間戳", () => {
     }
     return null;
   };
+  const messageRow = new FakeElement({
+    className: "message-row vod-message",
+    parent: ul,
+  });
+  messageRow.querySelectorAll = (selector) =>
+    selector.includes(".vod-message") ? [msgNode] : [];
+  messageRow.querySelector = (selector) =>
+    selector === ".vod-message" ? msgNode : msgNode.querySelector(selector);
 
-  observerCallback([{ type: "childList", addedNodes: [msgNode] }]);
+  observerCallback([{ type: "childList", addedNodes: [messageRow] }]);
 
   assert.equal(broadcasts.length, 1);
   assert.equal(broadcasts[0].text, "Twitch 彈幕測試");
   assert.equal(broadcasts[0].replayTime, 83);
   assert.equal(controller.getMessages().length, 1);
   assert.equal(controller.getMessages()[0].replayTime, 83);
+
+  observerCallback([{ type: "childList", addedNodes: [msgNode] }]);
+  assert.equal(broadcasts.length, 1, "同一訊息節點重複通知只廣播一次");
 });

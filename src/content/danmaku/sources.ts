@@ -194,8 +194,7 @@
       '[data-test-selector="chat-scrollable-area__message-container"], .chat-scrollable-area__message-container, [data-a-target="chat-scroller"], .video-chat__message-list-wrapper ul';
     const TWITCH_MESSAGE_SELECTOR =
       '[data-a-target="chat-line-message"], .chat-line__message, [data-test-selector="chat-line-message"], [data-test-selector="chat-line"], .vod-message';
-    const TWITCH_VOD_MESSAGE_SELECTOR =
-      ".video-chat__message-list-wrapper ul > *, .vod-message";
+    const TWITCH_VOD_MESSAGE_SELECTOR = ".vod-message";
 
     function isTwitchVodPage(): boolean {
       return SOURCE_IS_TWITCH && /^\/videos\/\d+/.test(location.pathname);
@@ -268,6 +267,9 @@
       return candidates.filter(
         (candidate) =>
           !candidate.closest('[class*="yt-danmaku"]') &&
+          (!SOURCE_IS_TWITCH ||
+            !isTwitchVodPage() ||
+            !candidate.querySelector(".vod-message")) &&
           (!SOURCE_IS_BAHAMUT || !candidate.querySelector(selector)),
       );
     }

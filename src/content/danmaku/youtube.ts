@@ -13,6 +13,16 @@
     const relayedIds = new Set<string>();
     let destroyed = false;
     let backgroundChatFrame: HTMLIFrameElement | null = null;
+    let nativeReplayChatFallback: {
+      videoId: string;
+      chatFrame: HTMLIFrameElement;
+      chatHost: Element;
+      originalFrameStyle: string | null;
+      originalHostStyle: string | null;
+      wasCollapsed: boolean;
+      wasHidden: boolean;
+    } | null = null;
+    let nativeChatStyleObserver: MutationObserver | null = null;
     let youtubeLiveStatusCache: { videoId: string; isLive: boolean } | null =
       null;
     let youtubeReplayContinuationCache: {
@@ -28,6 +38,8 @@
     let observedItemsNode: Element | null = null;
     let observerAttachedAt = 0;
     let observedChatVideoId = "";
+    let replayChatWarmupTimer: ReturnType<typeof setTimeout> | null = null;
+    let bufferingReplayChat = false;
     let replayVideo: HTMLVideoElement | null = null;
     let replayVideoController: AbortController | null = null;
     let replaySeeking = false;
@@ -39,6 +51,7 @@
       const currentTime = replayVideo?.currentTime;
       if (
         replaySeeking ||
+        bufferingReplayChat ||
         typeof currentTime !== "number" ||
         !Number.isFinite(currentTime)
       )
@@ -50,9 +63,7 @@
 
       for (const entry of dueMessages) {
         pendingReplayMessages.delete(entry);
-        entry.emitted = true;
         const elapsed = Math.max(0, currentTime - entry.replayTime);
-        if (elapsed > dependencies.lateToleranceSeconds) continue;
         dependencies.broadcast(entry.data, { elapsed, restore: elapsed > 0 });
       }
     }
@@ -96,20 +107,15 @@
         }
       }
 
-      const currentTime = replayVideo?.currentTime;
       const messageKey = data.messageId || Symbol();
       let entry = replayMessages.get(messageKey);
       if (!entry) {
         entry = {
           data,
           replayTime: data.replayTime,
-          emitted:
-            typeof currentTime === "number" &&
-            Number.isFinite(currentTime) &&
-            data.replayTime < currentTime - dependencies.lateToleranceSeconds,
         };
         replayMessages.set(messageKey, entry);
-        if (!entry.emitted) pendingReplayMessages.add(entry);
+        pendingReplayMessages.add(entry);
         if (replayMessages.size > YOUTUBE_MAX_REPLAY_MESSAGES) {
           const firstKey = replayMessages.keys().next().value;
           if (firstKey !== undefined) {
@@ -131,7 +137,7 @@
     }
 
     function syncYouTubeReplayChat(): void {
-      const frame = backgroundChatFrame;
+      const frame = backgroundChatFrame || observedChatFrame;
       const video = relayClock || replayVideo;
       if (!frame || !video || isYouTubeLiveVideo()) return;
 
@@ -235,9 +241,8 @@
           dependencies.ensureMainRenderer();
           pendingReplayMessages.clear();
           for (const entry of entries) {
-            const elapsed = currentTime - entry.replayTime;
-            entry.emitted = elapsed >= 0;
-            if (elapsed < 0) pendingReplayMessages.add(entry);
+            if (entry.replayTime > currentTime)
+              pendingReplayMessages.add(entry);
           }
           processReplayMessages();
           syncYouTubeReplayChat();
@@ -303,6 +308,35 @@
       if (youtubeLiveStatusCache?.videoId === videoId)
         return youtubeLiveStatusCache.isLive;
 
+      const bridgedVideoId = document.documentElement?.dataset?.pipYtVideoId;
+      const bridgedIsLive = document.documentElement?.dataset?.pipYtIsLive;
+      if (
+        bridgedVideoId === videoId &&
+        (bridgedIsLive === "true" || bridgedIsLive === "false")
+      ) {
+        const isLive = bridgedIsLive === "true";
+        youtubeLiveStatusCache = { videoId, isLive };
+        return isLive;
+      }
+
+      const player = document.querySelector("#movie_player") as {
+        getVideoData?: () => { isLive?: boolean; video_id?: string };
+        classList?: { contains(name: string): boolean };
+        querySelector?: (selector: string) => Element | null;
+      } | null;
+      try {
+        const videoData = player?.getVideoData?.();
+        if (
+          videoData &&
+          (!videoData.video_id || videoData.video_id === videoId) &&
+          typeof videoData.isLive === "boolean"
+        ) {
+          const isLive = videoData.isLive;
+          youtubeLiveStatusCache = { videoId, isLive };
+          return isLive;
+        }
+      } catch {}
+
       for (const script of document.scripts) {
         const data = parseYouTubeAssignedData(
           script.textContent || "",
@@ -324,30 +358,81 @@
           data.microformat?.playerMicroformatRenderer?.liveBroadcastDetails;
         const isLiveNow = liveBroadcastDetails?.isLiveNow;
         const isLiveContent = data.videoDetails?.isLiveContent;
-        if (
-          typeof isLiveNow === "boolean" ||
-          typeof isLiveContent === "boolean"
-        ) {
-          const hasEnded =
-            typeof liveBroadcastDetails?.endTimestamp === "string";
-          const isLive =
-            isLiveNow === true || (isLiveContent === true && !hasEnded);
+
+        if (typeof isLiveNow === "boolean") {
+          youtubeLiveStatusCache = { videoId, isLive: isLiveNow };
+          return isLiveNow;
+        }
+
+        const hasEnded = typeof liveBroadcastDetails?.endTimestamp === "string";
+        if (hasEnded) {
+          youtubeLiveStatusCache = { videoId, isLive: false };
+          return false;
+        }
+
+        if (typeof isLiveContent === "boolean") {
+          const hasLiveBadge = Boolean(
+            document.querySelector("ytd-watch-flexy[is-live-video]") ||
+            player?.classList?.contains("ytp-live") ||
+            player?.querySelector?.(".ytp-live-badge"),
+          );
+          if (player && !hasLiveBadge) {
+            youtubeLiveStatusCache = { videoId, isLive: false };
+            return false;
+          }
+          const isLive = isLiveContent;
           youtubeLiveStatusCache = { videoId, isLive };
           return isLive;
         }
       }
 
-      const player = document.querySelector("#movie_player");
-      return Boolean(
+      const hasLiveDom = Boolean(
         document.querySelector("ytd-watch-flexy[is-live-video]") ||
-        player?.classList.contains("ytp-live") ||
-        player?.querySelector(".ytp-live-badge"),
+        player?.classList?.contains("ytp-live") ||
+        player?.querySelector?.(".ytp-live-badge"),
       );
+      return hasLiveDom;
+    }
+
+    function findContinuationInTree(obj: unknown, depth = 0): string | null {
+      if (!obj || depth > 8 || typeof obj !== "object") return null;
+      if (Array.isArray(obj)) {
+        for (const item of obj) {
+          const res = findContinuationInTree(item, depth + 1);
+          if (res) return res;
+        }
+        return null;
+      }
+      const rec = obj as Record<string, unknown>;
+      const reload = rec.reloadContinuationData as
+        Record<string, unknown> | undefined;
+      if (typeof reload?.continuation === "string" && reload.continuation) {
+        return reload.continuation;
+      }
+      for (const val of Object.values(rec)) {
+        if (val && typeof val === "object") {
+          const res = findContinuationInTree(val, depth + 1);
+          if (res) return res;
+        }
+      }
+      return null;
     }
 
     function getYouTubeReplayContinuation(videoId: string): string | null {
       if (youtubeReplayContinuationCache?.videoId === videoId)
         return youtubeReplayContinuationCache.token;
+
+      const nativeFrame = getNativeChatIframe();
+      if (nativeFrame?.src) {
+        try {
+          const url = new URL(nativeFrame.src, location.href);
+          const token = url.searchParams.get("continuation");
+          if (token && url.searchParams.get("v") === videoId) {
+            youtubeReplayContinuationCache = { videoId, token };
+            return token;
+          }
+        } catch {}
+      }
 
       for (const script of document.scripts) {
         const data = parseYouTubeAssignedData(
@@ -357,42 +442,112 @@
           currentVideoEndpoint?: {
             watchEndpoint?: { videoId?: unknown };
           };
-          contents?: {
-            twoColumnWatchNextResults?: {
-              conversationBar?: {
-                liveChatRenderer?: {
-                  continuations?: Array<{
-                    reloadContinuationData?: { continuation?: unknown };
-                  }>;
-                };
-              };
-            };
-          };
         } | null;
-        if (data?.currentVideoEndpoint?.watchEndpoint?.videoId !== videoId)
+        if (!data) continue;
+        if (
+          data.currentVideoEndpoint?.watchEndpoint?.videoId &&
+          data.currentVideoEndpoint.watchEndpoint.videoId !== videoId
+        )
           continue;
-        const continuations =
-          data?.contents?.twoColumnWatchNextResults?.conversationBar
-            ?.liveChatRenderer?.continuations || [];
-        for (const item of continuations) {
-          const token = item.reloadContinuationData?.continuation;
-          if (typeof token === "string" && token) {
-            youtubeReplayContinuationCache = { videoId, token };
-            return token;
-          }
+
+        const token = findContinuationInTree(data);
+        if (token) {
+          youtubeReplayContinuationCache = { videoId, token };
+          return token;
         }
       }
       return null;
     }
 
+    function restoreNativeReplayChat(): void {
+      const fallback = nativeReplayChatFallback;
+      if (!fallback) return;
+      nativeReplayChatFallback = null;
+      nativeChatStyleObserver?.disconnect();
+      nativeChatStyleObserver = null;
+      if (!fallback.chatHost.isConnected) return;
+      if (fallback.wasCollapsed)
+        fallback.chatHost.setAttribute("collapsed", "");
+      else fallback.chatHost.removeAttribute("collapsed");
+      if (fallback.wasHidden)
+        fallback.chatHost.setAttribute("hide-chat-frame", "");
+      else fallback.chatHost.removeAttribute("hide-chat-frame");
+      if (fallback.originalHostStyle === null)
+        fallback.chatHost.removeAttribute("style");
+      else fallback.chatHost.setAttribute("style", fallback.originalHostStyle);
+      if (fallback.originalFrameStyle === null)
+        fallback.chatFrame.removeAttribute("style");
+      else
+        fallback.chatFrame.setAttribute("style", fallback.originalFrameStyle);
+    }
+
+    function startNativeReplayChatOffscreen(
+      chatFrame: HTMLIFrameElement,
+    ): void {
+      if (nativeReplayChatFallback?.chatFrame !== chatFrame)
+        restoreNativeReplayChat();
+      if (nativeReplayChatFallback?.chatFrame === chatFrame) return;
+      const chatHost = chatFrame.closest("ytd-live-chat-frame");
+      const showButton = chatHost?.querySelector<HTMLButtonElement>(
+        "#show-hide-button button",
+      );
+      if (
+        !chatHost ||
+        !showButton ||
+        !chatHost.isConnected ||
+        (!chatHost.hasAttribute("collapsed") &&
+          !chatHost.hasAttribute("hide-chat-frame"))
+      )
+        return;
+
+      nativeReplayChatFallback = {
+        videoId: getYouTubeVideoId(),
+        chatFrame,
+        chatHost,
+        originalFrameStyle: chatFrame.getAttribute("style"),
+        originalHostStyle: chatHost.getAttribute("style"),
+        wasCollapsed: chatHost.hasAttribute("collapsed"),
+        wasHidden: chatHost.hasAttribute("hide-chat-frame"),
+      };
+      const offscreenStyle =
+        "position:fixed!important;left:-10000px!important;top:0!important;width:320px!important;height:480px!important;visibility:hidden!important;pointer-events:none!important;border:0!important;";
+      const concealChat = () => {
+        for (const element of [chatHost, chatFrame]) {
+          const style = element.getAttribute("style") || "";
+          if (!/left:\s*-10000px/.test(style))
+            element.setAttribute("style", `${style}${offscreenStyle}`);
+        }
+      };
+      concealChat();
+      showButton.click();
+      concealChat();
+      nativeChatStyleObserver = new MutationObserver(concealChat);
+      nativeChatStyleObserver.observe(chatHost, {
+        attributes: true,
+        attributeFilter: ["style"],
+      });
+    }
+
     function getNativeChatIframe(): HTMLIFrameElement | null {
       return (
-        document.querySelector<HTMLIFrameElement>(
-          "ytd-live-chat-frame iframe#chatframe",
-        ) ||
         document.querySelector<HTMLIFrameElement>("iframe#chatframe") ||
         document.querySelector<HTMLIFrameElement>("ytd-live-chat-frame iframe")
       );
+    }
+
+    function isNativeChatFrameForVideo(
+      chatFrame: HTMLIFrameElement,
+      videoId: string,
+    ): boolean {
+      try {
+        const frameVideoId = new URL(
+          chatFrame.src,
+          location.href,
+        ).searchParams.get("v");
+        return !frameVideoId || frameVideoId === videoId;
+      } catch {
+        return false;
+      }
     }
 
     function removeBackgroundChatFrame(): void {
@@ -418,11 +573,8 @@
       chatUrl.searchParams.set("is_popout", "1");
       if (!isLive) {
         const continuation = getYouTubeReplayContinuation(videoId);
-        if (!continuation) {
-          removeBackgroundChatFrame();
-          return null;
-        }
-        chatUrl.searchParams.set("continuation", continuation);
+        if (continuation)
+          chatUrl.searchParams.set("continuation", continuation);
       }
       if (backgroundChatFrame?.src === chatUrl.href) return backgroundChatFrame;
       removeBackgroundChatFrame();
@@ -460,24 +612,70 @@
         !dependencies.isSettingsLoaded() ||
         !dependencies.isVisible()
       ) {
+        restoreNativeReplayChat();
         removeBackgroundChatFrame();
         return null;
       }
 
       const nativeChatFrame = getNativeChatIframe();
+      const nativeChatIsCurrent =
+        !nativeChatFrame ||
+        isNativeChatFrameForVideo(nativeChatFrame, getYouTubeVideoId());
       if (
-        (!dependencies.relay || isYouTubeLiveVideo()) &&
         nativeChatFrame &&
+        nativeChatIsCurrent &&
         hasChatItems(nativeChatFrame)
       ) {
         removeBackgroundChatFrame();
         return nativeChatFrame;
       }
 
-      return createBackgroundChatFrame() || nativeChatFrame;
+      if (!isYouTubeLiveVideo()) {
+        if (
+          nativeReplayChatFallback?.chatFrame === nativeChatFrame &&
+          nativeChatIsCurrent
+        ) {
+          removeBackgroundChatFrame();
+          return nativeChatFrame;
+        }
+        const videoId = getYouTubeVideoId();
+        const continuation = getYouTubeReplayContinuation(videoId);
+        if (!continuation) {
+          if (nativeChatFrame) {
+            startNativeReplayChatOffscreen(nativeChatFrame);
+            removeBackgroundChatFrame();
+            if (nativeChatIsCurrent) return nativeChatFrame;
+            if (!nativeChatFrame.dataset.ytDanmakuLoadBound) {
+              nativeChatFrame.dataset.ytDanmakuLoadBound = "true";
+              nativeChatFrame.addEventListener("load", () => {
+                window.setTimeout(checkAndBindDanmakuChat, 400);
+              });
+            }
+          }
+          removeBackgroundChatFrame();
+          return null;
+        }
+      }
+
+      if (nativeChatFrame && !nativeChatIsCurrent && !isYouTubeLiveVideo()) {
+        startNativeReplayChatOffscreen(nativeChatFrame);
+        if (!nativeChatFrame.dataset.ytDanmakuLoadBound) {
+          nativeChatFrame.dataset.ytDanmakuLoadBound = "true";
+          nativeChatFrame.addEventListener("load", () => {
+            window.setTimeout(checkAndBindDanmakuChat, 400);
+          });
+        }
+      }
+      return (
+        createBackgroundChatFrame() ||
+        (nativeChatIsCurrent ? nativeChatFrame : null)
+      );
     }
 
     function resetChatObservers(): void {
+      if (replayChatWarmupTimer) clearTimeout(replayChatWarmupTimer);
+      replayChatWarmupTimer = null;
+      bufferingReplayChat = false;
       chatObserver?.disconnect();
       chatObserver = null;
       chatDocumentObserver?.disconnect();
@@ -532,13 +730,26 @@
       if (!YOUTUBE_IS_PAGE || destroyed) return;
       const videoId = getYouTubeVideoId();
       if (videoId !== observedChatVideoId) {
+        const changedVideo = Boolean(observedChatVideoId);
+        if (
+          nativeReplayChatFallback &&
+          (nativeReplayChatFallback.videoId !== videoId ||
+            nativeReplayChatFallback.chatFrame !== getNativeChatIframe())
+        )
+          restoreNativeReplayChat();
         resetChatObservers();
         observedChatVideoId = videoId;
         resetReplayMessagesForVideo(videoId);
+        if (changedVideo && !isYouTubeLiveVideo()) {
+          const nativeChatFrame = getNativeChatIframe();
+          if (nativeChatFrame) startNativeReplayChatOffscreen(nativeChatFrame);
+        }
       }
       const chatFrame = getChatIframe();
       if (!chatFrame) {
         unbindReplayVideo();
+        if (nativeReplayChatFallback?.videoId !== videoId)
+          restoreNativeReplayChat();
         resetChatObservers();
         return;
       }
@@ -583,6 +794,14 @@
       chatObserver?.disconnect();
       observedItemsNode = itemsContainer;
       observerAttachedAt = Date.now();
+      if (!dependencies.relay && !isYouTubeLiveVideo()) {
+        bufferingReplayChat = true;
+        replayChatWarmupTimer = window.setTimeout(() => {
+          replayChatWarmupTimer = null;
+          bufferingReplayChat = false;
+          processReplayMessages();
+        }, 300);
+      }
 
       const existing = itemsContainer.querySelectorAll(
         "yt-live-chat-text-message-renderer, yt-live-chat-paid-message-renderer",
@@ -669,6 +888,7 @@
         resetChatObservers();
         relayedIds.clear();
         unbindReplayVideo();
+        restoreNativeReplayChat();
         removeBackgroundChatFrame();
         replayMessages.clear();
         pendingReplayMessages.clear();

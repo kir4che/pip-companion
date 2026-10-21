@@ -116,7 +116,6 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
 (() => {
   const SEGMENT_SECONDS =
     globalThis.PipCompanion.bilibiliDanmakuConfig.segmentSeconds;
-  const LATE_TOLERANCE_SECONDS = 0.5;
   const DANMAKU_IS_YOUTUBE = globalThis.PipCompanion.site.isYouTubeHost(
     location.hostname,
   );
@@ -409,7 +408,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
         if (emittedMessages.has(message)) continue;
         emittedMessages.add(message);
         const elapsed = Math.max(0, currentTime - displayTime);
-        if (elapsed <= LATE_TOLERANCE_SECONDS)
+        if (elapsed <= dependencies.lateToleranceSeconds)
           broadcastIfNew(message, { elapsed });
       }
       if (
@@ -427,7 +426,9 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
       const currentTime = videoElement.currentTime;
       if (!Number.isFinite(currentTime) || videoElement.seeking) return;
       const end = findMessageIndex(currentTime);
-      const start = findMessageIndex(Math.max(0, currentTime - 10));
+      const start = findMessageIndex(
+        Math.max(0, currentTime - dependencies.lateToleranceSeconds),
+      );
       for (const message of messages.slice(start, end).slice(-100)) {
         if (emittedMessages.has(message)) continue;
         const elapsed = currentTime - message.replayTime - source.offsetSeconds;
@@ -483,7 +484,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
       }
       if (video && Number.isFinite(video.currentTime)) {
         messageIndex = findMessageIndex(
-          video.currentTime - LATE_TOLERANCE_SECONDS,
+          video.currentTime - dependencies.lateToleranceSeconds,
         );
         if (identity?.kind !== "youtube") restoreRecent(video);
       }
@@ -820,7 +821,7 @@ function isExtraBilibiliMessage(value: unknown): value is ExtraBilibiliMessage {
               if (identity?.kind === "bilibili") loadedSegments.clear();
               emittedMessages = new WeakSet();
               messageIndex = findMessageIndex(
-                video.currentTime - LATE_TOLERANCE_SECONDS,
+                video.currentTime - dependencies.lateToleranceSeconds,
               );
               ensureSegments(video);
               sendYouTubeClock();

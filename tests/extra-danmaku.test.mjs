@@ -136,6 +136,7 @@ function setup(kind, options = {}) {
     context,
   );
   const controller = context.PipCompanion.ContentExtraBilibiliDanmaku.create({
+    lateToleranceSeconds: 8,
     isVisible: () => true,
     isSourceAvailable: () => true,
     broadcast: (msg) => broadcasts.push(msg),
@@ -290,7 +291,29 @@ function replaySetup() {
   return { ...s, chat, event };
 }
 
-test("YouTube replay buffers future messages without emitting a paused historical batch", async () => {
+test("extra danmaku uses the shared late-message tolerance", async () => {
+  const s = setup("bilibili", {
+    sendMessage: () =>
+      Promise.resolve({
+        ok: true,
+        messages: [
+          { messageId: "late-8", replayTime: 5492, text: "late within window" },
+          { messageId: "late-9", replayTime: 5491, text: "late beyond window" },
+        ],
+        duration: 10000,
+        segmentCount: 30,
+        segmentStart: 16,
+        segmentEnd: 18,
+      }),
+  });
+  await flush();
+  assert.deepEqual(
+    s.broadcasts.map((message) => message.messageId),
+    ["late-8"],
+  );
+});
+
+test("YouTube replay buffers messages while paused and catches up within the shared window", async () => {
   const s = replaySetup();
   await flush();
   s.video.paused = true;
@@ -305,11 +328,11 @@ test("YouTube replay buffers future messages without emitting a paused historica
   s.event("timeupdate");
   assert.deepEqual(
     s.broadcasts.map((m) => m.replayTime),
-    [5501],
+    [5499, 5500, 5501],
   );
   s.video.paused = true;
   s.chat(5501.1);
-  assert.equal(s.broadcasts.length, 1);
+  assert.equal(s.broadcasts.length, 3);
 });
 
 test("YouTube replay ignores old sessions and seek revisions but can replay a backward seek", async () => {

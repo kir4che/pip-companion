@@ -18,7 +18,7 @@ const DANMAKU_IS_SUPPORTED_SITE =
   DANMAKU_IS_BILIBILI ||
   DANMAKU_IS_TWITCH ||
   DANMAKU_IS_BAHAMUT;
-const REPLAY_LATE_TOLERANCE_SECONDS = 0.5;
+const REPLAY_LATE_TOLERANCE_SECONDS = 5;
 const REPLAY_RESTORE_WINDOW_SECONDS = 5;
 const MAX_SCROLL_DANMAKU_RESTORE_SECONDS = 3;
 const MAX_FIXED_DANMAKU_RESTORE_SECONDS = 2;
@@ -302,6 +302,7 @@ const danmakuSourcesController =
   });
 const extraBilibiliDanmakuController =
   globalThis.PipCompanion.ContentExtraBilibiliDanmaku.create({
+    lateToleranceSeconds: REPLAY_LATE_TOLERANCE_SECONDS,
     clear: clearDanmaku,
     isVisible: isDanmakuVisible,
     isSourceAvailable: (video) =>
