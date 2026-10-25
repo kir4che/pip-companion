@@ -270,13 +270,8 @@ async function loadSettings() {
 }
 
 function onPageKeyDown(e: KeyboardEvent) {
-  const target = e.target;
-  if (e.repeat || e.isComposing) return;
-
-  const isEditableTarget =
-    target instanceof HTMLElement &&
-    (target.isContentEditable ||
-      target.closest("input, textarea, select, [contenteditable='true']"));
+  if (e.repeat || e.isComposing || e.keyCode === 229) return;
+  if (isEditableTarget(e)) return;
 
   if (matchesShortcut(e, state.shortcuts.launchShortcut)) {
     if (
@@ -293,8 +288,7 @@ function onPageKeyDown(e: KeyboardEvent) {
       void chrome.runtime.sendMessage({
         type: "CLOSE_ALL_PIP",
       } satisfies ExtensionMessage);
-    } else if (isEditableTarget) return;
-    else {
+    } else {
       const video =
         state.sourceVideo ??
         globalThis.PipCompanion.ContentVideo.findVideo(false);
@@ -314,7 +308,7 @@ function onPageKeyDown(e: KeyboardEvent) {
     return;
   }
 
-  if (isEditableTarget || !state.sourceVideo) return;
+  if (!state.sourceVideo) return;
   if (matchesShortcut(e, state.shortcuts.commentsShortcut)) {
     if (!(IS_YOUTUBE || IS_BILIBILI) || !state.commentsEnabled) return;
     e.preventDefault();

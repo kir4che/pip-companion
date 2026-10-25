@@ -15,6 +15,7 @@ const {
   normalizeSeekSeconds,
   normalizeShortcut,
   matchesShortcut,
+  isEditableTarget,
 } = globalThis.PipCompanion.util;
 const subtitleSettings = globalThis.PipCompanion.subtitleSettings;
 const subtitleTranslationSettings =

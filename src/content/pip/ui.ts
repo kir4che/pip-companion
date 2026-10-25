@@ -1320,7 +1320,8 @@ globalThis.PipCompanion.PipUI = (() => {
         e.target === volumeValue ||
         e.target === timeCurrent ||
         e.target === danmakuSendInput ||
-        e.target === danmakuSearchInput
+        e.target === danmakuSearchInput ||
+        globalThis.PipCompanion.util.isEditableTarget(e)
       )
         return;
       const target = e.target instanceof Element ? e.target : null;

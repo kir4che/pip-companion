@@ -516,6 +516,7 @@ interface PipCompanionUtil {
   hasMetaModifier(e: KeyboardEvent): boolean;
   matchesShortcut(e: KeyboardEvent, shortcut: Shortcut): boolean;
   matchesWheelShortcut(e: WheelEvent, shortcut: Shortcut): boolean;
+  isEditableTarget(targetOrEvent?: unknown): boolean;
   formatShortcut(value: Shortcut, forAria?: boolean, spaced?: boolean): string;
   formatTime(seconds: number): string;
   parseTime(input: string): number | null;

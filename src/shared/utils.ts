@@ -585,6 +585,118 @@ globalThis.PipCompanion.util = (() => {
     );
   }
 
+  function isEditableDirectNode(target: Element): boolean {
+    const tagName = target.tagName.toUpperCase();
+    if (tagName === "INPUT") {
+      const type = (target as HTMLInputElement).type?.toLowerCase();
+      return !(
+        type === "button" ||
+        type === "checkbox" ||
+        type === "color" ||
+        type === "file" ||
+        type === "hidden" ||
+        type === "image" ||
+        type === "radio" ||
+        type === "range" ||
+        type === "reset" ||
+        type === "submit"
+      );
+    }
+    if (tagName === "TEXTAREA" || tagName === "SELECT") {
+      return true;
+    }
+    if (
+      typeof HTMLElement !== "undefined" &&
+      target instanceof HTMLElement &&
+      target.isContentEditable
+    ) {
+      return true;
+    }
+    const contentEditable = target.getAttribute("contenteditable");
+    if (contentEditable !== null && contentEditable.toLowerCase() !== "false") {
+      return true;
+    }
+    const role = target.getAttribute("role")?.toLowerCase();
+    if (role === "textbox" || role === "searchbox" || role === "combobox") {
+      return true;
+    }
+    return false;
+  }
+
+  function isEditableNode(node: unknown): boolean {
+    if (!node) return false;
+    const target =
+      typeof Node !== "undefined" &&
+      node instanceof Node &&
+      node.nodeType === 3 &&
+      node.parentElement
+        ? node.parentElement
+        : node;
+
+    if (typeof Element === "undefined" || !(target instanceof Element)) {
+      return false;
+    }
+
+    if (isEditableDirectNode(target)) {
+      return true;
+    }
+
+    if (typeof target.closest === "function") {
+      const candidate = target.closest(
+        "input, textarea, select, [contenteditable], [role='textbox'], [role='searchbox'], [role='combobox']",
+      );
+      if (
+        candidate &&
+        candidate !== target &&
+        isEditableDirectNode(candidate)
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function getDeepActiveElement(): Element | null {
+    if (typeof document === "undefined" || !document.activeElement) {
+      return null;
+    }
+    let active: Element | null = document.activeElement;
+    while (active && (active as HTMLElement).shadowRoot?.activeElement) {
+      active = (active as HTMLElement).shadowRoot!.activeElement;
+    }
+    return active;
+  }
+
+  function isEditableTarget(targetOrEvent?: unknown): boolean {
+    if (!targetOrEvent) {
+      return isEditableNode(getDeepActiveElement());
+    }
+
+    if (
+      (typeof Event !== "undefined" && targetOrEvent instanceof Event) ||
+      (typeof targetOrEvent === "object" &&
+        targetOrEvent !== null &&
+        ("composedPath" in targetOrEvent || "target" in targetOrEvent))
+    ) {
+      const event = targetOrEvent as {
+        composedPath?: () => EventTarget[];
+        target?: EventTarget | null;
+      };
+      if (typeof event.composedPath === "function") {
+        const path = event.composedPath();
+        for (const node of path) {
+          if (isEditableNode(node)) return true;
+        }
+      }
+      if (isEditableNode(event.target)) return true;
+      return isEditableNode(getDeepActiveElement());
+    }
+
+    if (isEditableNode(targetOrEvent)) return true;
+    return isEditableNode(getDeepActiveElement());
+  }
+
   function formatShortcut(value: Shortcut, forAria = false, spaced = false) {
     if (value.code === "")
       return forAria ? "" : getMessage("popupShortcutUnassigned");
@@ -680,6 +792,7 @@ globalThis.PipCompanion.util = (() => {
     hasMetaModifier,
     matchesShortcut,
     matchesWheelShortcut,
+    isEditableTarget,
     formatShortcut,
     formatTime,
     parseTime,
