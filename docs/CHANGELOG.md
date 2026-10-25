@@ -1,3 +1,7 @@
+## 0.6.1
+
+- Fixed editable-target detection for keyboard shortcuts and consolidated editability checks
+
 ## 0.6.0
 
 - Added danmaku keyword search inside PiP with dynamic Top 3 highlight timestamps
