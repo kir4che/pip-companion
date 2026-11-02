@@ -1,3 +1,7 @@
+## 0.6.2
+
+- Replaced issue reporting links with a feedback form (no GitHub account needed)
+
 ## 0.6.1
 
 - Fixed editable-target detection for keyboard shortcuts and consolidated editability checks
