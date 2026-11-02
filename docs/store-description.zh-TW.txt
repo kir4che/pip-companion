@@ -14,4 +14,4 @@
 
 【隱私與支援】
 • 不蒐集個人資料作為分析用途，功能會依你的操作與相應平台或服務通訊。
-• 問題回報與建議：https://github.com/kir4che/pip-companion/issues
+• 問題回報與建議：https://forms.gle/egwJHZygXRURg1Sp6

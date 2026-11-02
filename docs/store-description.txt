@@ -14,4 +14,4 @@ Platform support and limitations: https://github.com/kir4che/pip-companion/blob/
 
 Privacy and support
 • No personal data is collected for analytics. Sending danmaku or using subtitle translation connects to the relevant platform or service only when you use the feature.
-• Report issues or suggest features: https://github.com/kir4che/pip-companion/issues
+• Report issues or suggest features: https://forms.gle/egwJHZygXRURg1Sp6
