@@ -39,19 +39,19 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
   function withNativePairs(
     primaryLines: SubtitleLine[],
     secondaryLines: SubtitleLine[],
+    reversed = false,
   ): RenderedSubtitleLine[] {
-    return [
-      ...primaryLines.map((line) => ({
-        line,
-        role: "primary" as const,
-        pairIndex: 0,
-      })),
-      ...secondaryLines.map((line) => ({
-        line,
-        role: "secondary" as const,
-        pairIndex: 0,
-      })),
-    ];
+    const primary = primaryLines.map((line) => ({
+      line,
+      role: "primary" as const,
+      pairIndex: 0,
+    }));
+    const secondary = secondaryLines.map((line) => ({
+      line,
+      role: "secondary" as const,
+      pairIndex: 0,
+    }));
+    return reversed ? [...secondary, ...primary] : [...primary, ...secondary];
   }
 
   function uniqueRenderedLines(
@@ -177,7 +177,9 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
             if (
               res.provider === "microsoft" ||
               res.provider === "google" ||
-              res.provider === "deepl"
+              res.provider === "deepl" ||
+              res.provider === "edge-web" ||
+              res.provider === "google-web"
             )
               provider = res.provider;
             for (let index = 0; index < batch.length; index++)
@@ -208,7 +210,13 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
             provider === "microsoft" ? value.microsoftRegion : "",
           ]);
         };
-        for (const service of ["microsoft", "google", "deepl"] as const) {
+        for (const service of [
+          "microsoft",
+          "google",
+          "deepl",
+          "edge-web",
+          "google-web",
+        ] as const) {
           const credentials = (value: unknown) => {
             if (!globalThis.PipCompanion.util.isRecord(value)) return "";
             return JSON.stringify([
@@ -226,7 +234,9 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
           globalThis.PipCompanion.util.isRecord(next) &&
           (next.provider === "microsoft" ||
             next.provider === "google" ||
-            next.provider === "deepl")
+            next.provider === "deepl" ||
+            next.provider === "edge-web" ||
+            next.provider === "google-web")
         )
           provider = next.provider;
         failed = false;
@@ -255,14 +265,18 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
           cancelQueued();
           return withRole(sourceLines, "primary");
         }
+        const isBilingual =
+          preferences.mode === "bilingual" ||
+          preferences.mode === "bilingual-reversed";
+        const isReversed = preferences.mode === "bilingual-reversed";
         if (preferences.useNativeSecondaryTrack) {
           cancelQueued();
           if (!options.isNativeSecondaryActive())
             return withRole(sourceLines, "primary");
           const secondaryLines = options.getNativeSecondaryLines();
           return uniqueRenderedLines(
-            preferences.mode === "bilingual"
-              ? withNativePairs(sourceLines, secondaryLines)
+            isBilingual
+              ? withNativePairs(sourceLines, secondaryLines, isReversed)
               : withRole(secondaryLines, "secondary"),
           );
         }
@@ -284,8 +298,8 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
           if (nativeSecondary) {
             cancelQueued();
             return uniqueRenderedLines(
-              preferences.mode === "bilingual"
-                ? withNativePairs(sourceLines, nativeSecondary)
+              isBilingual
+                ? withNativePairs(sourceLines, nativeSecondary, isReversed)
                 : withRole(nativeSecondary, "secondary"),
             );
           }
@@ -307,7 +321,7 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
           const translated = getCached(
             keyFor(preferences.targetLanguage, text),
           );
-          if (preferences.mode === "bilingual") {
+          if (isBilingual) {
             output.push({
               line: sourceLine,
               role: "primary",
@@ -344,7 +358,13 @@ globalThis.PipCompanion.SubtitleTranslation = (() => {
               pairIndex: index,
             });
         }
-        if (preferences.mode === "bilingual") output.push(...translatedLines);
+        if (isBilingual) {
+          return uniqueRenderedLines(
+            isReversed
+              ? [...translatedLines, ...output]
+              : [...output, ...translatedLines],
+          );
+        }
         return uniqueRenderedLines(output);
       },
     };

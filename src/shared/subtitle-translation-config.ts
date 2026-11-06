@@ -12,9 +12,12 @@ globalThis.PipCompanion.subtitleTranslationConfig = {
     const config = isSubtitleTranslationConfigRecord(value) ? value : {};
     return {
       provider:
-        config.provider === "google" || config.provider === "deepl"
+        config.provider === "microsoft" ||
+        config.provider === "google" ||
+        config.provider === "deepl" ||
+        config.provider === "google-web"
           ? config.provider
-          : "microsoft",
+          : "edge-web",
       microsoftKey:
         typeof config.microsoftKey === "string" &&
         config.microsoftKey.length <= 4096
@@ -42,11 +45,10 @@ globalThis.PipCompanion.subtitleTranslationConfig = {
     config: SubtitleTranslationConfig,
     provider: SubtitleTranslationProvider,
   ): string {
-    return provider === "google"
-      ? config.googleKey
-      : provider === "deepl"
-        ? config.deeplKey
-        : config.microsoftKey;
+    if (provider === "google") return config.googleKey;
+    if (provider === "deepl") return config.deeplKey;
+    if (provider === "microsoft") return config.microsoftKey;
+    return "";
   },
   getProviderOrigins(
     provider: SubtitleTranslationProvider,
@@ -54,7 +56,10 @@ globalThis.PipCompanion.subtitleTranslationConfig = {
   ): string[] {
     if (provider === "microsoft")
       return ["https://api.cognitive.microsofttranslator.com/*"];
+    if (provider === "edge-web") return ["https://edge.microsoft.com/*"];
     if (provider === "google") return ["https://translation.googleapis.com/*"];
+    if (provider === "google-web")
+      return ["https://translate.googleapis.com/*"];
     return [
       key.trim().toLowerCase().endsWith(":fx")
         ? "https://api-free.deepl.com/*"

@@ -192,6 +192,7 @@ globalThis.PipCompanion.customSelect = (() => {
         enabledOptionButtons()[activeIndex]?.dataset.value;
       menu.replaceChildren();
       const appendOption = (option: HTMLOptionElement) => {
+        if (option.hidden) return;
         const item = doc.createElement("button");
         item.type = "button";
         item.tabIndex = -1;
@@ -361,7 +362,7 @@ globalThis.PipCompanion.customSelect = (() => {
       childList: true,
       characterData: true,
       subtree: true,
-      attributeFilter: ["disabled", "label", "selected", "value"],
+      attributeFilter: ["disabled", "label", "selected", "value", "hidden"],
     });
 
     if (!labelledBy && !explicitLabel && sourceLabel) {

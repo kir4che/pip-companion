@@ -401,7 +401,8 @@ interface SubtitleSettingsApi {
   apply(el: HTMLElement, settings: SubtitleStyleSettings): void;
 }
 
-type SubtitleTranslationProvider = "microsoft" | "google" | "deepl";
+type SubtitleTranslationProvider =
+  "microsoft" | "google" | "deepl" | "edge-web" | "google-web";
 interface SubtitleTranslationServiceOption {
   provider: SubtitleTranslationProvider;
   configured: boolean;
@@ -416,7 +417,8 @@ interface SubtitleTranslationLanguageOption {
   label: string;
 }
 
-type SubtitleTranslationMode = "translation-only" | "bilingual";
+type SubtitleTranslationMode =
+  "translation-only" | "bilingual" | "bilingual-reversed";
 interface SubtitleTranslationPreferences {
   enabled: boolean;
   mode: SubtitleTranslationMode;

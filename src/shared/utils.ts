@@ -474,7 +474,9 @@ globalThis.PipCompanion.util = (() => {
         return (
           value.provider === "microsoft" ||
           value.provider === "google" ||
-          value.provider === "deepl"
+          value.provider === "deepl" ||
+          value.provider === "edge-web" ||
+          value.provider === "google-web"
         );
       case "TRANSLATE_SUBTITLE_CUES":
         return (
@@ -490,7 +492,9 @@ globalThis.PipCompanion.util = (() => {
         return (
           (value.provider === "microsoft" ||
             value.provider === "google" ||
-            value.provider === "deepl") &&
+            value.provider === "deepl" ||
+            value.provider === "edge-web" ||
+            value.provider === "google-web") &&
           isRecord(value.config)
         );
       case "RESIZE_PIP_WINDOW":

@@ -71,7 +71,10 @@ globalThis.PipCompanion.subtitleTranslationSettings = (() => {
     const settings = globalThis.PipCompanion.util.isRecord(value) ? value : {};
     return {
       enabled: settings.enabled === true,
-      mode: settings.mode === "bilingual" ? "bilingual" : "translation-only",
+      mode:
+        settings.mode === "bilingual" || settings.mode === "bilingual-reversed"
+          ? settings.mode
+          : "translation-only",
       targetLanguage: normalizeLanguage(settings.targetLanguage),
       preferNative: settings.preferNative !== false,
       useNativeSecondaryTrack: settings.useNativeSecondaryTrack === true,

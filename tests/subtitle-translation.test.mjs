@@ -196,6 +196,7 @@ function background({ delayEnabled = false, ignoreAbort = false } = {}) {
     targetLanguage: "en",
     useNativeSecondaryTrack: false,
   };
+  const sessionData = { pipTabId: 1 };
   const messageHandlers = new Map();
   const runtimeMessageDispatcher = {
     addListener(types, handler) {
@@ -252,11 +253,16 @@ function background({ delayEnabled = false, ignoreAbort = false } = {}) {
         session: {
           get: async (key) =>
             key === "pipTabId"
-              ? { pipTabId: 1 }
+              ? { pipTabId: sessionData.pipTabId }
               : delayEnabled
                 ? new Promise((resolve) => (resolveEnabled = resolve))
-                : { "pipSubtitlesEnabled:1": true },
-          set: async () => {},
+                : { [key]: sessionData[key] ?? true },
+          set: async (obj) => {
+            Object.assign(sessionData, obj);
+          },
+          remove: async (key) => {
+            delete sessionData[key];
+          },
         },
       },
     },
@@ -270,6 +276,7 @@ function background({ delayEnabled = false, ignoreAbort = false } = {}) {
     fetches,
     send,
     preferences,
+    sessionData,
     advance(ms = 350) {
       now += ms;
     },
@@ -597,4 +604,206 @@ test("background retains provider caches but invalidates replaced credentials", 
   b.translate();
   await flush();
   assert.equal(b.fetches.length, 3);
+});
+
+test("supports edge-web free provider without credentials", async () => {
+  const b = background();
+  b.changeConfig({
+    provider: "edge-web",
+    microsoftKey: "",
+    googleKey: "",
+    deeplKey: "",
+  });
+  let response;
+  b.translate((res) => (response = res), "hello");
+  await flush();
+  assert.equal(b.fetches.length, 1);
+  assert.equal(
+    b.fetches[0].url.origin + b.fetches[0].url.pathname,
+    "https://edge.microsoft.com/translate/translatetext",
+  );
+  assert.equal(b.fetches[0].init.method, "POST");
+  assert.equal(b.fetches[0].init.body, JSON.stringify(["hello"]));
+  b.fetches[0].resolve({
+    ok: true,
+    json: async () => [{ translations: [{ text: "哈囉", to: "en" }] }],
+  });
+  await flush();
+  assert.equal(response.ok, true);
+  assert.equal(response.provider, "edge-web");
+  assert.deepEqual([...response.translations], ["哈囉"]);
+});
+
+test("supports google-web free provider and splits multiline responses", async () => {
+  const b = background();
+  b.preferences.targetLanguage = "zh-Hant";
+  b.changeConfig({
+    provider: "google-web",
+    microsoftKey: "",
+    googleKey: "",
+    deeplKey: "",
+  });
+  let response;
+  b.send(
+    {
+      type: "TRANSLATE_SUBTITLE_CUES",
+      targetLanguage: "zh-Hant",
+      texts: ["first line", "second line"],
+    },
+    (res) => (response = res),
+  );
+  await flush();
+  assert.equal(b.fetches.length, 1);
+  assert.equal(
+    b.fetches[0].url.origin + b.fetches[0].url.pathname,
+    "https://translate.googleapis.com/translate_a/single",
+  );
+  assert.equal(b.fetches[0].url.searchParams.get("client"), "gtx");
+  assert.equal(b.fetches[0].url.searchParams.get("tl"), "zh-TW");
+  b.fetches[0].resolve({
+    ok: true,
+    json: async () => ({
+      sentences: [{ trans: "第一行\n第二行", orig: "first line\nsecond line" }],
+    }),
+  });
+  await flush();
+  assert.equal(response.ok, true);
+  assert.equal(response.provider, "google-web");
+  assert.deepEqual([...response.translations], ["第一行", "第二行"]);
+});
+
+test("GET_SUBTITLE_TRANSLATION_SERVICES marks edge-web and google-web as configured without keys", async () => {
+  const b = background();
+  b.changeConfig({
+    provider: "edge-web",
+    microsoftKey: "",
+    microsoftRegion: "",
+    googleKey: "",
+    deeplKey: "",
+  });
+  let response;
+  b.send(
+    { type: "GET_SUBTITLE_TRANSLATION_SERVICES" },
+    (res) => (response = res),
+  );
+  await flush();
+  assert.equal(response.ok, true);
+  assert.equal(response.provider, "edge-web");
+  const edgeService = response.services.find((s) => s.provider === "edge-web");
+  const googleWebService = response.services.find(
+    (s) => s.provider === "google-web",
+  );
+  const msService = response.services.find((s) => s.provider === "microsoft");
+  assert.equal(edgeService?.configured, true);
+  assert.equal(googleWebService?.configured, true);
+  assert.equal(msService?.configured, false);
+});
+
+test("bilingual places primary lines on top and translated lines on bottom", async () => {
+  const c = client();
+  c.change({ mode: "bilingual" });
+  c.render("hello");
+  await c.tick();
+  await c.succeed();
+  const rendered = c.render("hello");
+  assert.equal(rendered.length, 2);
+  assert.equal(rendered[0].role, "primary");
+  assert.equal(rendered[0].line.segments[0].text, "hello");
+  assert.equal(rendered[1].role, "secondary");
+  assert.equal(rendered[1].line.segments[0].text, "translated hello");
+});
+
+test("bilingual-reversed places translated lines on top and primary lines on bottom", async () => {
+  const c = client();
+  c.change({ mode: "bilingual-reversed" });
+  c.render("hello");
+  await c.tick();
+  await c.succeed();
+  const rendered = c.render("hello");
+  assert.equal(rendered.length, 2);
+  assert.equal(rendered[0].role, "secondary");
+  assert.equal(rendered[0].line.segments[0].text, "translated hello");
+  assert.equal(rendered[1].role, "primary");
+  assert.equal(rendered[1].line.segments[0].text, "hello");
+});
+
+test("PIP_STATE_CHANGED synchronizes subtitles enabled state to session storage", async () => {
+  const b = background();
+  assert.equal(b.sessionData["pipSubtitlesEnabled:1"], true);
+  b.send({ type: "PIP_STATE_CHANGED", pipOpen: false });
+  assert.equal(b.sessionData["pipSubtitlesEnabled:1"], false);
+  b.send({ type: "PIP_STATE_CHANGED", pipOpen: true, subtitlesEnabled: true });
+  assert.equal(b.sessionData["pipSubtitlesEnabled:1"], true);
+});
+
+test("google-web sanitizes inner newlines in cue texts to preserve line splitting", async () => {
+  const b = background();
+  b.preferences.targetLanguage = "zh-Hant";
+  b.changeConfig({
+    provider: "google-web",
+    microsoftKey: "",
+    googleKey: "",
+    deeplKey: "",
+  });
+  let response;
+  b.send(
+    {
+      type: "TRANSLATE_SUBTITLE_CUES",
+      targetLanguage: "zh-Hant",
+      texts: ["first\nmultiline", "second"],
+    },
+    (res) => (response = res),
+  );
+  await flush();
+  assert.equal(b.fetches.length, 1);
+  assert.equal(
+    b.fetches[0].init.body,
+    `q=${encodeURIComponent("first multiline\nsecond")}`,
+  );
+  b.fetches[0].resolve({
+    ok: true,
+    json: async () => ({
+      sentences: [
+        { trans: "第一行 多行\n第二行", orig: "first multiline\nsecond" },
+      ],
+    }),
+  });
+  await flush();
+  assert.equal(response.ok, true);
+  assert.deepEqual([...response.translations], ["第一行 多行", "第二行"]);
+});
+
+test("trims leading and trailing whitespace from translation API credentials", async () => {
+  const b = background();
+  b.changeConfig({
+    provider: "microsoft",
+    microsoftKey: "  ms-key-with-spaces  ",
+    microsoftRegion: "  eastasia  ",
+  });
+  b.translate();
+  await flush();
+  assert.equal(b.fetches.length, 1);
+  assert.equal(
+    b.fetches[0].init.headers["Ocp-Apim-Subscription-Key"],
+    "ms-key-with-spaces",
+  );
+  assert.equal(
+    b.fetches[0].init.headers["Ocp-Apim-Subscription-Region"],
+    "eastasia",
+  );
+  b.succeed();
+  await flush();
+
+  b.advance();
+  b.changeConfig({
+    provider: "google",
+    googleKey: "  google-key-with-spaces  ",
+  });
+  b.translate(undefined, "different cue");
+  await flush();
+  assert.equal(b.fetches.length, 2);
+  assert.equal(
+    b.fetches[1].url.searchParams.get("key"),
+    "google-key-with-spaces",
+  );
 });

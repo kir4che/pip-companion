@@ -581,6 +581,15 @@
   "subtitleTranslationProvider": {
     "message": "翻译服务"
   },
+  "subtitleTranslationProviderEdgeWeb": {
+    "message": "Microsoft Edge"
+  },
+  "subtitleTranslationProviderGoogleWeb": {
+    "message": "Google 翻译"
+  },
+  "subtitleTranslationFreeNotice": {
+    "message": "免密钥即可使用。高频观看若遇限制，建议改用自备密钥方案。"
+  },
   "subtitleTranslationApiKey": {
     "message": "API 密钥"
   },
@@ -641,6 +650,12 @@
   "pipTranslationNoService": {
     "message": "原生字幕"
   },
+  "pipTranslationEdgeWeb": {
+    "message": "Microsoft Edge"
+  },
+  "pipTranslationGoogleWeb": {
+    "message": "Google 翻译"
+  },
   "pipTranslationEnable": {
     "message": "第二字幕"
   },
@@ -651,7 +666,10 @@
     "message": "仅翻译"
   },
   "pipTranslationBilingual": {
-    "message": "原文和翻译"
+    "message": "双语（原文在上）"
+  },
+  "pipTranslationBilingualReversed": {
+    "message": "双语（翻译在上）"
   },
   "pipTranslationLanguage": {
     "message": "目标语言"
@@ -661,12 +679,6 @@
   },
   "pipTranslationChooseSecondaryTrack": {
     "message": "选择第二字幕"
-  },
-  "pipTranslationOriginalAndSecondary": {
-    "message": "双语"
-  },
-  "pipTranslationSecondaryOnly": {
-    "message": "仅第二字幕"
   },
   "pipTranslationPreferNative": {
     "message": "优先使用原生字幕"

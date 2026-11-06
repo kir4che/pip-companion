@@ -7,9 +7,14 @@ const MAX_TEXTS = 20;
 const MAX_TEXT_LENGTH = 1000;
 const MAX_TOTAL_LENGTH = 10000;
 const REQUEST_TIMEOUT_MS = 15000;
+const TRANSLATION_THROTTLE_MS = 300;
+const MAX_CACHE_ENTRIES = 50;
+const MAX_RESPONSE_TEXT_LENGTH = 4000;
 const pipSubtitlesEnabledStorageKey = (tabId: number) =>
   `pipSubtitlesEnabled:${tabId}`;
 const TRANSLATION_PROVIDERS: SubtitleTranslationProvider[] = [
+  "edge-web",
+  "google-web",
   "microsoft",
   "google",
   "deepl",
@@ -56,7 +61,13 @@ function isTranslationRequest(
 function isTranslationProvider(
   value: unknown,
 ): value is SubtitleTranslationProvider {
-  return value === "microsoft" || value === "google" || value === "deepl";
+  return (
+    value === "microsoft" ||
+    value === "google" ||
+    value === "deepl" ||
+    value === "edge-web" ||
+    value === "google-web"
+  );
 }
 
 function readConfig(value: unknown): SubtitleTranslationConfig | null {
@@ -78,18 +89,27 @@ function readConfig(value: unknown): SubtitleTranslationConfig | null {
     deeplKey.length > 4096
   )
     return null;
-  return { provider, microsoftKey, microsoftRegion, googleKey, deeplKey };
+  return {
+    provider,
+    microsoftKey: microsoftKey.trim(),
+    microsoftRegion: microsoftRegion.trim(),
+    googleKey: googleKey.trim(),
+    deeplKey: deeplKey.trim(),
+  };
 }
 
 function isTranslationConfigured(
   config: SubtitleTranslationConfig,
   provider = config.provider,
 ) {
+  if (provider === "edge-web" || provider === "google-web") return true;
   if (provider === "google") return Boolean(config.googleKey.trim());
   if (provider === "deepl") return Boolean(config.deeplKey.trim());
   return (
     Boolean(config.microsoftKey.trim()) &&
-    /^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/i.test(config.microsoftRegion)
+    /^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/i.test(
+      config.microsoftRegion.trim(),
+    )
   );
 }
 
@@ -186,7 +206,11 @@ async function getTranslationLanguages(
   )
     return cachedLanguages.languages;
   let languages: SubtitleTranslationLanguageOption[];
-  if (provider === "microsoft") {
+  if (
+    provider === "microsoft" ||
+    provider === "edge-web" ||
+    provider === "google-web"
+  ) {
     const url = new URL(
       "https://api.cognitive.microsofttranslator.com/languages",
     );
@@ -208,7 +232,7 @@ async function getTranslationLanguages(
       "https://translation.googleapis.com/language/translate/v2/languages",
     );
     url.searchParams.set("target", "en");
-    url.searchParams.set("key", config.googleKey);
+    url.searchParams.set("key", config.googleKey.trim());
     languages = await fetchWithTimeout(
       url,
       {},
@@ -275,7 +299,7 @@ async function parseMicrosoftResponse(
       typeof entry.translations[0].text !== "string"
     )
       throw new Error("Invalid translation response");
-    return entry.translations[0].text.slice(0, 4000);
+    return entry.translations[0].text.slice(0, MAX_RESPONSE_TEXT_LENGTH);
   });
 }
 
@@ -331,7 +355,7 @@ async function parseDeepLResponse(
   return value.translations.map((entry) => {
     if (!isRecord(entry) || typeof entry.text !== "string")
       throw new Error("Invalid translation response");
-    return entry.text.slice(0, 4000);
+    return entry.text.slice(0, MAX_RESPONSE_TEXT_LENGTH);
   });
 }
 
@@ -351,8 +375,36 @@ async function parseGoogleResponse(
   return value.data.translations.map((entry) => {
     if (!isRecord(entry) || typeof entry.translatedText !== "string")
       throw new Error("Invalid translation response");
-    return decodeGoogleText(entry.translatedText).slice(0, 4000);
+    return decodeGoogleText(entry.translatedText).slice(
+      0,
+      MAX_RESPONSE_TEXT_LENGTH,
+    );
   });
+}
+
+async function parseGoogleWebResponse(
+  res: Response,
+  expectedCount: number,
+): Promise<string[]> {
+  if (!res.ok) throw new Error("Translation request failed");
+  const value: unknown = await res.json();
+  if (!isRecord(value) || !Array.isArray(value.sentences))
+    throw new Error("Invalid translation response");
+  const fullTranslated = value.sentences
+    .map((s) => (isRecord(s) && typeof s.trans === "string" ? s.trans : ""))
+    .join("");
+  const lines = fullTranslated.split("\n");
+  if (lines.length === expectedCount) {
+    return lines.map((line) => line.slice(0, MAX_RESPONSE_TEXT_LENGTH));
+  }
+  if (expectedCount === 1) {
+    return [fullTranslated.slice(0, MAX_RESPONSE_TEXT_LENGTH)];
+  }
+  const result: string[] = [];
+  for (let i = 0; i < expectedCount; i++) {
+    result.push((lines[i] ?? "").slice(0, MAX_RESPONSE_TEXT_LENGTH));
+  }
+  return result;
 }
 
 async function translateTexts(
@@ -379,8 +431,8 @@ async function translateTexts(
         method: "POST",
         headers: {
           "Content-Type": "application/json; charset=UTF-8",
-          "Ocp-Apim-Subscription-Key": config.microsoftKey,
-          "Ocp-Apim-Subscription-Region": config.microsoftRegion,
+          "Ocp-Apim-Subscription-Key": config.microsoftKey.trim(),
+          "Ocp-Apim-Subscription-Region": config.microsoftRegion.trim(),
         },
         body: JSON.stringify(texts.map((text) => ({ Text: text }))),
       },
@@ -395,7 +447,7 @@ async function translateTexts(
     const url = new URL(
       "https://translation.googleapis.com/language/translate/v2",
     );
-    url.searchParams.set("key", config.googleKey);
+    url.searchParams.set("key", config.googleKey.trim());
     return fetchWithTimeout(
       url,
       {
@@ -412,24 +464,64 @@ async function translateTexts(
     );
   }
 
-  if (!config.deeplKey.trim())
-    throw new Error("Translation provider is not configured");
-  const deeplKey = config.deeplKey.trim();
-  const url = new URL(`${deeplApiBaseUrl(deeplKey)}/v2/translate`);
+  if (provider === "deepl") {
+    if (!config.deeplKey.trim())
+      throw new Error("Translation provider is not configured");
+    const deeplKey = config.deeplKey.trim();
+    const url = new URL(`${deeplApiBaseUrl(deeplKey)}/v2/translate`);
+    return fetchWithTimeout(
+      url,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `DeepL-Auth-Key ${deeplKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: texts,
+          target_lang: deeplLanguage(targetLanguage),
+        }),
+      },
+      (res) => parseDeepLResponse(res, texts.length),
+      signal,
+    );
+  }
+
+  if (provider === "edge-web") {
+    const url = new URL("https://edge.microsoft.com/translate/translatetext");
+    url.searchParams.set("to", microsoftLanguage(targetLanguage));
+    url.searchParams.set("isEnterpriseClient", "false");
+    return fetchWithTimeout(
+      url,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json; charset=UTF-8",
+        },
+        body: JSON.stringify(texts),
+      },
+      (res) => parseMicrosoftResponse(res, texts.length),
+      signal,
+    );
+  }
+
+  const sanitizedTexts = texts.map((text) => text.replace(/\r?\n/g, " "));
+  const url = new URL("https://translate.googleapis.com/translate_a/single");
+  url.searchParams.set("client", "gtx");
+  url.searchParams.set("sl", "auto");
+  url.searchParams.set("tl", googleLanguage(targetLanguage));
+  url.searchParams.set("dt", "t");
+  url.searchParams.set("dj", "1");
   return fetchWithTimeout(
     url,
     {
       method: "POST",
       headers: {
-        Authorization: `DeepL-Auth-Key ${deeplKey}`,
-        "Content-Type": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded;charset=utf-8",
       },
-      body: JSON.stringify({
-        text: texts,
-        target_lang: deeplLanguage(targetLanguage),
-      }),
+      body: `q=${encodeURIComponent(sanitizedTexts.join("\n"))}`,
     },
-    (res) => parseDeepLResponse(res, texts.length),
+    (res) => parseGoogleWebResponse(res, texts.length),
     signal,
   );
 }
@@ -481,6 +573,7 @@ function providerConfigSignature(
 ): string {
   const config = readConfig(value);
   if (!config) return "";
+  if (provider === "edge-web" || provider === "google-web") return "free";
   return JSON.stringify([
     config[`${provider}Key`],
     provider === "microsoft" ? config.microsoftRegion : "",
@@ -526,7 +619,7 @@ async function translate(
   if (translationInFlight || Date.now() < nextTranslationAt)
     throw new Error("busy");
   translationInFlight = true;
-  nextTranslationAt = Date.now() + 300;
+  nextTranslationAt = Date.now() + TRANSLATION_THROTTLE_MS;
   const result = (async () => {
     try {
       const translations = await translateTexts(
@@ -539,7 +632,7 @@ async function translate(
       signal?.throwIfAborted();
       if (!test) {
         translationCache.set(cacheKey, translations);
-        while (translationCache.size > 50)
+        while (translationCache.size > MAX_CACHE_ENTRIES)
           translationCache.delete(translationCache.keys().next().value!);
       }
       return translations;
@@ -570,6 +663,9 @@ export function registerSubtitleTranslationListener() {
       translationGeneration++;
     pipSubtitleStates.delete(tabId);
     abortTabTranslations(tabId);
+    void chrome.storage.session
+      .remove?.(pipSubtitlesEnabledStorageKey(tabId))
+      ?.catch(() => {});
   });
   chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== "local") return;
@@ -635,11 +731,22 @@ export function registerSubtitleTranslationListener() {
           if (pipSubtitleStates.get(tabId) !== enabled) translationGeneration++;
           pipSubtitleStates.set(tabId, enabled);
           if (!enabled) abortTabTranslations(tabId);
+          translationFailure = "";
+          void chrome.storage.session
+            .set({
+              [pipSubtitlesEnabledStorageKey(tabId)]: enabled,
+            })
+            .catch(() => {});
         } else {
           // 舊的 session-storage 設定已經失效，清除所有 PiP 分頁的翻譯狀態。
           pipSubtitleStates.set(tabId, false);
           translationGeneration++;
           abortTabTranslations(tabId);
+          void chrome.storage.session
+            .set({
+              [pipSubtitlesEnabledStorageKey(tabId)]: false,
+            })
+            .catch(() => {});
         }
         return false;
       }
@@ -711,6 +818,7 @@ export function registerSubtitleTranslationListener() {
               undefined,
               true,
             );
+            translationFailure = "";
             sendResponse({ ok: true });
             return;
           }
@@ -731,35 +839,39 @@ export function registerSubtitleTranslationListener() {
             return;
           }
           const config = readConfig(stored[CONFIG_KEY]);
+          const effectiveConfig: SubtitleTranslationConfig = config ?? {
+            provider: "edge-web",
+            microsoftKey: "",
+            microsoftRegion: "",
+            googleKey: "",
+            deeplKey: "",
+          };
+          const effectiveProvider = isTranslationConfigured(
+            effectiveConfig,
+            effectiveConfig.provider,
+          )
+            ? effectiveConfig.provider
+            : "edge-web";
           if (servicesRequest) {
             sendResponse({
               ok: true,
-              provider: config?.provider ?? "microsoft",
+              provider: effectiveProvider,
               services: TRANSLATION_PROVIDERS.map((provider) => ({
                 provider,
-                configured: config
-                  ? isTranslationConfigured(config, provider)
-                  : false,
+                configured: isTranslationConfigured(effectiveConfig, provider),
               })),
             });
             return;
           }
           if (requestedProvider !== null) {
-            if (
-              !config ||
-              !isTranslationConfigured(config, requestedProvider)
-            ) {
+            if (!isTranslationConfigured(effectiveConfig, requestedProvider)) {
               sendResponse({ ok: false, error: "not-configured" });
               return;
             }
             await chrome.storage.local.set({
-              [CONFIG_KEY]: { ...config, provider: requestedProvider },
+              [CONFIG_KEY]: { ...effectiveConfig, provider: requestedProvider },
             });
             sendResponse({ ok: true });
-            return;
-          }
-          if (!config) {
-            sendResponse({ ok: false, error: "not-configured" });
             return;
           }
           const preferences = stored[PREFERENCES_KEY];
@@ -802,8 +914,8 @@ export function registerSubtitleTranslationListener() {
             activeTranslationControllers.set(tabId, controllers);
             try {
               const languages = await getTranslationLanguages(
-                config,
-                config.provider,
+                effectiveConfig,
+                effectiveProvider,
                 controller.signal,
               );
               if (
@@ -825,7 +937,7 @@ export function registerSubtitleTranslationListener() {
             return;
           }
           if (!translationRequest) return;
-          if (!isTranslationConfigured(config)) {
+          if (!isTranslationConfigured(effectiveConfig, effectiveProvider)) {
             sendResponse({ ok: false, error: "not-configured" });
             return;
           }
@@ -836,10 +948,10 @@ export function registerSubtitleTranslationListener() {
           activeTranslationControllers.set(tabId, controllers);
           try {
             const result = await translate(
-              config,
+              effectiveConfig,
               translationRequest.targetLanguage,
               translationRequest.texts,
-              config.provider,
+              effectiveProvider,
               controller.signal,
             );
             if (
@@ -852,7 +964,7 @@ export function registerSubtitleTranslationListener() {
             sendResponse({
               ok: true,
               translations: result,
-              provider: config.provider,
+              provider: effectiveProvider,
             });
           } finally {
             controllers.delete(controller);

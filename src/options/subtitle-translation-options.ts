@@ -14,6 +14,9 @@ globalThis.PipCompanion.subtitleTranslationOptions = {
     const deeplConfig = document.querySelector(
       "#deepl-translation-config",
     ) as HTMLElement;
+    const freeConfig = document.querySelector(
+      "#free-translation-config",
+    ) as HTMLElement | null;
     const microsoftKey = document.querySelector(
       "#microsoft-translation-key",
     ) as HTMLInputElement;
@@ -53,9 +56,12 @@ globalThis.PipCompanion.subtitleTranslationOptions = {
     const removeButton = document.querySelector(
       "#subtitle-translation-remove",
     ) as HTMLButtonElement;
+    const actionsContainer = document.querySelector(
+      ".translation-settings-actions",
+    ) as HTMLElement | null;
     let testInProgress = false;
     let config: SubtitleTranslationConfig = {
-      provider: "microsoft",
+      provider: "edge-web",
       microsoftKey: "",
       microsoftRegion: "",
       googleKey: "",
@@ -73,6 +79,15 @@ globalThis.PipCompanion.subtitleTranslationOptions = {
 
     function renderActions() {
       const provider = config.provider;
+      const isFree = provider === "edge-web" || provider === "google-web";
+      if (actionsContainer) actionsContainer.hidden = isFree;
+      if (isFree) {
+        saveButton.hidden = true;
+        removeButton.hidden = true;
+        testButton.hidden = true;
+        return;
+      }
+      testButton.hidden = false;
       const keyInput =
         provider === "google"
           ? googleKey
@@ -115,6 +130,10 @@ globalThis.PipCompanion.subtitleTranslationOptions = {
       microsoftConfig.hidden = config.provider !== "microsoft";
       googleConfig.hidden = config.provider !== "google";
       deeplConfig.hidden = config.provider !== "deepl";
+      if (freeConfig) {
+        freeConfig.hidden =
+          config.provider !== "edge-web" && config.provider !== "google-web";
+      }
       renderActions();
     }
 
@@ -141,25 +160,38 @@ globalThis.PipCompanion.subtitleTranslationOptions = {
     }
 
     providerSelect.addEventListener("change", () => {
+      const nextProvider =
+        providerSelect.value === "google" ||
+        providerSelect.value === "deepl" ||
+        providerSelect.value === "microsoft" ||
+        providerSelect.value === "google-web"
+          ? (providerSelect.value as SubtitleTranslationProvider)
+          : "edge-web";
       config = {
         ...config,
-        provider:
-          providerSelect.value === "google" || providerSelect.value === "deepl"
-            ? providerSelect.value
-            : "microsoft",
+        provider: nextProvider,
       };
       render();
-      void saveConfig(config, false, true);
+      void (async () => {
+        if (nextProvider === "edge-web" || nextProvider === "google-web") {
+          await requestProviderAccess(nextProvider, "").catch(() => false);
+        }
+        await saveConfig(config, false, true);
+      })();
     });
 
     function getConfigWithInputKey(): SubtitleTranslationConfig {
       const nextConfig = { ...config };
-      const keyField = `${nextConfig.provider}Key` as const;
+      const provider = nextConfig.provider;
+      if (provider === "edge-web" || provider === "google-web") {
+        return nextConfig;
+      }
+      const keyField = `${provider}Key` as const;
       const input = {
         microsoft: microsoftKey,
         google: googleKey,
         deepl: deeplKey,
-      }[nextConfig.provider];
+      }[provider];
       const key = input.value.trim();
       if (!nextConfig[keyField].trim() && key) nextConfig[keyField] = key;
       return nextConfig;

@@ -581,6 +581,15 @@
   "subtitleTranslationProvider": {
     "message": "Translation service"
   },
+  "subtitleTranslationProviderEdgeWeb": {
+    "message": "Microsoft Edge"
+  },
+  "subtitleTranslationProviderGoogleWeb": {
+    "message": "Google Translate"
+  },
+  "subtitleTranslationFreeNotice": {
+    "message": "No API key required. High-frequency playback may be rate-limited; use your own key for higher stability."
+  },
   "subtitleTranslationApiKey": {
     "message": "API key"
   },
@@ -641,6 +650,12 @@
   "pipTranslationNoService": {
     "message": "Native subtitles"
   },
+  "pipTranslationEdgeWeb": {
+    "message": "Microsoft Edge"
+  },
+  "pipTranslationGoogleWeb": {
+    "message": "Google Translate"
+  },
   "pipTranslationEnable": {
     "message": "Second subtitle"
   },
@@ -651,7 +666,10 @@
     "message": "Translation only"
   },
   "pipTranslationBilingual": {
-    "message": "Original and translation"
+    "message": "Bilingual (Original on top)"
+  },
+  "pipTranslationBilingualReversed": {
+    "message": "Bilingual (Translation on top)"
   },
   "pipTranslationLanguage": {
     "message": "Target language"
@@ -661,12 +679,6 @@
   },
   "pipTranslationChooseSecondaryTrack": {
     "message": "Choose a second subtitle"
-  },
-  "pipTranslationOriginalAndSecondary": {
-    "message": "Bilingual"
-  },
-  "pipTranslationSecondaryOnly": {
-    "message": "Second subtitle only"
   },
   "pipTranslationPreferNative": {
     "message": "Prefer native subtitles"

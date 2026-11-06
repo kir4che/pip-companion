@@ -960,7 +960,13 @@
               >__MSG_subtitleTranslationProvider__</label
             >
             <select id="subtitle-translation-provider" class="form-select">
-              <option value="microsoft">Microsoft Translator</option>
+              <option value="edge-web">
+                __MSG_subtitleTranslationProviderEdgeWeb__
+              </option>
+              <option value="google-web">
+                __MSG_subtitleTranslationProviderGoogleWeb__
+              </option>
+              <option value="microsoft">Azure Translator</option>
               <option value="google">Google Cloud Translation</option>
               <option value="deepl">DeepL API</option>
             </select>
@@ -1102,6 +1108,15 @@
               class="translation-security-note"
             >
               __MSG_subtitleTranslationSecurityNote__
+            </p>
+          </div>
+          <div
+            id="free-translation-config"
+            class="translation-config-grid"
+            hidden
+          >
+            <p id="free-translation-note" class="translation-security-note">
+              __MSG_subtitleTranslationFreeNotice__
             </p>
           </div>
           <div class="translation-settings-actions">

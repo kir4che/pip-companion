@@ -4,7 +4,14 @@ import test from "node:test";
 import vm from "node:vm";
 import ts from "typescript";
 
-const providers = ["none", "microsoft", "google", "deepl"];
+const providers = [
+  "none",
+  "edge-web",
+  "google-web",
+  "microsoft",
+  "google",
+  "deepl",
+];
 const source = [
   "../../shared/subtitle-language-tags.ts",
   "../../shared/danmaku-search.ts",
@@ -447,6 +454,22 @@ test("unconfigured provider and missing native tracks keep settings disabled", a
       ui.service.options.find((option) => option.value === "google").disabled,
       true,
     );
+    assert.equal(
+      ui.service.options.find((option) => option.value === "google").hidden,
+      true,
+    );
+    assert.equal(
+      ui.service.options.find((option) => option.value === "microsoft").hidden,
+      false,
+    );
+    assert.equal(
+      ui.service.options.find((option) => option.value === "edge-web").hidden,
+      false,
+    );
+    assert.equal(
+      ui.service.options.find((option) => option.value === "google-web").hidden,
+      false,
+    );
     assert.equal(ui.translationToggle.disabled, true);
     assert.equal(ui.mode.disabled, true);
     assert.equal(ui.language.disabled, true);
@@ -494,4 +517,14 @@ test("stale service query cannot overwrite a newer provider state", async () => 
   assert.equal(ui.translationToggle.disabled, false);
   assert.equal(ui.mode.disabled, false);
   assert.equal(ui.language.disabled, false);
+});
+
+test("mode switch to bilingual-reversed updates preferences", async () => {
+  const ui = createUi("microsoft");
+  await flush();
+  assert.equal(ui.mode.options.length, 3);
+  ui.mode.value = "bilingual-reversed";
+  ui.mode.dispatchEvent({ type: "change" });
+  await flush();
+  assert.equal(ui.preferences.mode, "bilingual-reversed");
 });

@@ -40,7 +40,9 @@
   ],
   "optional_host_permissions": [
     "https://api.cognitive.microsofttranslator.com/*",
+    "https://edge.microsoft.com/*",
     "https://translation.googleapis.com/*",
+    "https://translate.googleapis.com/*",
     "https://api-free.deepl.com/*",
     "https://api.deepl.com/*"
   ],

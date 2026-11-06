@@ -517,7 +517,9 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
               response.ok !== true ||
               (response.provider !== "microsoft" &&
                 response.provider !== "google" &&
-                response.provider !== "deepl") ||
+                response.provider !== "deepl" &&
+                response.provider !== "edge-web" &&
+                response.provider !== "google-web") ||
               !Array.isArray(response.services)
             )
               return null;
@@ -526,7 +528,9 @@ globalThis.PipCompanion.ContentPipLifecycle = (() => {
                 globalThis.PipCompanion.util.isRecord(service) &&
                 (service.provider === "microsoft" ||
                   service.provider === "google" ||
-                  service.provider === "deepl") &&
+                  service.provider === "deepl" ||
+                  service.provider === "edge-web" ||
+                  service.provider === "google-web") &&
                 typeof service.configured === "boolean"
                   ? [
                       {

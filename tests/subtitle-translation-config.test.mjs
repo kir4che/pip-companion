@@ -38,7 +38,13 @@ test("normalizes translation config values and limits credential lengths", () =>
       deeplKey: "deepl",
     }),
   );
-  assert.equal(api.normalize({ provider: "other" }).provider, "microsoft");
+  assert.equal(api.normalize({ provider: "other" }).provider, "edge-web");
+  assert.equal(api.normalize({ provider: "microsoft" }).provider, "microsoft");
+  assert.equal(api.normalize({ provider: "edge-web" }).provider, "edge-web");
+  assert.equal(
+    api.normalize({ provider: "google-web" }).provider,
+    "google-web",
+  );
   assert.equal(
     api.normalize({ microsoftKey: "x".repeat(4097) }).microsoftKey,
     "",
@@ -59,13 +65,23 @@ test("selects provider credentials and origins", () => {
   assert.equal(api.getProviderApiKey(config, "microsoft"), "ms");
   assert.equal(api.getProviderApiKey(config, "google"), "google");
   assert.equal(api.getProviderApiKey(config, "deepl"), "free:fx");
+  assert.equal(api.getProviderApiKey(config, "edge-web"), "");
+  assert.equal(api.getProviderApiKey(config, "google-web"), "");
   assert.equal(
     api.getProviderOrigins("microsoft", "")[0],
     "https://api.cognitive.microsofttranslator.com/*",
   );
   assert.equal(
+    api.getProviderOrigins("edge-web", "")[0],
+    "https://edge.microsoft.com/*",
+  );
+  assert.equal(
     api.getProviderOrigins("google", "")[0],
     "https://translation.googleapis.com/*",
+  );
+  assert.equal(
+    api.getProviderOrigins("google-web", "")[0],
+    "https://translate.googleapis.com/*",
   );
   assert.equal(
     api.getProviderOrigins("deepl", "free:fx")[0],

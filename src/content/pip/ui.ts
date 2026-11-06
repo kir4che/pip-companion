@@ -409,14 +409,19 @@ globalThis.PipCompanion.PipUI = (() => {
           for (const option of Array.from(translationService.options)) {
             if (option.value === "none") {
               option.disabled = false;
+              option.hidden = false;
               continue;
             }
+            const isFree =
+              option.value === "edge-web" || option.value === "google-web";
             const service = result.services.find(
               (item) => item.provider === option.value,
             );
-            option.disabled = service?.configured !== true;
+            const isConfigured = service?.configured === true;
+            option.disabled = !isConfigured;
+            option.hidden = !isFree && !isConfigured;
             if (result.provider === option.value)
-              activeTranslationServiceConfigured = service?.configured === true;
+              activeTranslationServiceConfigured = isConfigured;
           }
           translationService.value = actions.getSubtitleTranslationPreferences()
             .useNativeSecondaryTrack
@@ -448,16 +453,11 @@ globalThis.PipCompanion.PipUI = (() => {
         translationLanguage.value = preferences.targetLanguage;
       preferNative.checked = preferences.preferNative;
       translationServiceLabel.textContent = t("pipTranslationSource");
-      translationMode.options[0]!.textContent = t(
-        preferences.useNativeSecondaryTrack
-          ? "pipTranslationOriginalAndSecondary"
-          : "pipTranslationBilingual",
-      );
+      translationMode.options[0]!.textContent = t("pipTranslationBilingual");
       translationMode.options[1]!.textContent = t(
-        preferences.useNativeSecondaryTrack
-          ? "pipTranslationSecondaryOnly"
-          : "pipTranslationOnly",
+        "pipTranslationBilingualReversed",
       );
+      translationMode.options[2]!.textContent = t("pipTranslationOnly");
       translationLanguageText.textContent = t("pipTranslationLanguage");
       preferNativeRow.hidden = preferences.useNativeSecondaryTrack;
       translationLanguageRow.hidden = false;
@@ -627,7 +627,9 @@ globalThis.PipCompanion.PipUI = (() => {
         mode:
           translationMode.value === "bilingual"
             ? "bilingual"
-            : "translation-only",
+            : translationMode.value === "bilingual-reversed"
+              ? "bilingual-reversed"
+              : "translation-only",
       }),
     );
     eventScope.listen(translationLanguage, "change", () => {
@@ -635,7 +637,8 @@ globalThis.PipCompanion.PipUI = (() => {
       if (preferences.useNativeSecondaryTrack) {
         if (
           !actions.getSelectedSecondarySubtitleTrack() &&
-          preferences.mode !== "bilingual"
+          preferences.mode !== "bilingual" &&
+          preferences.mode !== "bilingual-reversed"
         )
           saveSubtitleTranslationPreferences({ mode: "bilingual" });
         actions.selectSecondarySubtitleTrack(translationLanguage.value);
@@ -794,16 +797,11 @@ globalThis.PipCompanion.PipUI = (() => {
         "aria-label",
         t("pipTranslationLanguage"),
       );
-      translationMode.options[0]!.textContent = t(
-        actions.getSubtitleTranslationPreferences().useNativeSecondaryTrack
-          ? "pipTranslationOriginalAndSecondary"
-          : "pipTranslationBilingual",
-      );
+      translationMode.options[0]!.textContent = t("pipTranslationBilingual");
       translationMode.options[1]!.textContent = t(
-        actions.getSubtitleTranslationPreferences().useNativeSecondaryTrack
-          ? "pipTranslationSecondaryOnly"
-          : "pipTranslationOnly",
+        "pipTranslationBilingualReversed",
       );
+      translationMode.options[2]!.textContent = t("pipTranslationOnly");
       refreshTranslationLanguageOptions();
       preferNativeText.textContent = t("pipTranslationPreferNative");
       preferNative.setAttribute("aria-label", t("pipTranslationPreferNative"));

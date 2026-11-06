@@ -74,7 +74,9 @@ globalThis.PipCompanion.subtitleTranslationPanel = {
       provider: SubtitleTranslationProvider;
       label: string;
     }[] = [
-      { provider: "microsoft", label: "Microsoft Translator" },
+      { provider: "edge-web", label: t("pipTranslationEdgeWeb") },
+      { provider: "google-web", label: t("pipTranslationGoogleWeb") },
+      { provider: "microsoft", label: "Azure Translator" },
       { provider: "google", label: "Google Cloud Translation" },
       { provider: "deepl", label: "DeepL API" },
     ];
@@ -83,6 +85,8 @@ globalThis.PipCompanion.subtitleTranslationPanel = {
       option.value = provider;
       option.textContent = label;
       option.disabled = true;
+      if (provider !== "edge-web" && provider !== "google-web")
+        option.hidden = true;
       translationService.append(option);
     }
     translationServiceRow.append(translationServiceText, translationService);
@@ -117,6 +121,7 @@ globalThis.PipCompanion.subtitleTranslationPanel = {
     translationMode.setAttribute("aria-label", t("pipTranslationDisplayMode"));
     for (const [value, key] of [
       ["bilingual", "pipTranslationBilingual"],
+      ["bilingual-reversed", "pipTranslationBilingualReversed"],
       ["translation-only", "pipTranslationOnly"],
     ] as const) {
       const option = doc.createElement("option");
