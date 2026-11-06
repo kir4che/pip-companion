@@ -1,3 +1,9 @@
+## 0.7.0
+
+- Added Edge and Google Translate as built-in free subtitle translation providers
+- Improved subtitle translation stability, background worker session synchronization, and multiline cue handling
+- Simplified subtitle translation display mode localization
+
 ## 0.6.2
 
 - Replaced issue reporting links with a feedback form (no GitHub account needed)
